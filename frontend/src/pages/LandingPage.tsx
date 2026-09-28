@@ -1,4 +1,7 @@
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import FloatingBalls from '../components/FloatingBalls';
+import LiveRoundTeaser from '../components/LiveRoundTeaser';
 
 const STEPS = [
   {
@@ -26,6 +29,11 @@ const TRUST_POINTS = [
   'Chaves para jogar e premios em dinheiro nunca se misturam - cada saldo no seu lugar.',
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
 export default function LandingPage() {
   return (
     <div className="landing">
@@ -41,25 +49,52 @@ export default function LandingPage() {
       </nav>
 
       <header className="hero">
-        <h1>Bingo online, rodadas rapidas, premios reais.</h1>
-        <p>
+        <FloatingBalls />
+
+        <LiveRoundTeaser />
+
+        <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          Bingo online, rodadas rapidas, premios reais.
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
           O Pbingo e uma plataforma de bingo com rodadas cronometradas de 1 minuto, sorteio em tempo real e premios
           sacaveis em dinheiro. Compre suas chaves via Pix, entre na rodada e acompanhe cada numero sendo sorteado na
           hora.
-        </p>
-        <Link to="/app" className="cta-button">
-          Jogar agora
-        </Link>
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-block' }}>
+            <Link to="/app" className="cta-button">
+              Jogar agora
+            </Link>
+          </motion.div>
+        </motion.div>
       </header>
 
       <section id="como-funciona" className="how-it-works">
         <h2>Como funciona</h2>
         <div className="steps">
-          {STEPS.map((step) => (
-            <div className="step-card" key={step.title}>
+          {STEPS.map((step, index) => (
+            <motion.div
+              className="step-card"
+              key={step.title}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.4 }}
+              variants={fadeUp}
+              transition={{ duration: 0.4, delay: index * 0.08 }}
+              whileHover={{ y: -4 }}
+            >
               <h3>{step.title}</h3>
               <p>{step.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -67,8 +102,17 @@ export default function LandingPage() {
       <section className="trust-section">
         <h2>Seguranca em primeiro lugar</h2>
         <ul>
-          {TRUST_POINTS.map((point) => (
-            <li key={point}>{point}</li>
+          {TRUST_POINTS.map((point, index) => (
+            <motion.li
+              key={point}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.6 }}
+              variants={fadeUp}
+              transition={{ duration: 0.4, delay: index * 0.08 }}
+            >
+              {point}
+            </motion.li>
           ))}
         </ul>
       </section>
