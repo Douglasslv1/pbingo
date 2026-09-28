@@ -1,23 +1,19 @@
-import AuthForm from './components/AuthForm';
-import Dashboard from './components/Dashboard';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-
-function AppContent() {
-  const { auth } = useAuth();
-  return auth ? <Dashboard /> : <AuthForm />;
-}
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './hooks/useAuth';
+import AppPage from './pages/AppPage';
+import LandingPage from './pages/LandingPage';
+import SupportPage from './pages/SupportPage';
 
 export default function App() {
   return (
     <AuthProvider>
-      <div className="app-shell">
-        <header className="app-header">
-          <h1>Bingo Online</h1>
-        </header>
-        <main>
-          <AppContent />
-        </main>
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/suporte" element={<SupportPage />} />
+          <Route path="/app" element={<AppPage />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
