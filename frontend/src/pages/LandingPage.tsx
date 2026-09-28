@@ -20,10 +20,10 @@ const STEPS = [
 ];
 
 const TRUST_POINTS = [
-  'Saldo de chaves e premios nunca fica negativo - garantido pelo banco de dados.',
-  'Toda validacao de vitoria e de saldo acontece no servidor, nunca so no navegador.',
-  'Operacoes financeiras sao atomicas: ou completam por inteiro, ou nao acontecem.',
-  'Chaves de participacao nao sao sacaveis; premios em reais sim - sem misturar os dois saldos.',
+  'Seu saldo nunca some. Cada centavo e cada chave ficam registrados com seguranca.',
+  'Sorteio 100% verificado - sem trapaca possivel, sem depender de confiar na nossa palavra.',
+  'Pagamentos processados com cuidado: ou a transacao acontece certinho, ou nao acontece.',
+  'Chaves para jogar e premios em dinheiro nunca se misturam - cada saldo no seu lugar.',
 ];
 
 export default function LandingPage() {
