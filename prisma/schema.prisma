@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  credits      UserCredit?
+  prizes       UserPrize?
+  tickets      Ticket[]
+  transactions Transaction[]
+  roundsWon    Round[]       @relation("RoundWinner")
+
+  @@map("users")
+}
+
+model UserCredit {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  balance   Int      @default(0)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credits")
+}
+
+model UserPrize {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  balanceFiat Decimal  @default(0.00) @map("balance_fiat") @db.Decimal(10, 2)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_prizes")
+}
+
+enum RoundStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+
+  @@map("round_status")
+}
+
+model Round {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status           RoundStatus @default(WAITING)
+  accumulatedPrize Decimal     @default(0.00) @map("accumulated_prize") @db.Decimal(10, 2)
+  drawnNumbers     Int[]       @default([]) @map("drawn_numbers")
+  winnerUserId     String?     @map("winner_user_id") @db.Uuid
+  startedAt        DateTime    @default(now()) @map("started_at") @db.Timestamptz
+  endedAt          DateTime?   @map("ended_at") @db.Timestamptz
+
+  winner  User?    @relation("RoundWinner", fields: [winnerUserId], references: [id])
+  tickets Ticket[]
+
+  @@map("rounds")
+}
+
+model Ticket {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roundId       String   @map("round_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  numbersMatrix Json     @map("numbers_matrix")
+  markedNumbers Int[]    @default([]) @map("marked_numbers")
+  isWinner      Boolean  @default(false) @map("is_winner")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("tickets")
+}
+
+enum TransactionType {
+  PURCHASE_CREDITS
+  SPEND_KEY
+  PRIZE_PAYOUT
+  WITHDRAWAL
+
+  @@map("transaction_type")
+}
+
+model Transaction {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String          @map("user_id") @db.Uuid
+  type          TransactionType
+  amountFiat    Decimal         @default(0.00) @map("amount_fiat") @db.Decimal(10, 2)
+  amountCredits Int             @default(0) @map("amount_credits")
+  status        String          @default("COMPLETED") @db.VarChar(50)
+  providerReference String?     @map("provider_reference") @db.VarChar(255)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([providerReference])
+  @@map("transactions")
+}
