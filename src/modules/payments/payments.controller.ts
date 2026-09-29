@@ -45,17 +45,35 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
   const topic = req.query.type ?? req.body?.type;
 
   if (env.mercadoPagoWebhookSecret) {
-    try {
-      WebhookSignatureValidator.validate({
+    // A documentacao manda usar IDs alfanumericos (ORD...) em minusculas na
+    // assinatura; o ID original fica como alternativa caso o envio nao siga isso.
+    const candidateIds =
+      typeof dataId === 'string' ? [...new Set([dataId.toLowerCase(), dataId])] : [undefined];
+    let lastError: unknown;
+    const valid = candidateIds.some((candidate) => {
+      try {
+        WebhookSignatureValidator.validate({
+          xSignature: req.headers['x-signature'],
+          xRequestId: req.headers['x-request-id'],
+          dataId: candidate,
+          secret: env.mercadoPagoWebhookSecret,
+          toleranceSeconds: 300,
+        });
+        return true;
+      } catch (err) {
+        lastError = err;
+        return false;
+      }
+    });
+
+    if (!valid) {
+      // Nada aqui e secreto: o x-signature e so o hash da mensagem, nao a chave.
+      console.warn('Assinatura de webhook do Mercado Pago invalida, ignorando notificacao', {
+        error: lastError,
+        query: req.query,
         xSignature: req.headers['x-signature'],
         xRequestId: req.headers['x-request-id'],
-        // IDs alfanumericos (ORD...) entram na assinatura em minusculas.
-        dataId: typeof dataId === 'string' ? dataId.toLowerCase() : undefined,
-        secret: env.mercadoPagoWebhookSecret,
-        toleranceSeconds: 300,
       });
-    } catch (err) {
-      console.warn('Assinatura de webhook do Mercado Pago invalida, ignorando notificacao', err);
       res.status(401).send('invalid signature');
       return;
     }
