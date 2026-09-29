@@ -4,3 +4,5 @@ dist/
 .git/
 tests/
 *.log
+.env
+.env.local
