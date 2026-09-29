@@ -1,7 +1,11 @@
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
-import { mpPaymentClient } from './mercadopago.client';
+import { mpOrderClient } from './mercadopago.client';
+
+// Status de order (Orders API) que encerram a cobranca.
+const ORDER_PAID_STATUSES = ['processed'];
+const ORDER_FAILED_STATUSES = ['failed', 'canceled', 'expired'];
 
 function assertMercadoPagoConfigured(): void {
   if (!env.mercadoPagoAccessToken) {
@@ -26,29 +30,34 @@ export async function createPixCharge(userId: string, creditsAmount: number) {
   });
 
   try {
-    const payment = await mpPaymentClient.create({
+    // O aviso de pagamento chega pelo webhook configurado no painel do
+    // Mercado Pago (evento "Order") - a Orders API nao aceita notification_url.
+    const order = await mpOrderClient.create({
       body: {
-        transaction_amount: amountFiat,
-        description: `Compra de ${creditsAmount} chave(s) - Bingo Online`,
-        payment_method_id: 'pix',
-        payer: { email: user.email },
+        type: 'online',
+        processing_mode: 'automatic',
+        total_amount: amountFiat.toFixed(2),
         external_reference: transaction.id,
-        notification_url: `${env.publicBaseUrl}/payments/webhook/mercadopago`,
+        payer: { email: user.email },
+        transactions: {
+          payments: [{ amount: amountFiat.toFixed(2), payment_method: { id: 'pix', type: 'bank_transfer' } }],
+        },
       },
+      requestOptions: { idempotencyKey: transaction.id },
     });
 
     await prisma.transaction.update({
       where: { id: transaction.id },
-      data: { providerReference: payment.id ? String(payment.id) : null },
+      data: { providerReference: order.id ?? null },
     });
 
-    const qrData = payment.point_of_interaction?.transaction_data;
+    const pixData = order.transactions?.payments?.[0]?.payment_method;
 
     return {
       transactionId: transaction.id,
-      status: payment.status ?? 'pending',
-      qrCode: qrData?.qr_code ?? null,
-      qrCodeBase64: qrData?.qr_code_base64 ?? null,
+      status: order.status ?? 'pending',
+      qrCode: pixData?.qr_code ?? null,
+      qrCodeBase64: pixData?.qr_code_base64 ?? null,
     };
   } catch (err) {
     await prisma.transaction.update({ where: { id: transaction.id }, data: { status: 'FAILED' } });
@@ -73,18 +82,18 @@ export async function getPixChargeStatus(userId: string, transactionId: string) 
 /**
  * O status confiavel e sempre buscado direto na API do Mercado Pago usando
  * nossas credenciais - o corpo do webhook e tratado apenas como um aviso
- * de "confira o pagamento X", nunca como fonte de verdade sobre valor/status.
+ * de "confira a order X", nunca como fonte de verdade sobre valor/status.
  */
-export async function handleMercadoPagoWebhook(paymentId: string): Promise<void> {
+export async function handleMercadoPagoWebhook(orderId: string): Promise<void> {
   assertMercadoPagoConfigured();
 
-  const payment = await mpPaymentClient.get({ id: paymentId });
-  const transactionId = payment.external_reference;
-  if (!transactionId) {
+  const order = await mpOrderClient.get({ id: orderId });
+  const transactionId = order.external_reference;
+  if (!transactionId || !order.status) {
     return;
   }
 
-  if (payment.status === 'approved') {
+  if (ORDER_PAID_STATUSES.includes(order.status)) {
     await prisma.$transaction(async (tx) => {
       const updated = await tx.transaction.updateMany({
         where: { id: transactionId, status: 'PENDING' },
@@ -101,7 +110,7 @@ export async function handleMercadoPagoWebhook(paymentId: string): Promise<void>
         data: { balance: { increment: transaction.amountCredits } },
       });
     });
-  } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
+  } else if (ORDER_FAILED_STATUSES.includes(order.status)) {
     await prisma.transaction.updateMany({
       where: { id: transactionId, status: 'PENDING' },
       data: { status: 'FAILED' },

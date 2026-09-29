@@ -41,14 +41,16 @@ export async function getPixStatus(req: Request, res: Response): Promise<void> {
 export async function mercadoPagoWebhook(req: Request, res: Response): Promise<void> {
   const dataIdRaw = req.query['data.id'] ?? req.query.id;
   const dataId = Array.isArray(dataIdRaw) ? dataIdRaw[0] : dataIdRaw;
-  const paymentId = dataId ?? req.body?.data?.id;
+  const orderId = dataId ?? req.body?.data?.id;
+  const topic = req.query.type ?? req.body?.type;
 
   if (env.mercadoPagoWebhookSecret) {
     try {
       WebhookSignatureValidator.validate({
         xSignature: req.headers['x-signature'],
         xRequestId: req.headers['x-request-id'],
-        dataId: dataId as string | undefined,
+        // IDs alfanumericos (ORD...) entram na assinatura em minusculas.
+        dataId: typeof dataId === 'string' ? dataId.toLowerCase() : undefined,
         secret: env.mercadoPagoWebhookSecret,
         toleranceSeconds: 300,
       });
@@ -59,9 +61,10 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
     }
   }
 
-  if (paymentId) {
+  // So avisos de order interessam: outros topicos (ex.: "payment") sao confirmados e ignorados.
+  if (orderId && (!topic || topic === 'order')) {
     try {
-      await handleMercadoPagoWebhook(String(paymentId));
+      await handleMercadoPagoWebhook(String(orderId));
     } catch (err) {
       console.error('Erro ao processar webhook do Mercado Pago', err);
     }
