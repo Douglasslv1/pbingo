@@ -49,6 +49,15 @@ export const api = {
   login: (data: { email: string; password: string }) =>
     request<AuthResult>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
 
+  forgotPassword: (email: string) =>
+    request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+
+  resetPassword: (token: string, password: string) =>
+    request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+
   getWallet: (token: string) => request<Wallet>('/wallet/me', {}, token),
 
   createPixCharge: (token: string, creditsAmount: number) =>

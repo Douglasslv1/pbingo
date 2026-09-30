@@ -53,4 +53,16 @@ export const env = {
   mercadoPagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? '',
   creditPriceBrl,
   minWithdrawalBrl: optionalNumber('MIN_WITHDRAWAL_BRL', 10),
+
+  // Origens do frontend aceitas pelo CORS e pelo WebSocket; vazio libera todas (apenas desenvolvimento)
+  corsOrigins: (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean),
+  rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
+
+  frontendUrl: (process.env.FRONTEND_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
+  resendApiKey: process.env.RESEND_API_KEY ?? '',
+  emailFrom: process.env.EMAIL_FROM ?? 'Pbingo <onboarding@resend.dev>',
+  passwordResetTtlMs: optionalNumber('PASSWORD_RESET_TTL_MS', 60 * 60 * 1000),
 };

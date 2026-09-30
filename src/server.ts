@@ -4,6 +4,10 @@ import { env } from './config/env';
 import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
 
+if (env.isProduction && env.corsOrigins.length === 0) {
+  console.warn('CORS_ORIGINS nao configurada: a API esta aceitando requisicoes de qualquer origem');
+}
+
 const app = createApp();
 const httpServer = createServer(app);
 
