@@ -1,9 +1,17 @@
 import { z } from 'zod';
+import { acceptTermsField, birthDateSchema } from './terms';
 
 export const registerSchema = z.object({
   name: z.string().min(2).max(255),
   email: z.string().email(),
   password: z.string().min(8).max(72),
+  birthDate: birthDateSchema,
+  acceptTerms: acceptTermsField,
+});
+
+export const acceptTermsSchema = z.object({
+  birthDate: birthDateSchema,
+  acceptTerms: acceptTermsField,
 });
 
 export const loginSchema = z.object({
@@ -22,3 +30,4 @@ export const resetPasswordSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type AcceptTermsInput = z.infer<typeof acceptTermsSchema>;

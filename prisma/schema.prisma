@@ -14,6 +14,9 @@ model User {
   passwordHash      String    @map("password_hash") @db.VarChar(255)
   role              UserRole  @default(PLAYER)
   passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz
+  birthDate         DateTime? @map("birth_date") @db.Date
+  termsAcceptedAt   DateTime? @map("terms_accepted_at") @db.Timestamptz
+  termsVersion      String?   @map("terms_version") @db.VarChar(20)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   credits             UserCredit?
@@ -24,6 +27,7 @@ model User {
   withdrawals         Withdrawal[]         @relation("WithdrawalOwner")
   reviewedWithdrawals Withdrawal[]         @relation("WithdrawalReviewer")
   PasswordResetToken  PasswordResetToken[]
+  AccessLog           AccessLog[]
 
   @@map("users")
 }
@@ -180,4 +184,18 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+model AccessLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  event     String   @db.VarChar(30)
+  ip        String?  @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("access_logs")
 }

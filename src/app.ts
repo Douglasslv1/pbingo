@@ -6,6 +6,7 @@ import { errorMiddleware, notFoundMiddleware } from './middleware/error.middlewa
 import { createRateLimiter } from './middleware/rateLimit.middleware';
 import { requestLogger } from './middleware/requestLogger.middleware';
 import { authRouter } from './modules/auth/auth.routes';
+import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
 import { walletRouter } from './modules/wallet/wallet.routes';
@@ -67,6 +68,8 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
       minPlayersPerRound: env.minPlayersPerRound,
       roundIntervalMinutes: env.roundIntervalMinutes,
       minWithdrawalBrl: env.minWithdrawalBrl,
+      houseFeePercent: env.houseFeePercent,
+      termsVersion: CURRENT_TERMS_VERSION,
     });
   });
 

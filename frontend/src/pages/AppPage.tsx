@@ -1,3 +1,4 @@
+import AcceptTermsCard from '../components/AcceptTermsCard';
 import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import Dashboard from '../components/Dashboard';
@@ -9,7 +10,9 @@ export default function AppPage() {
   return (
     <div className="app-shell">
       <AppHeader />
-      <main>{auth ? <Dashboard /> : <AuthForm />}</main>
+      <main>
+        {!auth ? <AuthForm /> : auth.user.termsAccepted === false ? <AcceptTermsCard /> : <Dashboard />}
+      </main>
     </div>
   );
 }

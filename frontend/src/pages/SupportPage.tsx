@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
+import { CONTACT_EMAIL } from '../components/LegalDocument';
 
 const FAQ_ITEMS = [
   {
@@ -65,14 +67,18 @@ export default function SupportPage() {
           <h2>Nao encontrou o que precisava?</h2>
           <p>Fale direto com a nossa equipe:</p>
           <div className="contact-cards">
-            <a className="contact-card" href="mailto:suporte@pbingo.com">
+            <a className="contact-card" href={`mailto:${CONTACT_EMAIL}`}>
               <strong>E-mail</strong>
-              <span>suporte@pbingo.com</span>
+              <span>{CONTACT_EMAIL}</span>
             </a>
-            <a className="contact-card" href="https://wa.me/5500000000000" target="_blank" rel="noreferrer">
-              <strong>WhatsApp</strong>
-              <span>Atendimento rapido</span>
-            </a>
+            <Link className="contact-card" to="/termos">
+              <strong>Termos de Uso</strong>
+              <span>Regras das rodadas, chaves e saques</span>
+            </Link>
+            <Link className="contact-card" to="/privacidade">
+              <strong>Politica de Privacidade</strong>
+              <span>Como cuidamos dos seus dados</span>
+            </Link>
           </div>
         </div>
       </main>

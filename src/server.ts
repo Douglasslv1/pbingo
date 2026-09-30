@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from './lib/logger';
+import { purgeExpiredAccessLogs } from './modules/auth/accessLog.service';
 import { setUserRole } from './modules/auth/userRole.service';
 import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
@@ -35,6 +36,18 @@ async function promoteBootstrapAdmin(): Promise<void> {
   }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Apaga diariamente os registros de acesso que passaram do prazo legal de guarda. */
+function schedulePurgeOfAccessLogs(): void {
+  const purge = () =>
+    purgeExpiredAccessLogs()
+      .then((count) => count > 0 && logger.info('Registros de acesso expirados removidos', { count }))
+      .catch((err) => logger.error('Erro ao remover registros de acesso expirados', { err }));
+  purge();
+  setInterval(purge, DAY_MS).unref();
+}
+
 const app = createApp();
 const httpServer = createServer(app);
 
@@ -45,6 +58,7 @@ httpServer.listen(env.port, () => {
   roundEngine.start().catch((err) => {
     logger.error('Erro ao iniciar o motor de rodadas', { err });
   });
+  schedulePurgeOfAccessLogs();
   promoteBootstrapAdmin().catch((err) => {
     logger.error('Erro ao promover BOOTSTRAP_ADMIN_EMAIL', { err });
   });

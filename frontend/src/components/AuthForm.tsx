@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { api, ApiError } from '../api';
 import { useAuth } from '../hooks/useAuth';
+import TermsConsentFields from './TermsConsentFields';
 
 type Mode = 'login' | 'register' | 'forgot';
 
@@ -10,6 +11,8 @@ export default function AuthForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +35,9 @@ export default function AuthForm() {
         return;
       }
       const result =
-        mode === 'login' ? await api.login({ email, password }) : await api.register({ name, email, password });
+        mode === 'login'
+          ? await api.login({ email, password })
+          : await api.register({ name, email, password, birthDate, acceptTerms });
       login(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro de conexao com o servidor');
@@ -83,6 +88,15 @@ export default function AuthForm() {
               minLength={8}
             />
           </label>
+        )}
+
+        {mode === 'register' && (
+          <TermsConsentFields
+            birthDate={birthDate}
+            onBirthDateChange={setBirthDate}
+            accepted={acceptTerms}
+            onAcceptedChange={setAcceptTerms}
+          />
         )}
 
         {error && <p className="error">{error}</p>}

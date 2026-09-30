@@ -10,6 +10,8 @@ export async function registerTestUser(overrides: Partial<{ name: string; email:
     name: overrides.name ?? `Usuario ${userCounter}`,
     email: overrides.email ?? `usuario${userCounter}@example.com`,
     password: overrides.password ?? 'senha1234',
+    birthDate: '1990-05-20',
+    acceptTerms: true,
   };
 
   const res = await request(app).post('/auth/register').send(payload);

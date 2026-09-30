@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { adminMiddleware } from '../../middleware/admin.middleware';
 import { authMiddleware } from '../../middleware/auth.middleware';
+import { requireTermsAccepted } from '../../middleware/terms.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
 import {
   createWithdrawal,
@@ -12,7 +13,7 @@ import {
 
 export const withdrawalsRouter = Router();
 
-withdrawalsRouter.post('/', authMiddleware, asyncHandler(createWithdrawal));
+withdrawalsRouter.post('/', authMiddleware, asyncHandler(requireTermsAccepted), asyncHandler(createWithdrawal));
 withdrawalsRouter.get('/me', authMiddleware, asyncHandler(getMyWithdrawals));
 
 export const adminWithdrawalsRouter = Router();

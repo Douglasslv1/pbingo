@@ -55,11 +55,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
   await mailer.send({ to: user.email, ...buildResetEmail(user.name, link, ttlMinutes) });
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<void> {
+/** Troca a senha e retorna o id do usuario. */
+export async function resetPassword(token: string, newPassword: string): Promise<string> {
   const passwordHash = await hashPassword(newPassword);
   const now = new Date();
 
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const resetToken = await tx.passwordResetToken.findUnique({ where: { tokenHash: hashToken(token) } });
     if (!resetToken || resetToken.expiresAt <= now) {
       throw new AppError('Link de redefinicao invalido ou expirado', 400);
@@ -78,5 +79,6 @@ export async function resetPassword(token: string, newPassword: string): Promise
       where: { id: resetToken.userId },
       data: { passwordHash, passwordChangedAt: now },
     });
+    return resetToken.userId;
   });
 }

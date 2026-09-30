@@ -3,8 +3,10 @@ import { AuthProvider } from './hooks/useAuth';
 import AdminPage from './pages/AdminPage';
 import AppPage from './pages/AppPage';
 import LandingPage from './pages/LandingPage';
+import PrivacyPage from './pages/PrivacyPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SupportPage from './pages/SupportPage';
+import TermsPage from './pages/TermsPage';
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
           <Route path="/app" element={<AppPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+          <Route path="/termos" element={<TermsPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,5 +1,6 @@
 import type {
   AuthResult,
+  AuthUser,
   GameConfig,
   JoinRoundResult,
   Page,
@@ -47,11 +48,16 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 }
 
 export const api = {
-  register: (data: { name: string; email: string; password: string }) =>
+  register: (data: { name: string; email: string; password: string; birthDate: string; acceptTerms: boolean }) =>
     request<AuthResult>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
   login: (data: { email: string; password: string }) =>
     request<AuthResult>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+
+  me: (token: string) => request<AuthUser>('/auth/me', {}, token),
+
+  acceptTerms: (token: string, birthDate: string) =>
+    request<AuthUser>('/auth/accept-terms', { method: 'POST', body: JSON.stringify({ birthDate, acceptTerms: true }) }, token),
 
   forgotPassword: (email: string) =>
     request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),

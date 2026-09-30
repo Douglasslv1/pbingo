@@ -118,8 +118,14 @@ export default function LandingPage() {
       </section>
 
       <footer className="landing-footer">
-        <Link to="/suporte">Central de ajuda</Link>
-        <span>© {new Date().getFullYear()} Pbingu</span>
+        <nav className="landing-footer-links">
+          <Link to="/suporte">Central de ajuda</Link>
+          <Link to="/termos">Termos de Uso</Link>
+          <Link to="/privacidade">Privacidade</Link>
+        </nav>
+        <span>
+          <span className="age-badge">18+</span> Proibido para menores · © {new Date().getFullYear()} Pbingu
+        </span>
       </footer>
     </div>
   );

@@ -18,6 +18,8 @@ export interface GameConfig {
   minPlayersPerRound: number;
   roundIntervalMinutes: number;
   minWithdrawalBrl: number;
+  houseFeePercent: number;
+  termsVersion: string;
 }
 
 export interface JoinRoundResult {
@@ -48,8 +50,9 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  // Ausente em sessoes salvas antes da criacao dos papeis
+  // Ausentes em sessoes salvas antes da criacao desses campos (atualizados via /auth/me)
   role?: UserRole;
+  termsAccepted?: boolean;
 }
 
 export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';
