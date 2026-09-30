@@ -35,6 +35,12 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
       return { title: 'Cartela comprada', amount: `-${keys(transaction.amountCredits)}`, positive: false };
     case 'PRIZE_PAYOUT':
       return { title: 'Premio recebido', amount: `+${formatBrl(transaction.amountFiat)}`, positive: true };
+    case 'KEY_REFUND':
+      return {
+        title: 'Chave devolvida (rodada cancelada ou saida)',
+        amount: `+${keys(transaction.amountCredits)}`,
+        positive: true,
+      };
     case 'WITHDRAWAL':
       return {
         title: 'Saque via Pix',
@@ -46,6 +52,7 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
 }
 
 function describeRoundResult(round: RoundHistoryItem): string {
+  if (round.status === 'CANCELLED') return 'Cancelada - chave devolvida';
   if (round.status !== 'FINISHED') return 'Em andamento';
   if (round.winningTickets === 0) return 'Nao ganhou';
   return `Ganhou ${formatBrl(round.prizeWon)}`;

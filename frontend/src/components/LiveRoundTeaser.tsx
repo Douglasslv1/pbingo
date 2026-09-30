@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { formatCountdown, formatTime } from '../format';
 import { useCountdown } from '../hooks/useCountdown';
 import { getSocket } from '../socket';
 import type { RoundView } from '../types';
@@ -16,15 +17,20 @@ export default function LiveRoundTeaser() {
 
     const socket = getSocket();
 
-    function onWaiting(payload: { roundId: string; endsAt: string }) {
-      setRound({
-        id: payload.roundId,
-        status: 'WAITING',
-        accumulatedPrize: '0',
-        drawnNumbers: [],
-        startedAt: new Date().toISOString(),
-        waitingEndsAt: payload.endsAt,
-      });
+    function onWaiting(payload: RoundView) {
+      setRound(payload);
+    }
+
+    function onPlayersChanged(payload: { roundId: string; accumulatedPrize: string; playersCount: number }) {
+      setRound((prev) =>
+        prev && prev.id === payload.roundId
+          ? { ...prev, accumulatedPrize: payload.accumulatedPrize, playersCount: payload.playersCount }
+          : prev,
+      );
+    }
+
+    function onCancelled(payload: { roundId: string }) {
+      setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, status: 'CANCELLED' } : prev));
     }
 
     function onStarted(payload: { roundId: string }) {
@@ -43,8 +49,12 @@ export default function LiveRoundTeaser() {
     socket.on('round:started', onStarted);
     socket.on('number:drawn', onNumberDrawn);
     socket.on('round:finished', onFinished);
+    socket.on('round:players_changed', onPlayersChanged);
+    socket.on('round:cancelled', onCancelled);
 
     return () => {
+      socket.off('round:players_changed', onPlayersChanged);
+      socket.off('round:cancelled', onCancelled);
       socket.off('round:waiting', onWaiting);
       socket.off('round:started', onStarted);
       socket.off('number:drawn', onNumberDrawn);
@@ -58,11 +68,18 @@ export default function LiveRoundTeaser() {
     <div className="live-teaser">
       <span className="live-dot" />
       {!round && <span>Conectando na rodada ao vivo...</span>}
-      {round?.status === 'WAITING' && <span>Rodada aberta agora - fecha em {countdown ?? '...'}s</span>}
+      {round?.status === 'WAITING' && (
+        <span>
+          Proxima rodada as {round.waitingEndsAt ? formatTime(round.waitingEndsAt) : '...'}
+          {countdown !== null && ` (em ${formatCountdown(countdown)})`} - {round.playersCount}/{round.minPlayers}{' '}
+          jogadores
+        </span>
+      )}
       {round?.status === 'IN_PROGRESS' && (
         <span>Sorteio em andamento{lastNumber ? ` - ultimo numero: ${lastNumber}` : ''}</span>
       )}
-      {round?.status === 'FINISHED' && <span>Rodada encerrada - proxima comeca em instantes</span>}
+      {round?.status === 'FINISHED' && <span>Rodada encerrada - a proxima sala abre em instantes</span>}
+      {round?.status === 'CANCELLED' && <span>Rodada cancelada por falta de jogadores - nova sala abrindo</span>}
     </div>
   );
 }

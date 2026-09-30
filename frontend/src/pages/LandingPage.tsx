@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: '3. Entre na rodada e acompanhe o sorteio',
-    description: 'Cada rodada abre por 1 minuto para entrada. Os numeros sao sorteados em tempo real, com a cartela marcando automaticamente.',
+    description: 'Rodadas a cada 15 minutos, com no minimo 5 jogadores - se nao completar, sua chave volta. Os numeros sao sorteados em tempo real, com a cartela marcando automaticamente.',
   },
   {
     title: '4. Ganhe e saque',
@@ -61,7 +61,7 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          O Pbingu e uma plataforma de bingo com rodadas cronometradas de 1 minuto, sorteio em tempo real e premios
+          O Pbingu e uma plataforma de bingo com rodadas a cada 15 minutos, sorteio em tempo real e premios
           sacaveis em dinheiro. Compre suas chaves via Pix, entre na rodada e acompanhe cada numero sendo sorteado na
           hora.
         </motion.p>

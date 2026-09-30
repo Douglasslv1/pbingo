@@ -816,3 +816,49 @@ button.danger {
 .amount-out {
   color: var(--text);
 }
+
+/* Sala de espera da rodada */
+
+.round-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.round-stats strong {
+  display: block;
+  font-size: 1.35rem;
+}
+
+.progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.round-lobby .hint {
+  margin-bottom: 12px;
+}
+
+.round-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .round-stats strong {
+    font-size: 1.1rem;
+  }
+}

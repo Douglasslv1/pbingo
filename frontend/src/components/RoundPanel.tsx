@@ -1,6 +1,7 @@
-import { formatBrl } from '../format';
-import type { RoundView, Ticket } from '../types';
+import { formatBrl, formatCountdown, formatTime } from '../format';
 import { useCountdown } from '../hooks/useCountdown';
+import { useGameConfig } from '../hooks/useGameConfig';
+import type { RoundView, Ticket } from '../types';
 import BallRoulette, { DrawEvent } from './BallRoulette';
 import TicketCard from './TicketCard';
 
@@ -8,38 +9,93 @@ interface Props {
   round: RoundView | null;
   myTickets: Ticket[];
   onJoin: () => void;
+  onLeave: () => void;
   joining: boolean;
   lastDrawn: DrawEvent | null;
 }
 
-export default function RoundPanel({ round, myTickets, onJoin, joining, lastDrawn }: Props) {
+const STATUS_LABELS: Record<RoundView['status'], string> = {
+  WAITING: 'Sala aberta - aguardando jogadores',
+  IN_PROGRESS: 'Sorteio em andamento',
+  FINISHED: 'Encerrada',
+  CANCELLED: 'Cancelada por falta de jogadores',
+};
+
+export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining, lastDrawn }: Props) {
+  const config = useGameConfig();
   const countdown = useCountdown(round?.status === 'WAITING' ? round.waitingEndsAt : null);
 
   if (!round) {
     return <div className="card">Carregando rodada...</div>;
   }
 
-  const statusLabel: Record<string, string> = {
-    WAITING: 'Aberta para entrada',
-    IN_PROGRESS: 'Sorteio em andamento',
-    FINISHED: 'Encerrada',
-  };
+  const inRound = myTickets.length > 0;
+  const missingPlayers = Math.max(round.minPlayers - round.playersCount, 0);
+  const ticketPrice = config ? formatBrl(config.creditPriceBrl * config.ticketPriceCredits) : null;
 
   return (
     <div className="card">
-      <h2>Rodada atual</h2>
+      <h2>Rodada</h2>
       <p>
-        Status: <strong>{statusLabel[round.status] ?? round.status}</strong>
-        {round.status === 'WAITING' && countdown !== null && <> — abre em {countdown}s</>}
-      </p>
-      <p>
-        Premio acumulado: <strong>{formatBrl(round.accumulatedPrize)}</strong>
+        <strong>{STATUS_LABELS[round.status]}</strong>
       </p>
 
       {round.status === 'WAITING' && (
-        <button onClick={onJoin} disabled={myTickets.length > 0 || joining}>
-          {myTickets.length > 0 ? 'Cartela comprada' : joining ? 'Comprando...' : 'Comprar cartela (1 chave)'}
-        </button>
+        <div className="round-lobby">
+          <div className="round-stats">
+            <div>
+              <span className="label">Comeca as</span>
+              <strong>{round.waitingEndsAt ? formatTime(round.waitingEndsAt) : '-'}</strong>
+              {countdown !== null && <span className="label">em {formatCountdown(countdown)}</span>}
+            </div>
+            <div>
+              <span className="label">Jogadores</span>
+              <strong>
+                {round.playersCount}/{round.minPlayers}
+              </strong>
+              <span className="label">
+                {missingPlayers > 0 ? `faltam ${missingPlayers} para comecar` : 'minimo atingido'}
+              </span>
+            </div>
+            <div>
+              <span className="label">Premio atual</span>
+              <strong>{formatBrl(round.accumulatedPrize)}</strong>
+            </div>
+          </div>
+
+          <div className="progress" aria-hidden="true">
+            <div
+              className="progress-bar"
+              style={{ width: `${Math.min((round.playersCount / round.minPlayers) * 100, 100)}%` }}
+            />
+          </div>
+
+          <p className="hint">
+            A rodada so comeca com pelo menos {round.minPlayers} jogadores. Se nao completar ate o horario, ela e
+            cancelada e sua chave volta para a carteira.
+          </p>
+
+          {inRound ? (
+            <div className="round-actions">
+              <button type="button" disabled>
+                Voce esta na rodada
+              </button>
+              <button type="button" className="link" onClick={onLeave} disabled={joining}>
+                Sair e recuperar a chave
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={onJoin} disabled={joining}>
+              {joining ? 'Entrando...' : `Entrar na rodada (1 chave${ticketPrice ? ` = ${ticketPrice}` : ''})`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {round.status !== 'WAITING' && (
+        <p>
+          Premio da rodada: <strong>{formatBrl(round.accumulatedPrize)}</strong>
+        </p>
       )}
 
       {round.status === 'IN_PROGRESS' && <BallRoulette lastDrawn={lastDrawn} />}
@@ -57,7 +113,7 @@ export default function RoundPanel({ round, myTickets, onJoin, joining, lastDraw
         </div>
       )}
 
-      {myTickets.length > 0 && (
+      {inRound && (
         <div className="my-tickets">
           <span className="label">Minha cartela</span>
           {myTickets.map((ticket) => (

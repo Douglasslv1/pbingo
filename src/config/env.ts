@@ -39,7 +39,9 @@ export const env = {
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
 
-  roundWaitMs: optionalNumber('ROUND_WAIT_MS', 60_000),
+  // Rodadas comecam em horarios fixos (ex.: :00, :15, :30, :45) se houver o minimo de jogadores
+  roundIntervalMinutes: optionalNumber('ROUND_INTERVAL_MINUTES', 15),
+  minPlayersPerRound: optionalNumber('MIN_PLAYERS_PER_ROUND', 5),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),
   nextRoundDelayMs: optionalNumber('NEXT_ROUND_DELAY_MS', 5_000),
 

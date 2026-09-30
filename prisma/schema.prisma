@@ -61,6 +61,7 @@ enum RoundStatus {
   WAITING
   IN_PROGRESS
   FINISHED
+  CANCELLED
 
   @@map("round_status")
 }
@@ -72,6 +73,7 @@ model Round {
   drawnNumbers     Int[]       @default([]) @map("drawn_numbers")
   winnerUserId     String?     @map("winner_user_id") @db.Uuid
   startedAt        DateTime    @default(now()) @map("started_at") @db.Timestamptz
+  scheduledAt      DateTime?   @map("scheduled_at") @db.Timestamptz
   endedAt          DateTime?   @map("ended_at") @db.Timestamptz
 
   winner  User?    @relation("RoundWinner", fields: [winnerUserId], references: [id])
@@ -81,14 +83,16 @@ model Round {
 }
 
 model Ticket {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  roundId       String   @map("round_id") @db.Uuid
-  userId        String   @map("user_id") @db.Uuid
-  numbersMatrix Json     @map("numbers_matrix")
-  markedNumbers Int[]    @default([]) @map("marked_numbers")
-  isWinner      Boolean  @default(false) @map("is_winner")
-  prizeAmount   Decimal? @map("prize_amount") @db.Decimal(10, 2)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roundId           String   @map("round_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  numbersMatrix     Json     @map("numbers_matrix")
+  markedNumbers     Int[]    @default([]) @map("marked_numbers")
+  isWinner          Boolean  @default(false) @map("is_winner")
+  prizeAmount       Decimal? @map("prize_amount") @db.Decimal(10, 2)
+  creditsSpent      Int      @default(1) @map("credits_spent")
+  prizeContribution Decimal  @default(0.00) @map("prize_contribution") @db.Decimal(10, 2)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id])
@@ -101,6 +105,7 @@ enum TransactionType {
   SPEND_KEY
   PRIZE_PAYOUT
   WITHDRAWAL
+  KEY_REFUND
 
   @@map("transaction_type")
 }

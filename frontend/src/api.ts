@@ -1,5 +1,6 @@
 import type {
   AuthResult,
+  GameConfig,
   JoinRoundResult,
   Page,
   RoundHistoryItem,
@@ -77,9 +78,18 @@ export const api = {
       token,
     ),
 
+  getConfig: () => request<GameConfig>('/config'),
+
   getCurrentRound: () => request<RoundView | null>('/rounds/current'),
 
   joinRound: (token: string) => request<JoinRoundResult>('/rounds/join', { method: 'POST' }, token),
+
+  leaveRound: (token: string) =>
+    request<{ refundedCredits: number; accumulatedPrize: string; playersCount: number }>(
+      '/rounds/leave',
+      { method: 'POST' },
+      token,
+    ),
 
   getMyTickets: (token: string, roundId: string) =>
     request<Ticket[]>(`/rounds/${roundId}/my-tickets`, {}, token),

@@ -1,4 +1,4 @@
-export type RoundStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
+export type RoundStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'CANCELLED';
 
 export interface RoundView {
   id: string;
@@ -7,6 +7,17 @@ export interface RoundView {
   drawnNumbers: number[];
   startedAt: string;
   waitingEndsAt: string | null;
+  playersCount: number;
+  minPlayers: number;
+}
+
+export interface GameConfig {
+  creditPriceBrl: number;
+  ticketPriceCredits: number;
+  prizeContributionPerTicket: number;
+  minPlayersPerRound: number;
+  roundIntervalMinutes: number;
+  minWithdrawalBrl: number;
 }
 
 export interface JoinRoundResult {
@@ -73,7 +84,7 @@ export interface AuthResult {
   user: AuthUser;
 }
 
-export type TransactionType = 'PURCHASE_CREDITS' | 'SPEND_KEY' | 'PRIZE_PAYOUT' | 'WITHDRAWAL';
+export type TransactionType = 'PURCHASE_CREDITS' | 'SPEND_KEY' | 'PRIZE_PAYOUT' | 'WITHDRAWAL' | 'KEY_REFUND';
 
 export interface TransactionItem {
   id: string;

@@ -3,7 +3,9 @@ import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { broadcast } from '../../websocket/socket';
+import { countPlayers, openWaitingRound, startOrCancelRound } from './round.lifecycle';
 import { settleRoundIfWon, WinnerPayout } from './round.settlement';
+import { toRoundView } from './rounds.service';
 
 const BALL_MIN = 1;
 const BALL_MAX = 75;
@@ -49,35 +51,39 @@ export class RoundEngine {
     this.pendingTimeouts.add(timeout);
   }
 
+  /** Abre (ou reaproveita) a sala da proxima rodada e agenda a decisao para o horario marcado. */
   private async ensureWaitingRound(): Promise<void> {
-    let round = await prisma.round.findFirst({
-      where: { status: 'WAITING' },
-      orderBy: { startedAt: 'desc' },
-    });
+    const round = await openWaitingRound();
+    const scheduledAt = round.scheduledAt ?? new Date();
 
-    if (!round) {
-      round = await prisma.round.create({ data: { status: 'WAITING' } });
-    }
+    broadcast('round:waiting', toRoundView(round, await countPlayers(prisma, round.id)));
 
-    const endsAt = round.startedAt.getTime() + env.roundWaitMs;
-    const remainingMs = Math.max(endsAt - Date.now(), 0);
-    const roundId = round.id;
-
-    broadcast('round:waiting', {
-      roundId,
-      endsAt: new Date(endsAt).toISOString(),
-    });
-
-    this.schedule(() => this.startDrawPhase(roundId), remainingMs, 'Erro ao iniciar fase de sorteio');
+    const remainingMs = Math.max(scheduledAt.getTime() - Date.now(), 0);
+    this.schedule(() => this.resolveWaitingRound(round.id), remainingMs, 'Erro ao iniciar ou cancelar a rodada');
   }
 
-  private async startDrawPhase(roundId: string): Promise<void> {
-    await prisma.round.update({
-      where: { id: roundId },
-      data: { status: 'IN_PROGRESS' },
-    });
+  /** No horario marcado: comeca o sorteio ou, sem o minimo de jogadores, cancela e devolve as chaves. */
+  private async resolveWaitingRound(roundId: string): Promise<void> {
+    const result = await startOrCancelRound(roundId);
 
-    await this.runDrawPhase(roundId);
+    if (result.outcome === 'started') {
+      await this.runDrawPhase(roundId);
+      return;
+    }
+
+    if (result.outcome === 'cancelled') {
+      logger.info('Rodada cancelada por falta de jogadores', {
+        roundId,
+        playersCount: result.playersCount,
+        minPlayers: env.minPlayersPerRound,
+      });
+      broadcast('round:cancelled', {
+        roundId,
+        playersCount: result.playersCount,
+        minPlayers: env.minPlayersPerRound,
+      });
+      this.scheduleNextRound();
+    }
   }
 
   private async runDrawPhase(roundId: string): Promise<void> {

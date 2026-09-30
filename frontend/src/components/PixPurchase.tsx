@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
+import { useGameConfig } from '../hooks/useGameConfig';
 
 interface Charge {
   transactionId: string;
@@ -17,6 +19,7 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function PixPurchase({ onWalletChange }: Props) {
   const { auth } = useAuth();
+  const config = useGameConfig();
   const [creditsAmount, setCreditsAmount] = useState(10);
   const [charge, setCharge] = useState<Charge | null>(null);
   const [busy, setBusy] = useState(false);
@@ -124,6 +127,11 @@ export default function PixPurchase({ onWalletChange }: Props) {
         Comprar chaves via Pix
         <input type="number" min={1} value={creditsAmount} onChange={(e) => setCreditsAmount(Number(e.target.value))} />
       </label>
+      {config && (
+        <p className="hint">
+          {formatBrl(config.creditPriceBrl)} por chave - total <strong>{formatBrl(creditsAmount * config.creditPriceBrl)}</strong>
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
       <button type="submit" disabled={busy}>
         {busy ? 'Gerando cobranca...' : 'Gerar cobranca Pix'}

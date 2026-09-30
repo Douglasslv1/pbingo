@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
@@ -17,6 +17,11 @@ export default function Dashboard() {
   const [message, setMessage] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [lastDrawn, setLastDrawn] = useState<DrawEvent | null>(null);
+  // Os handlers do WebSocket sao registrados uma vez; refs dao a eles o estado atual
+  const roundIdRef = useRef<string | null>(null);
+  const myTicketsRef = useRef<Ticket[]>([]);
+  roundIdRef.current = round?.id ?? null;
+  myTicketsRef.current = myTickets;
 
   const refreshWallet = useCallback(async () => {
     if (!auth) return;
@@ -59,18 +64,14 @@ export default function Dashboard() {
     const currentUserId = auth.user.id;
     const socket = getSocket();
 
-    function onWaiting(payload: { roundId: string; endsAt: string }) {
-      setRound({
-        id: payload.roundId,
-        status: 'WAITING',
-        accumulatedPrize: '0',
-        drawnNumbers: [],
-        startedAt: new Date().toISOString(),
-        waitingEndsAt: payload.endsAt,
-      });
-      setMyTickets([]);
-      setMessage(null);
-      setLastDrawn(null);
+    function onWaiting(payload: RoundView) {
+      setRound(payload);
+      // A sala pode ser reanunciada (ex.: servidor reiniciado): so limpa o estado se for uma rodada nova
+      if (payload.id !== roundIdRef.current) {
+        setMyTickets([]);
+        setMessage(null);
+        setLastDrawn(null);
+      }
     }
 
     function onStarted(payload: { roundId: string }) {
@@ -82,8 +83,24 @@ export default function Dashboard() {
       setLastDrawn((prev) => ({ number: payload.number, seq: (prev?.seq ?? 0) + 1, animate: true }));
     }
 
-    function onPlayerJoined(payload: { roundId: string; accumulatedPrize: string }) {
-      setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, accumulatedPrize: payload.accumulatedPrize } : prev));
+    function onPlayersChanged(payload: { roundId: string; accumulatedPrize: string; playersCount: number }) {
+      setRound((prev) =>
+        prev && prev.id === payload.roundId
+          ? { ...prev, accumulatedPrize: payload.accumulatedPrize, playersCount: payload.playersCount }
+          : prev,
+      );
+    }
+
+    function onCancelled(payload: { roundId: string; playersCount: number; minPlayers: number }) {
+      setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, status: 'CANCELLED' } : prev));
+      if (myTicketsRef.current.length > 0) {
+        setMessage(
+          `Rodada cancelada: eram necessarios ${payload.minPlayers} jogadores e so ${payload.playersCount} entraram. Sua chave foi devolvida.`,
+        );
+        refreshWallet();
+      } else {
+        setMessage('Rodada cancelada por falta de jogadores. A proxima sala ja vai abrir.');
+      }
     }
 
     function onFinished(payload: {
@@ -112,14 +129,16 @@ export default function Dashboard() {
     socket.on('round:waiting', onWaiting);
     socket.on('round:started', onStarted);
     socket.on('number:drawn', onNumberDrawn);
-    socket.on('round:player_joined', onPlayerJoined);
+    socket.on('round:players_changed', onPlayersChanged);
+    socket.on('round:cancelled', onCancelled);
     socket.on('round:finished', onFinished);
 
     return () => {
       socket.off('round:waiting', onWaiting);
       socket.off('round:started', onStarted);
       socket.off('number:drawn', onNumberDrawn);
-      socket.off('round:player_joined', onPlayerJoined);
+      socket.off('round:players_changed', onPlayersChanged);
+      socket.off('round:cancelled', onCancelled);
       socket.off('round:finished', onFinished);
     };
   }, [auth, refreshWallet]);
@@ -139,6 +158,22 @@ export default function Dashboard() {
     }
   }
 
+  async function handleLeaveRound() {
+    if (!auth) return;
+    setJoining(true);
+    setMessage(null);
+    try {
+      await api.leaveRound(auth.token);
+      setMyTickets([]);
+      await refreshWallet();
+      setMessage('Voce saiu da rodada e sua chave foi devolvida.');
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Erro ao sair da rodada');
+    } finally {
+      setJoining(false);
+    }
+  }
+
   if (!auth) return null;
 
   return (
@@ -148,7 +183,14 @@ export default function Dashboard() {
       {message && <div className="banner">{message}</div>}
 
       <WalletPanel wallet={wallet} onWalletChange={refreshWallet} />
-      <RoundPanel round={round} myTickets={myTickets} onJoin={handleJoinRound} joining={joining} lastDrawn={lastDrawn} />
+      <RoundPanel
+        round={round}
+        myTickets={myTickets}
+        onJoin={handleJoinRound}
+        onLeave={handleLeaveRound}
+        joining={joining}
+        lastDrawn={lastDrawn}
+      />
       <HistoryPanel />
     </div>
   );

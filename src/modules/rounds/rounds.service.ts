@@ -1,9 +1,10 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Round } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
 import { HistoryPage } from '../../utils/pagination';
 import { broadcast } from '../../websocket/socket';
+import { countPlayers, leaveWaitingRound } from './round.lifecycle';
 import { generateBingoMatrix } from './ticket.util';
 
 export async function joinCurrentRound(userId: string) {
@@ -51,6 +52,8 @@ export async function joinCurrentRound(userId: string) {
         roundId,
         userId,
         numbersMatrix: matrix as unknown as Prisma.InputJsonValue,
+        creditsSpent: env.ticketPriceCredits,
+        prizeContribution: env.prizeContributionPerTicket,
       },
     });
 
@@ -59,12 +62,13 @@ export async function joinCurrentRound(userId: string) {
       data: { accumulatedPrize: { increment: env.prizeContributionPerTicket } },
     });
 
-    return { ticket, round: updatedRound };
+    return { ticket, round: updatedRound, playersCount: await countPlayers(tx, roundId) };
   });
 
-  broadcast('round:player_joined', {
+  broadcast('round:players_changed', {
     roundId: result.round.id,
     accumulatedPrize: result.round.accumulatedPrize.toString(),
+    playersCount: result.playersCount,
   });
 
   return {
@@ -72,6 +76,33 @@ export async function joinCurrentRound(userId: string) {
     roundId: result.round.id,
     numbersMatrix: result.ticket.numbersMatrix,
     accumulatedPrize: result.round.accumulatedPrize.toString(),
+    playersCount: result.playersCount,
+  };
+}
+
+export async function leaveCurrentRound(userId: string) {
+  const result = await leaveWaitingRound(userId);
+
+  broadcast('round:players_changed', {
+    roundId: result.roundId,
+    accumulatedPrize: result.accumulatedPrize,
+    playersCount: result.playersCount,
+  });
+
+  return result;
+}
+
+/** Formato publico da rodada, usado pela API e pelos eventos do WebSocket. */
+export function toRoundView(round: Round, playersCount: number) {
+  return {
+    id: round.id,
+    status: round.status,
+    accumulatedPrize: round.accumulatedPrize.toString(),
+    drawnNumbers: round.drawnNumbers,
+    startedAt: round.startedAt.toISOString(),
+    waitingEndsAt: round.status === 'WAITING' ? (round.scheduledAt?.toISOString() ?? null) : null,
+    playersCount,
+    minPlayers: env.minPlayersPerRound,
   };
 }
 
@@ -85,17 +116,7 @@ export async function getCurrentRoundView() {
     return null;
   }
 
-  return {
-    id: round.id,
-    status: round.status,
-    accumulatedPrize: round.accumulatedPrize.toString(),
-    drawnNumbers: round.drawnNumbers,
-    startedAt: round.startedAt.toISOString(),
-    waitingEndsAt:
-      round.status === 'WAITING'
-        ? new Date(round.startedAt.getTime() + env.roundWaitMs).toISOString()
-        : null,
-  };
+  return toRoundView(round, await countPlayers(prisma, round.id));
 }
 
 export async function getMyTicketsForRound(userId: string, roundId: string) {
@@ -124,7 +145,7 @@ export async function listMyRounds(userId: string, { limit, cursor }: HistoryPag
     return {
       roundId: round.id,
       status: round.status,
-      startedAt: round.startedAt.toISOString(),
+      startedAt: (round.scheduledAt ?? round.startedAt).toISOString(),
       endedAt: round.endedAt?.toISOString() ?? null,
       accumulatedPrize: round.accumulatedPrize.toString(),
       ticketsCount: round.tickets.length,

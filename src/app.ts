@@ -58,6 +58,18 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
     res.status(200).json({ status: 'ok' });
   });
 
+  // Regras do jogo exibidas no app; mudam por variavel de ambiente, sem novo deploy do frontend
+  app.get('/config', (_req, res) => {
+    res.status(200).json({
+      creditPriceBrl: env.creditPriceBrl,
+      ticketPriceCredits: env.ticketPriceCredits,
+      prizeContributionPerTicket: env.prizeContributionPerTicket,
+      minPlayersPerRound: env.minPlayersPerRound,
+      roundIntervalMinutes: env.roundIntervalMinutes,
+      minWithdrawalBrl: env.minWithdrawalBrl,
+    });
+  });
+
   if (rateLimitEnabled) {
     applyRateLimits(app);
   }
