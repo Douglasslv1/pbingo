@@ -43,6 +43,8 @@ export const env = {
   roundIntervalMinutes: optionalNumber('ROUND_INTERVAL_MINUTES', 15),
   minPlayersPerRound: optionalNumber('MIN_PLAYERS_PER_ROUND', 5),
   // Mesa de domino que nao completa 4 jogadores nesse prazo e cancelada, com as chaves devolvidas
+  // Enquanto false, so administradores jogam domino (liberacao gradual)
+  dominoEnabled: process.env.DOMINO_ENABLED === 'true',
   dominoQueueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),
   nextRoundDelayMs: optionalNumber('NEXT_ROUND_DELAY_MS', 5_000),

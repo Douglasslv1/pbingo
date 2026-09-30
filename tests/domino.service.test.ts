@@ -143,6 +143,24 @@ describe('Fila e mesas de domino', () => {
     expect(res.status).toBe(409);
   });
 
+  it('com o domino desligado, so administradores entram na fila', async () => {
+    const original = env.dominoEnabled;
+    env.dominoEnabled = false;
+    try {
+      const player = await fundedPlayer();
+      const admin = await fundedPlayer();
+      await prisma.user.update({ where: { id: admin.user.id }, data: { role: 'ADMIN' } });
+
+      const blocked = await joinQueue(player);
+      const allowed = await joinQueue(admin);
+
+      expect([blocked.status, allowed.status]).toEqual([403, 201]);
+      expect(await credits(player.user.id)).toBe(5);
+    } finally {
+      env.dominoEnabled = original;
+    }
+  });
+
   it('cancela mesas paradas alem do prazo e devolve as chaves', async () => {
     const player = await fundedPlayer();
     const joined = await joinQueue(player);

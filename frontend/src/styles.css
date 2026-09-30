@@ -946,3 +946,257 @@ label.checkbox input {
 .intro-hint {
   margin-bottom: 16px;
 }
+
+/* Domino */
+
+.domino-tile {
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  line-height: 0;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.domino-tile.clickable {
+  cursor: pointer;
+}
+
+.domino-tile.clickable:hover {
+  transform: translateY(-3px);
+}
+
+.domino-tile.highlighted {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.domino-tile.selected {
+  transform: translateY(-8px);
+  box-shadow: 0 0 0 3px #facc15;
+}
+
+.domino-tile.dimmed {
+  opacity: 0.35;
+}
+
+.domino-face {
+  fill: #f8fafc;
+  stroke: #cbd5e1;
+  stroke-width: 4;
+}
+
+.domino-divider {
+  stroke: #94a3b8;
+  stroke-width: 4;
+}
+
+.domino-pip {
+  fill: #0f172a;
+}
+
+.domino-back {
+  fill: #166534;
+  stroke: #22c55e;
+  stroke-width: 6;
+}
+
+.domino-header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.domino-opponents {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.domino-opponent {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.domino-opponent strong {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.domino-opponent.turn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.partner-badge {
+  margin-left: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #facc15;
+}
+
+.domino-backs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.domino-board {
+  min-height: 140px;
+  background: #064e3b;
+  border: 1px solid #065f46;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.domino-board .label {
+  color: #a7f3d0;
+  margin: auto;
+  text-align: center;
+}
+
+.domino-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.domino-row.reversed {
+  flex-direction: row-reverse;
+}
+
+.domino-turn {
+  text-align: center;
+  color: var(--muted);
+  margin: 4px 0 12px;
+}
+
+.domino-turn.mine {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.domino-side-choice {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.domino-side-choice button {
+  flex: 1;
+}
+
+.domino-hand {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.domino-hand-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.domino-result {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.domino-revealed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin: 12px 0;
+}
+
+.domino-revealed-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.option-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 6px 0 16px;
+}
+
+.option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 400;
+}
+
+.option-card span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.option-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.domino-prize {
+  margin: 0 0 12px;
+}
+
+.domino-keys {
+  margin-top: 8px;
+}
+
+.domino-seats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.domino-seat {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.domino-seat.filled {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+@media (max-width: 480px) {
+  .option-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .domino-seats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

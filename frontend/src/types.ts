@@ -20,6 +20,7 @@ export interface GameConfig {
   minWithdrawalBrl: number;
   houseFeePercent: number;
   termsVersion: string;
+  dominoEnabled: boolean;
 }
 
 export interface JoinRoundResult {
@@ -112,4 +113,49 @@ export interface RoundHistoryItem {
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;
+}
+
+export type DominoTile = [number, number];
+export type DominoMode = 'SIX_TILES' | 'BURRINHO';
+export type DominoTeamMode = 'INDIVIDUAL' | 'PAIRS';
+export type DominoSide = 'LEFT' | 'RIGHT';
+
+export type DominoAction =
+  | { type: 'PLAY'; tile: DominoTile; side: DominoSide }
+  | { type: 'DRAW' }
+  | { type: 'PASS' };
+
+export interface DominoPlacedTile {
+  tile: DominoTile;
+  left: number;
+  right: number;
+}
+
+export interface DominoGameView {
+  mode: DominoMode;
+  teamMode: DominoTeamMode;
+  seat: number;
+  hand: DominoTile[];
+  handSizes: number[];
+  boneyardSize: number;
+  line: DominoPlacedTile[];
+  ends: { left: number; right: number } | null;
+  currentSeat: number;
+  openingTile: DominoTile | null;
+  status: 'PLAYING' | 'FINISHED';
+  result: { reason: 'DOMINO' | 'BLOCKED'; winnerSeats: number[]; pips: number[] } | null;
+  revealedHands: DominoTile[][] | null;
+  legalActions: DominoAction[];
+}
+
+export interface DominoTableView {
+  id: string;
+  mode: DominoMode;
+  teamMode: DominoTeamMode;
+  status: 'WAITING' | 'PLAYING' | 'FINISHED' | 'CANCELLED';
+  prizePool: string;
+  queueExpiresAt: string | null;
+  mySeat: number | null;
+  players: Array<{ seat: number; name: string; isMe: boolean; prizeAmount: string | null }>;
+  game: DominoGameView | null;
 }

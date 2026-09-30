@@ -1,0 +1,193 @@
+import { useState } from 'react';
+import { formatBrl } from '../../format';
+import type { DominoAction, DominoSide, DominoTableView, DominoTile as Tile } from '../../types';
+import DominoBoard from './DominoBoard';
+import DominoTile, { DominoTileBack } from './DominoTile';
+import { MODE_LABELS, TEAM_LABELS } from './dominoLabels';
+
+interface Props {
+  table: DominoTableView;
+  busy: boolean;
+  error: string | null;
+  onAction: (action: DominoAction) => void;
+  onBackToLobby: () => void;
+}
+
+const sameTile = (a: Tile, b: Tile) => a[0] === b[0] && a[1] === b[1];
+const pipsOf = (hand: Tile[]) => hand.reduce((sum, tile) => sum + tile[0] + tile[1], 0);
+
+export default function DominoGame({ table, busy, error, onAction, onBackToLobby }: Props) {
+  const [selected, setSelected] = useState<Tile | null>(null);
+  const game = table.game;
+  if (!game || table.mySeat === null) return null;
+
+  const mySeat = table.mySeat;
+  const nameOf = (seat: number) => {
+    const player = table.players.find((p) => p.seat === seat);
+    return player?.isMe ? 'Voce' : (player?.name ?? `Lugar ${seat + 1}`);
+  };
+  const isPartner = (seat: number) => table.teamMode === 'PAIRS' && seat !== mySeat && seat % 2 === mySeat % 2;
+  const finished = game.status === 'FINISHED';
+  const myTurn = !finished && game.currentSeat === mySeat;
+
+  const plays = game.legalActions.filter((a): a is Extract<DominoAction, { type: 'PLAY' }> => a.type === 'PLAY');
+  const sidesFor = (tile: Tile): DominoSide[] => plays.filter((play) => sameTile(play.tile, tile)).map((p) => p.side);
+  const selectedSides = selected ? sidesFor(selected) : [];
+  const otherAction = game.legalActions.find((a) => a.type !== 'PLAY');
+
+  function playTile(tile: Tile, side: DominoSide) {
+    setSelected(null);
+    onAction({ type: 'PLAY', tile, side });
+  }
+
+  function handleTileClick(tile: Tile) {
+    const sides = sidesFor(tile);
+    if (sides.length === 1) {
+      playTile(tile, sides[0]);
+    } else if (sides.length > 1) {
+      setSelected(selected && sameTile(selected, tile) ? null : tile);
+    }
+  }
+
+  // Adversarios na ordem de jogo a partir de mim
+  const opponents = [1, 2, 3].map((offset) => (mySeat + offset) % 4);
+
+  return (
+    <div className="card domino-game">
+      <div className="domino-header">
+        <span className="label">
+          {MODE_LABELS[table.mode]} · {TEAM_LABELS[table.teamMode]} · premio {formatBrl(table.prizePool)}
+        </span>
+        {table.mode === 'BURRINHO' && <span className="label">Monte: {game.boneyardSize}</span>}
+      </div>
+
+      <div className="domino-opponents">
+        {opponents.map((seat) => (
+          <div key={seat} className={!finished && game.currentSeat === seat ? 'domino-opponent turn' : 'domino-opponent'}>
+            <strong>
+              {nameOf(seat)}
+              {isPartner(seat) && <span className="partner-badge">parceiro</span>}
+            </strong>
+            <div className="domino-backs" aria-label={`${game.handSizes[seat]} pedras`}>
+              {Array.from({ length: game.handSizes[seat] }, (_, i) => (
+                <DominoTileBack key={i} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <DominoBoard
+        line={game.line}
+        targetSides={myTurn && selected ? selectedSides : []}
+        onPlaySide={(side) => selected && playTile(selected, side)}
+      />
+
+      {finished && game.result ? (
+        <DominoResult table={table} nameOf={nameOf} onBackToLobby={onBackToLobby} />
+      ) : (
+        <>
+          <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>
+            {myTurn
+              ? selected
+                ? 'Escolha a ponta: toque numa ponta destacada ou nos botoes abaixo'
+                : 'Sua vez: toque numa pedra destacada'
+              : `Vez de ${nameOf(game.currentSeat)}...`}
+          </p>
+
+          {myTurn && selected && selectedSides.length > 1 && game.ends && (
+            <div className="domino-side-choice">
+              <button type="button" onClick={() => playTile(selected, 'LEFT')} disabled={busy}>
+                Na ponta {game.ends.left} (inicio)
+              </button>
+              <button type="button" onClick={() => playTile(selected, 'RIGHT')} disabled={busy}>
+                Na ponta {game.ends.right} (fim)
+              </button>
+            </div>
+          )}
+
+          {myTurn && otherAction && (
+            <button type="button" onClick={() => onAction(otherAction)} disabled={busy}>
+              {otherAction.type === 'DRAW' ? 'Comprar pedra' : 'Passar a vez'}
+            </button>
+          )}
+        </>
+      )}
+
+      {error && <p className="error">{error}</p>}
+
+      {!finished && (
+        <div className="domino-hand">
+          <span className="label">Suas pedras ({game.hand.length})</span>
+          <div className="domino-hand-tiles">
+            {game.hand.map((tile) => {
+              const playable = myTurn && sidesFor(tile).length > 0;
+              return (
+                <DominoTile
+                  key={`${tile[0]}-${tile[1]}`}
+                  first={tile[0]}
+                  second={tile[1]}
+                  vertical
+                  size={34}
+                  selected={selected !== null && sameTile(selected, tile)}
+                  highlighted={playable && !selected}
+                  dimmed={myTurn && !playable}
+                  onClick={playable && !busy ? () => handleTileClick(tile) : undefined}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DominoResult({
+  table,
+  nameOf,
+  onBackToLobby,
+}: {
+  table: DominoTableView;
+  nameOf: (seat: number) => string;
+  onBackToLobby: () => void;
+}) {
+  const game = table.game!;
+  const result = game.result!;
+  const me = table.players.find((player) => player.isMe);
+  const iWon = table.mySeat !== null && result.winnerSeats.includes(table.mySeat);
+  const winners = result.winnerSeats.map(nameOf).join(' e ');
+
+  return (
+    <div className="domino-result">
+      <h3>{iWon ? `Voce venceu! +${formatBrl(me?.prizeAmount ?? 0)}` : 'Fim de partida'}</h3>
+      <p>
+        {result.reason === 'DOMINO'
+          ? `${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} batendo.`
+          : `Jogo trancado: ${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} com menos pontos na mao.`}
+      </p>
+
+      {game.revealedHands && (
+        <div className="domino-revealed">
+          {game.revealedHands.map((hand, seat) => (
+            <div key={seat} className="domino-revealed-row">
+              <span>
+                {nameOf(seat)} · {pipsOf(hand)} pontos
+                {result.winnerSeats.includes(seat) && ' · vencedor'}
+              </span>
+              <div className="domino-backs">
+                {hand.map((tile) => (
+                  <DominoTile key={`${tile[0]}-${tile[1]}`} first={tile[0]} second={tile[1]} vertical size={16} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button type="button" onClick={onBackToLobby}>
+        Jogar de novo
+      </button>
+    </div>
+  );
+}

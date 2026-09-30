@@ -114,6 +114,13 @@ async function publishTable(tableId: string, extraUserIds: string[] = []): Promi
 
 /** Entra na fila da modalidade escolhida, pagando 1 chave. Com 4 jogadores a partida comeca. */
 export async function joinQueue(userId: string, choice: QueueChoice) {
+  if (!env.dominoEnabled) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (user?.role !== 'ADMIN') {
+      throw new AppError('O domino ainda nao esta disponivel', 403);
+    }
+  }
+
   const tableId = await prisma.$transaction(async (tx) => {
     // Travar a carteira primeiro serializa pedidos simultaneos do mesmo jogador
     const credits = await tx.$queryRaw<Array<{ balance: number }>>`

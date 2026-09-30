@@ -1,6 +1,10 @@
 import type {
   AuthResult,
   AuthUser,
+  DominoAction,
+  DominoMode,
+  DominoTableView,
+  DominoTeamMode,
   GameConfig,
   JoinRoundResult,
   Page,
@@ -112,6 +116,17 @@ export const api = {
 
   getMyRoundHistory: (token: string, cursor?: string) =>
     request<Page<RoundHistoryItem>>(`/rounds/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+
+  getMyDominoTable: (token: string) => request<DominoTableView | null>('/domino/tables/me', {}, token),
+
+  joinDominoQueue: (token: string, mode: DominoMode, teamMode: DominoTeamMode) =>
+    request<DominoTableView>('/domino/queue', { method: 'POST', body: JSON.stringify({ mode, teamMode }) }, token),
+
+  leaveDominoQueue: (token: string) =>
+    request<{ tableId: string; refundedCredits: number }>('/domino/queue/leave', { method: 'POST' }, token),
+
+  playDomino: (token: string, tableId: string, action: DominoAction) =>
+    request<DominoTableView>(`/domino/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token),
 
   getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
 

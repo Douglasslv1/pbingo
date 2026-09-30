@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
+import { setSocketToken } from '../socket';
 import type { AuthResult, AuthUser } from '../types';
 
 const STORAGE_KEY = 'bingo_auth';
@@ -40,8 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Atualiza os dados salvos (papel, aceite dos termos) e descarta sessoes que o servidor nao aceita mais
   const token = auth?.token;
+
+  // O WebSocket autenticado recebe os eventos privados do domino
+  useEffect(() => {
+    setSocketToken(token ?? null);
+  }, [token]);
+
+  // Atualiza os dados salvos (papel, aceite dos termos) e descarta sessoes que o servidor nao aceita mais
   useEffect(() => {
     if (!token) return;
     api
