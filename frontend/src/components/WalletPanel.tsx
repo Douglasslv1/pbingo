@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import type { Wallet, Withdrawal } from '../types';
 import PixPurchase from './PixPurchase';
@@ -38,7 +39,7 @@ export default function WalletPanel({ wallet, onWalletChange }: Props) {
         </div>
         <div>
           <span className="label">Premios (sacavel)</span>
-          <strong>R$ {wallet?.prizes.balanceFiat ?? '-'}</strong>
+          <strong>{wallet ? formatBrl(wallet.prizes.balanceFiat) : '-'}</strong>
         </div>
       </div>
 

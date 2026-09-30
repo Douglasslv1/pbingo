@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import AdminWithdrawalItem from '../components/AdminWithdrawalItem';
+import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import { useAuth } from '../hooks/useAuth';
 import type { WithdrawalForReview, WithdrawalStatus } from '../types';
@@ -36,14 +36,7 @@ export default function AdminPage() {
 
   return (
     <div className="app-shell">
-      <header className="app-header app-header-nav">
-        <Link to="/" className="brand">
-          Pbingo
-        </Link>
-        <Link to="/app" className="link">
-          Voltar ao jogo
-        </Link>
-      </header>
+      <AppHeader />
       <main>
         {!auth ? (
           <AuthForm />

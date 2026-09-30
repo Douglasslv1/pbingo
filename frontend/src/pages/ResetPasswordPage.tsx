@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
+import AppHeader from '../components/AppHeader';
 import { useAuth } from '../hooks/useAuth';
 
 export default function ResetPasswordPage() {
@@ -35,11 +36,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="app-shell">
-      <header className="app-header app-header-nav">
-        <Link to="/" className="brand">
-          Pbingo
-        </Link>
-      </header>
+      <AppHeader />
       <main>
         <div className="card auth-card">
           <h2>Nova senha</h2>

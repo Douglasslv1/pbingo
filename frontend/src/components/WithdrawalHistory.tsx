@@ -1,3 +1,4 @@
+import { formatBrl } from '../format';
 import type { Withdrawal } from '../types';
 import { formatDateTime, WITHDRAWAL_STATUS_LABELS } from '../withdrawalFormat';
 
@@ -17,7 +18,7 @@ export default function WithdrawalHistory({ withdrawals }: Props) {
         {withdrawals.map((withdrawal) => (
           <li key={withdrawal.id}>
             <div className="withdrawal-row">
-              <span>R$ {Number(withdrawal.amountFiat).toFixed(2)}</span>
+              <span>{formatBrl(withdrawal.amountFiat)}</span>
               <span className={`status-chip status-${withdrawal.status.toLowerCase()}`}>
                 {WITHDRAWAL_STATUS_LABELS[withdrawal.status]}
               </span>

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import Dashboard from '../components/Dashboard';
 import { useAuth } from '../hooks/useAuth';
@@ -8,21 +8,7 @@ export default function AppPage() {
 
   return (
     <div className="app-shell">
-      <header className="app-header app-header-nav">
-        <Link to="/" className="brand">
-          Pbingo
-        </Link>
-        <nav className="app-header-links">
-          {auth?.user.role === 'ADMIN' && (
-            <Link to="/admin" className="link">
-              Admin
-            </Link>
-          )}
-          <Link to="/suporte" className="link">
-            Suporte
-          </Link>
-        </nav>
-      </header>
+      <AppHeader />
       <main>{auth ? <Dashboard /> : <AuthForm />}</main>
     </div>
   );

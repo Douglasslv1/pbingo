@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import AppHeader from '../components/AppHeader';
 
 const FAQ_ITEMS = [
   {
@@ -34,14 +34,7 @@ export default function SupportPage() {
 
   return (
     <div className="app-shell">
-      <header className="app-header app-header-nav">
-        <Link to="/" className="brand">
-          Pbingo
-        </Link>
-        <Link to="/app" className="link">
-          Ir para o app
-        </Link>
-      </header>
+      <AppHeader />
 
       <main>
         <div className="card">

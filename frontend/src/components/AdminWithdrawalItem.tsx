@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { api, ApiError } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import type { WithdrawalForReview } from '../types';
 import { formatCpf, formatDateTime, PIX_KEY_LABELS, WITHDRAWAL_STATUS_LABELS } from '../withdrawalFormat';
@@ -16,7 +17,7 @@ export default function AdminWithdrawalItem({ withdrawal, onReviewed }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const amount = Number(withdrawal.amountFiat).toFixed(2);
+  const amount = formatBrl(withdrawal.amountFiat);
 
   async function runReview(action: () => Promise<unknown>) {
     setBusy(true);
@@ -40,7 +41,7 @@ export default function AdminWithdrawalItem({ withdrawal, onReviewed }: Props) {
   function handleReject(event: FormEvent) {
     event.preventDefault();
     if (!auth) return;
-    if (!window.confirm(`Recusar o saque de R$ ${amount} e devolver o valor ao jogador?`)) return;
+    if (!window.confirm(`Recusar o saque de ${amount} e devolver o valor ao jogador?`)) return;
     runReview(() => api.rejectWithdrawal(auth.token, withdrawal.id, reason));
   }
 
@@ -53,7 +54,7 @@ export default function AdminWithdrawalItem({ withdrawal, onReviewed }: Props) {
   return (
     <li className="card admin-withdrawal">
       <div className="withdrawal-row">
-        <strong>R$ {amount}</strong>
+        <strong>{amount}</strong>
         <span className={`status-chip status-${withdrawal.status.toLowerCase()}`}>
           {WITHDRAWAL_STATUS_LABELS[withdrawal.status]}
         </span>

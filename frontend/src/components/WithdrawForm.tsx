@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { api, ApiError } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import type { PixKeyType } from '../types';
 import { PIX_KEY_LABELS } from '../withdrawalFormat';
@@ -35,7 +36,7 @@ export default function WithdrawForm({ onWithdrawn }: Props) {
       const res = await api.withdraw(auth.token, { amount, cpf, pixKeyType, pixKey });
       await onWithdrawn();
       setAmount(0);
-      setInfo(`Saque solicitado! Ele sera pago via Pix apos analise. Saldo restante: R$ ${res.remainingBalance}`);
+      setInfo(`Saque solicitado! Ele sera pago via Pix apos analise. Saldo restante: ${formatBrl(res.remainingBalance)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao solicitar saque');
     } finally {

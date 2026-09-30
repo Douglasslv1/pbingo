@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import type { Page, RoundHistoryItem, TransactionItem } from '../types';
 import { formatDateTime } from '../withdrawalFormat';
@@ -18,10 +19,6 @@ const WITHDRAWAL_STATUS_NOTES: Record<string, string> = {
   COMPLETED: 'Pago',
   REJECTED: 'Recusado - valor devolvido',
 };
-
-function formatBrl(value: string | number): string {
-  return `R$ ${Number(value).toFixed(2)}`;
-}
 
 function describeTransaction(transaction: TransactionItem): TransactionView {
   const keys = (count: number) => `${count} ${count === 1 ? 'chave' : 'chaves'}`;

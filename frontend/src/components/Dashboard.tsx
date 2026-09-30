@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
+import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import { getSocket } from '../socket';
 import type { RoundView, Ticket, Wallet } from '../types';
@@ -9,7 +10,7 @@ import RoundPanel from './RoundPanel';
 import WalletPanel from './WalletPanel';
 
 export default function Dashboard() {
-  const { auth, logout } = useAuth();
+  const { auth } = useAuth();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [round, setRound] = useState<RoundView | null>(null);
   const [myTickets, setMyTickets] = useState<Ticket[]>([]);
@@ -97,7 +98,7 @@ export default function Dashboard() {
       if (myWinnings.length > 0) {
         const myPrize = myWinnings.reduce((sum, winner) => sum + winner.prize, 0);
         const tieNote = isTie ? ` (premio dividido entre ${payload.winners.length} cartelas)` : '';
-        setMessage(`Parabens! Voce ganhou R$ ${myPrize.toFixed(2)}!${tieNote}`);
+        setMessage(`Parabens! Voce ganhou ${formatBrl(myPrize)}!${tieNote}`);
         refreshWallet();
       } else if (isTie) {
         setMessage(`Rodada encerrada. ${payload.winners.length} cartelas venceram e dividiram o premio.`);
@@ -142,12 +143,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
-        <span>Ola, {auth.user.name}</span>
-        <button type="button" className="link" onClick={logout}>
-          Sair
-        </button>
-      </div>
+      <p className="greeting">Ola, {auth.user.name}</p>
 
       {message && <div className="banner">{message}</div>}
 

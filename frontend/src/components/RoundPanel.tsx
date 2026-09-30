@@ -1,3 +1,4 @@
+import { formatBrl } from '../format';
 import type { RoundView, Ticket } from '../types';
 import { useCountdown } from '../hooks/useCountdown';
 import BallRoulette, { DrawEvent } from './BallRoulette';
@@ -32,7 +33,7 @@ export default function RoundPanel({ round, myTickets, onJoin, joining, lastDraw
         {round.status === 'WAITING' && countdown !== null && <> — abre em {countdown}s</>}
       </p>
       <p>
-        Premio acumulado: <strong>R$ {round.accumulatedPrize}</strong>
+        Premio acumulado: <strong>{formatBrl(round.accumulatedPrize)}</strong>
       </p>
 
       {round.status === 'WAITING' && (
