@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { setUserRole } from '../modules/auth/userRole.service';
 
 /**
  * Concede ou revoga o papel ADMIN de um usuario ja cadastrado.
@@ -13,9 +14,7 @@ async function main(): Promise<void> {
   }
 
   const role = flag === '--revoke' ? 'PLAYER' : 'ADMIN';
-  const result = await prisma.user.updateMany({ where: { email }, data: { role } });
-
-  if (result.count === 0) {
+  if (!(await setUserRole(email, role))) {
     console.error(`Nenhum usuario encontrado com o e-mail ${email}`);
     process.exitCode = 1;
     return;
