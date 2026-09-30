@@ -1,8 +1,10 @@
-import { FormEvent, useState } from 'react';
-import { api, ApiError } from '../api';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '../api';
 import { useAuth } from '../hooks/useAuth';
-import type { Wallet } from '../types';
+import type { Wallet, Withdrawal } from '../types';
 import PixPurchase from './PixPurchase';
+import WithdrawForm from './WithdrawForm';
+import WithdrawalHistory from './WithdrawalHistory';
 
 interface Props {
   wallet: Wallet | null;
@@ -11,26 +13,19 @@ interface Props {
 
 export default function WalletPanel({ wallet, onWalletChange }: Props) {
   const { auth } = useAuth();
-  const [withdrawAmount, setWithdrawAmount] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
 
-  async function handleWithdraw(event: FormEvent) {
-    event.preventDefault();
+  const refreshWithdrawals = useCallback(async () => {
     if (!auth) return;
-    setBusy(true);
-    setError(null);
-    setInfo(null);
-    try {
-      const res = await api.withdraw(auth.token, withdrawAmount);
-      await onWalletChange();
-      setInfo(`Saque solicitado. Saldo restante: R$ ${res.remainingBalance}`);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao solicitar saque');
-    } finally {
-      setBusy(false);
-    }
+    setWithdrawals(await api.getMyWithdrawals(auth.token));
+  }, [auth]);
+
+  useEffect(() => {
+    refreshWithdrawals().catch(() => setWithdrawals([]));
+  }, [refreshWithdrawals]);
+
+  async function handleWithdrawn() {
+    await Promise.all([onWalletChange(), refreshWithdrawals()]);
   }
 
   return (
@@ -47,28 +42,12 @@ export default function WalletPanel({ wallet, onWalletChange }: Props) {
         </div>
       </div>
 
-      {error && <p className="error">{error}</p>}
-      {info && <p className="info">{info}</p>}
-
       <div className="wallet-forms">
         <PixPurchase onWalletChange={onWalletChange} />
-
-        <form onSubmit={handleWithdraw}>
-          <label>
-            Sacar premio (R$)
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(Number(e.target.value))}
-            />
-          </label>
-          <button type="submit" disabled={busy}>
-            Sacar
-          </button>
-        </form>
+        <WithdrawForm onWithdrawn={handleWithdrawn} />
       </div>
+
+      <WithdrawalHistory withdrawals={withdrawals} />
     </div>
   );
 }

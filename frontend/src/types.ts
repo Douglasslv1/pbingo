@@ -31,10 +31,41 @@ export interface Wallet {
   prizes: { balanceFiat: string };
 }
 
+export type UserRole = 'PLAYER' | 'ADMIN';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  // Ausente em sessoes salvas antes da criacao dos papeis
+  role?: UserRole;
+}
+
+export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';
+export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED';
+
+export interface WithdrawalRequest {
+  amount: number;
+  cpf: string;
+  pixKeyType: PixKeyType;
+  pixKey: string;
+}
+
+export interface Withdrawal {
+  id: string;
+  amountFiat: string;
+  cpf: string;
+  pixKeyType: PixKeyType;
+  pixKey: string;
+  status: WithdrawalStatus;
+  paymentReference: string | null;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface WithdrawalForReview extends Withdrawal {
+  user: { id: string; name: string; email: string };
 }
 
 export interface AuthResult {

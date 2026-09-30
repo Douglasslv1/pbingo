@@ -633,3 +633,112 @@ button.link {
   color: var(--muted);
   font-size: 0.8rem;
 }
+
+select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+button.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.app-header-links {
+  display: flex;
+  gap: 16px;
+}
+
+.withdrawal-history {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.withdrawal-history ul,
+.admin-withdrawals {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.withdrawal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.status-pending {
+  color: #facc15;
+}
+
+.status-paid {
+  color: var(--accent);
+}
+
+.status-rejected {
+  color: var(--danger);
+}
+
+.admin-tabs {
+  align-items: center;
+}
+
+.admin-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+
+.admin-details dt {
+  color: var(--muted);
+}
+
+.admin-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-actions form {
+  flex: 1;
+  min-width: 220px;
+}
+
+@media (max-width: 480px) {
+  .admin-details {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-details dd {
+    margin-bottom: 6px;
+  }
+}

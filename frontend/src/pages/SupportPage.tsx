@@ -20,7 +20,7 @@ const FAQ_ITEMS = [
   {
     question: 'Como sacar meu premio?',
     answer:
-      'Na carteira, informe o valor que quer sacar do seu saldo de premios. O pedido de saque fica pendente e e processado pela equipe.',
+      'Na carteira, informe o valor, seu CPF e uma chave Pix cadastrada no seu CPF. O pedido fica em analise e e pago via Pix pela equipe - acompanhe o status em "Meus saques". Se o saque for recusado, o valor volta integralmente para o seu saldo de premios.',
   },
   {
     question: 'E possivel meu saldo ficar negativo?',

@@ -1,4 +1,14 @@
-import type { AuthResult, JoinRoundResult, RoundView, Ticket, Wallet } from './types';
+import type {
+  AuthResult,
+  JoinRoundResult,
+  RoundView,
+  Ticket,
+  Wallet,
+  Withdrawal,
+  WithdrawalForReview,
+  WithdrawalRequest,
+  WithdrawalStatus,
+} from './types';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -62,10 +72,29 @@ export const api = {
   getMyTickets: (token: string, roundId: string) =>
     request<Ticket[]>(`/rounds/${roundId}/my-tickets`, {}, token),
 
-  withdraw: (token: string, amount: number) =>
-    request<{ transactionId: string; remainingBalance: string }>(
+  withdraw: (token: string, data: WithdrawalRequest) =>
+    request<{ withdrawalId: string; transactionId: string; remainingBalance: string }>(
       '/withdrawals',
-      { method: 'POST', body: JSON.stringify({ amount }) },
+      { method: 'POST', body: JSON.stringify(data) },
+      token,
+    ),
+
+  getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
+
+  getWithdrawalsForReview: (token: string, status?: WithdrawalStatus) =>
+    request<WithdrawalForReview[]>(`/admin/withdrawals${status ? `?status=${status}` : ''}`, {}, token),
+
+  markWithdrawalPaid: (token: string, withdrawalId: string, paymentReference: string) =>
+    request<Withdrawal>(
+      `/admin/withdrawals/${withdrawalId}/pay`,
+      { method: 'POST', body: JSON.stringify({ paymentReference }) },
+      token,
+    ),
+
+  rejectWithdrawal: (token: string, withdrawalId: string, reason: string) =>
+    request<Withdrawal>(
+      `/admin/withdrawals/${withdrawalId}/reject`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
       token,
     ),
 };

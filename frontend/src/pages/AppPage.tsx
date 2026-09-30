@@ -12,9 +12,16 @@ export default function AppPage() {
         <Link to="/" className="brand">
           Pbingo
         </Link>
-        <Link to="/suporte" className="link">
-          Suporte
-        </Link>
+        <nav className="app-header-links">
+          {auth?.user.role === 'ADMIN' && (
+            <Link to="/admin" className="link">
+              Admin
+            </Link>
+          )}
+          <Link to="/suporte" className="link">
+            Suporte
+          </Link>
+        </nav>
       </header>
       <main>{auth ? <Dashboard /> : <AuthForm />}</main>
     </div>

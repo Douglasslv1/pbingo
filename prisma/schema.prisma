@@ -12,15 +12,25 @@ model User {
   name         String   @db.VarChar(255)
   email        String   @unique @db.VarChar(255)
   passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(PLAYER)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  credits      UserCredit?
-  prizes       UserPrize?
-  tickets      Ticket[]
-  transactions Transaction[]
-  roundsWon    Round[]       @relation("RoundWinner")
+  credits             UserCredit?
+  prizes              UserPrize?
+  tickets             Ticket[]
+  transactions        Transaction[]
+  roundsWon           Round[]       @relation("RoundWinner")
+  withdrawals         Withdrawal[]  @relation("WithdrawalOwner")
+  reviewedWithdrawals Withdrawal[]  @relation("WithdrawalReviewer")
 
   @@map("users")
+}
+
+enum UserRole {
+  PLAYER
+  ADMIN
+
+  @@map("user_role")
 }
 
 model UserCredit {
@@ -94,17 +104,59 @@ enum TransactionType {
 }
 
 model Transaction {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String          @map("user_id") @db.Uuid
-  type          TransactionType
-  amountFiat    Decimal         @default(0.00) @map("amount_fiat") @db.Decimal(10, 2)
-  amountCredits Int             @default(0) @map("amount_credits")
-  status        String          @default("COMPLETED") @db.VarChar(50)
-  providerReference String?     @map("provider_reference") @db.VarChar(255)
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String          @map("user_id") @db.Uuid
+  type              TransactionType
+  amountFiat        Decimal         @default(0.00) @map("amount_fiat") @db.Decimal(10, 2)
+  amountCredits     Int             @default(0) @map("amount_credits")
+  status            String          @default("COMPLETED") @db.VarChar(50)
+  providerReference String?         @map("provider_reference") @db.VarChar(255)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  withdrawal Withdrawal?
 
   @@index([providerReference])
   @@map("transactions")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PAID
+  REJECTED
+
+  @@map("withdrawal_status")
+}
+
+enum PixKeyType {
+  CPF
+  EMAIL
+  PHONE
+  RANDOM
+
+  @@map("pix_key_type")
+}
+
+model Withdrawal {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  transactionId    String           @unique @map("transaction_id") @db.Uuid
+  amountFiat       Decimal          @map("amount_fiat") @db.Decimal(10, 2)
+  cpf              String           @db.Char(11)
+  pixKeyType       PixKeyType       @map("pix_key_type")
+  pixKey           String           @map("pix_key") @db.VarChar(255)
+  status           WithdrawalStatus @default(PENDING)
+  paymentReference String?          @map("payment_reference") @db.VarChar(255)
+  rejectionReason  String?          @map("rejection_reason") @db.VarChar(500)
+  reviewedByUserId String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt       DateTime?        @map("reviewed_at") @db.Timestamptz
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  user        User        @relation("WithdrawalOwner", fields: [userId], references: [id])
+  reviewedBy  User?       @relation("WithdrawalReviewer", fields: [reviewedByUserId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("withdrawals")
 }

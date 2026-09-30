@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import AdminPage from './pages/AdminPage';
 import AppPage from './pages/AppPage';
 import LandingPage from './pages/LandingPage';
 import SupportPage from './pages/SupportPage';
@@ -12,6 +13,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/suporte" element={<SupportPage />} />
           <Route path="/app" element={<AppPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

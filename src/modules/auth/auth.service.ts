@@ -28,7 +28,7 @@ export async function registerUser(input: RegisterInput) {
   });
 
   const token = signAuthToken({ userId: user.id });
-  return { token, user: { id: user.id, name: user.name, email: user.email } };
+  return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
 }
 
 export async function loginUser(input: LoginInput) {
@@ -43,5 +43,5 @@ export async function loginUser(input: LoginInput) {
   }
 
   const token = signAuthToken({ userId: user.id });
-  return { token, user: { id: user.id, name: user.name, email: user.email } };
+  return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
 }

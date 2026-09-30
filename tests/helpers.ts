@@ -27,3 +27,7 @@ export function setCreditBalance(userId: string, balance: number) {
 export function setPrizeBalance(userId: string, balanceFiat: number) {
   return prisma.userPrize.update({ where: { userId }, data: { balanceFiat } });
 }
+
+export function makeAdmin(userId: string) {
+  return prisma.user.update({ where: { id: userId }, data: { role: 'ADMIN' } });
+}

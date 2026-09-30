@@ -52,4 +52,5 @@ export const env = {
   mercadoPagoAccessToken: process.env.MERCADOPAGO_ACCESS_TOKEN ?? '',
   mercadoPagoWebhookSecret: process.env.MERCADOPAGO_WEBHOOK_SECRET ?? '',
   creditPriceBrl,
+  minWithdrawalBrl: optionalNumber('MIN_WITHDRAWAL_BRL', 10),
 };
