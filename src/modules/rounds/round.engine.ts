@@ -1,4 +1,5 @@
 import { randomInt } from 'crypto';
+import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { broadcast } from '../../websocket/socket';
@@ -23,7 +24,7 @@ export class RoundEngine {
     });
 
     if (interruptedRound) {
-      console.log(`Retomando sorteio da rodada ${interruptedRound.id}`);
+      logger.warn('Retomando sorteio de rodada interrompida', { roundId: interruptedRound.id });
       await this.runDrawPhase(interruptedRound.id);
       return;
     }
@@ -42,7 +43,7 @@ export class RoundEngine {
     const timeout = setTimeout(() => {
       this.pendingTimeouts.delete(timeout);
       task().catch((err) => {
-        console.error(errorMessage, err);
+        logger.error(errorMessage, { err });
       });
     }, delayMs);
     this.pendingTimeouts.add(timeout);
@@ -96,7 +97,7 @@ export class RoundEngine {
     this.stopDrawTimer();
     this.drawTimer = setInterval(() => {
       this.drawNumber(roundId).catch((err) => {
-        console.error('Erro ao sortear numero', err);
+        logger.error('Erro ao sortear numero', { roundId, err });
       });
     }, env.drawIntervalMs);
   }

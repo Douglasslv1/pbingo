@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { WebhookSignatureValidator } from 'mercadopago';
 import { env } from '../../config/env';
+import { logger } from '../../lib/logger';
 import { AppError } from '../../utils/errors';
 import { confirmMockPixPurchase } from './payments.service';
 import { createPixChargeSchema, mockPixSchema } from './payments.types';
@@ -68,7 +69,7 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
 
     if (!valid) {
       // Nada aqui e secreto: o x-signature e so o hash da mensagem, nao a chave.
-      console.warn('Assinatura de webhook do Mercado Pago invalida, ignorando notificacao', {
+      logger.warn('Assinatura de webhook do Mercado Pago invalida, ignorando notificacao', {
         error: lastError,
         query: req.query,
         xSignature: req.headers['x-signature'],
@@ -84,7 +85,7 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
     try {
       await handleMercadoPagoWebhook(String(orderId));
     } catch (err) {
-      console.error('Erro ao processar webhook do Mercado Pago', err);
+      logger.error('Erro ao processar webhook do Mercado Pago', { orderId: String(orderId), err });
     }
   }
 

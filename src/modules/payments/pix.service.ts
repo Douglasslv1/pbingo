@@ -1,3 +1,4 @@
+import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
@@ -61,7 +62,7 @@ export async function createPixCharge(userId: string, creditsAmount: number) {
     };
   } catch (err) {
     await prisma.transaction.update({ where: { id: transaction.id }, data: { status: 'FAILED' } });
-    console.error('Erro ao criar cobranca Pix no Mercado Pago', err);
+    logger.error('Erro ao criar cobranca Pix no Mercado Pago', { transactionId: transaction.id, err });
     throw new AppError('Nao foi possivel gerar a cobranca Pix no Mercado Pago', 502);
   }
 }

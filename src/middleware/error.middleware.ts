@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { logger } from '../lib/logger';
 import { AppError } from '../utils/errors';
 
 export function notFoundMiddleware(req: Request, res: Response): void {
@@ -22,6 +23,6 @@ export function errorMiddleware(
     return;
   }
 
-  console.error(err);
+  logger.error('Erro nao tratado', { requestId: req.requestId, method: req.method, path: req.path, err });
   res.status(500).json({ error: 'Erro interno do servidor' });
 }

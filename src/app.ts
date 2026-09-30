@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env';
 import { errorMiddleware, notFoundMiddleware } from './middleware/error.middleware';
 import { createRateLimiter } from './middleware/rateLimit.middleware';
+import { requestLogger } from './middleware/requestLogger.middleware';
 import { authRouter } from './modules/auth/auth.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
@@ -47,6 +48,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   // Railway coloca um proxy na frente: sem isso, req.ip seria o IP do proxy para todos os jogadores
   app.set('trust proxy', 1);
 
+  app.use(requestLogger);
   app.use(helmet());
   app.use(cors({ origin: env.corsOrigins.length > 0 ? env.corsOrigins : true }));
   app.use(express.json());

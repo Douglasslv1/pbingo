@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
+import { HistoryPage } from '../../utils/pagination';
 import { broadcast } from '../../websocket/socket';
 import { generateBingoMatrix } from './ticket.util';
 
@@ -102,4 +103,35 @@ export async function getMyTicketsForRound(userId: string, roundId: string) {
     where: { userId, roundId },
     orderBy: { createdAt: 'asc' },
   });
+}
+
+/** Rodadas em que o jogador comprou cartela, da mais recente para a mais antiga, paginadas por cursor. */
+export async function listMyRounds(userId: string, { limit, cursor }: HistoryPage) {
+  const rounds = await prisma.round.findMany({
+    where: { tickets: { some: { userId } } },
+    orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: { tickets: { where: { userId }, select: { isWinner: true, prizeAmount: true } } },
+  });
+
+  const hasMore = rounds.length > limit;
+  const items = rounds.slice(0, limit).map((round) => {
+    const prizeWonCents = round.tickets.reduce(
+      (sum, ticket) => sum + Math.round(Number(ticket.prizeAmount ?? 0) * 100),
+      0,
+    );
+    return {
+      roundId: round.id,
+      status: round.status,
+      startedAt: round.startedAt.toISOString(),
+      endedAt: round.endedAt?.toISOString() ?? null,
+      accumulatedPrize: round.accumulatedPrize.toString(),
+      ticketsCount: round.tickets.length,
+      winningTickets: round.tickets.filter((ticket) => ticket.isWinner).length,
+      prizeWon: (prizeWonCents / 100).toFixed(2),
+    };
+  });
+
+  return { items, nextCursor: hasMore ? items[items.length - 1].roundId : null };
 }

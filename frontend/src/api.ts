@@ -1,8 +1,11 @@
 import type {
   AuthResult,
   JoinRoundResult,
+  Page,
+  RoundHistoryItem,
   RoundView,
   Ticket,
+  TransactionItem,
   Wallet,
   Withdrawal,
   WithdrawalForReview,
@@ -87,6 +90,12 @@ export const api = {
       { method: 'POST', body: JSON.stringify(data) },
       token,
     ),
+
+  getMyTransactions: (token: string, cursor?: string) =>
+    request<Page<TransactionItem>>(`/wallet/transactions${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+
+  getMyRoundHistory: (token: string, cursor?: string) =>
+    request<Page<RoundHistoryItem>>(`/rounds/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
 
   getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
 

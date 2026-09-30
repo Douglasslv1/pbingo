@@ -742,3 +742,25 @@ button.danger {
     margin-bottom: 6px;
   }
 }
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-list li {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.amount-in {
+  color: var(--accent);
+}
+
+.amount-out {
+  color: var(--text);
+}

@@ -1,4 +1,5 @@
 import { env } from '../config/env';
+import { logger } from './logger';
 
 export interface EmailMessage {
   to: string;
@@ -70,6 +71,6 @@ export const mailer = {
     if (env.isProduction) {
       throw new Error('Nenhum provedor de e-mail configurado (RESEND_API_KEY ou BREVO_API_KEY)');
     }
-    console.log(`[e-mail de desenvolvimento] para ${message.to}: ${message.subject}\n${message.text}`);
+    logger.info('E-mail de desenvolvimento (nao enviado)', { to: message.to, subject: message.subject, text: message.text });
   },
 };

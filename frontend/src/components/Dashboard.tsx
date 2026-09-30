@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { getSocket } from '../socket';
 import type { RoundView, Ticket, Wallet } from '../types';
 import { DrawEvent } from './BallRoulette';
+import HistoryPanel from './HistoryPanel';
 import RoundPanel from './RoundPanel';
 import WalletPanel from './WalletPanel';
 
@@ -152,6 +153,7 @@ export default function Dashboard() {
 
       <WalletPanel wallet={wallet} onWalletChange={refreshWallet} />
       <RoundPanel round={round} myTickets={myTickets} onJoin={handleJoinRound} joining={joining} lastDrawn={lastDrawn} />
+      <HistoryPanel />
     </div>
   );
 }

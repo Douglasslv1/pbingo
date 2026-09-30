@@ -72,3 +72,30 @@ export interface AuthResult {
   token: string;
   user: AuthUser;
 }
+
+export type TransactionType = 'PURCHASE_CREDITS' | 'SPEND_KEY' | 'PRIZE_PAYOUT' | 'WITHDRAWAL';
+
+export interface TransactionItem {
+  id: string;
+  type: TransactionType;
+  status: string;
+  amountFiat: string;
+  amountCredits: number;
+  createdAt: string;
+}
+
+export interface RoundHistoryItem {
+  roundId: string;
+  status: RoundStatus;
+  startedAt: string;
+  endedAt: string | null;
+  accumulatedPrize: string;
+  ticketsCount: number;
+  winningTickets: number;
+  prizeWon: string;
+}
+
+export interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
+}

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { logger } from '../../lib/logger';
 import { loginUser, registerUser } from './auth.service';
 import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from './auth.types';
 import { requestPasswordReset, resetPassword } from './passwordReset.service';
@@ -23,7 +24,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   const { email } = forgotPasswordSchema.parse(req.body);
   // Sem await: a resposta (conteudo e tempo) nao pode revelar quais e-mails tem conta
   requestPasswordReset(email).catch((err) => {
-    console.error('Erro ao enviar e-mail de redefinicao de senha', err);
+    logger.error('Erro ao enviar e-mail de redefinicao de senha', { requestId: req.requestId, err });
   });
   res.status(200).json(FORGOT_PASSWORD_RESPONSE);
 }
