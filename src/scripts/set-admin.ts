@@ -15,7 +15,7 @@ async function main(): Promise<void> {
 
   const role = flag === '--revoke' ? 'PLAYER' : 'ADMIN';
   if (!(await setUserRole(email, role))) {
-    console.error(`Nenhum usuario encontrado com o e-mail ${email}`);
+    console.error(`Nenhum usuário encontrado com o e-mail ${email}`);
     process.exitCode = 1;
     return;
   }

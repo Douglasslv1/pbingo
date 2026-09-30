@@ -83,7 +83,7 @@ export default function BallRoulette({ lastDrawn, ballMin = 1, ballMax = 75 }: P
         </AnimatePresence>
       </div>
       <p className="roulette-caption">
-        {spinning ? 'Sorteando...' : displayNumber !== null ? 'Numero sorteado' : 'Aguardando sorteio'}
+        {spinning ? 'Sorteando...' : displayNumber !== null ? 'Número sorteado' : 'Aguardando sorteio'}
       </p>
     </div>
   );

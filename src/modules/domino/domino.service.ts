@@ -137,7 +137,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
   if (!env.dominoEnabled) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     if (user?.role !== 'ADMIN') {
-      throw new AppError('O domino ainda nao esta disponivel', 403);
+      throw new AppError('O dominó ainda não está disponível', 403);
     }
   }
 
@@ -151,7 +151,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
       where: { userId, table: { status: { in: [...ACTIVE_STATUSES] } } },
     });
     if (active) {
-      throw new AppError('Voce ja esta em uma mesa de domino', 409);
+      throw new AppError('Você já está em uma mesa de dominó', 409);
     }
     if ((credits[0]?.balance ?? 0) < env.ticketPriceCredits) {
       throw new AppError('Saldo de chaves insuficiente para entrar na mesa', 400);
@@ -224,13 +224,13 @@ export async function leaveQueue(userId: string) {
       include: { table: true },
     });
     if (!seat) {
-      throw new AppError('Voce nao esta aguardando em nenhuma mesa', 409);
+      throw new AppError('Você não está aguardando em nenhuma mesa', 409);
     }
 
     await lockQueue(tx, seat.table.mode, seat.table.teamMode);
     const table = await lockTable(tx, seat.tableId);
     if (!table || table.status !== 'WAITING') {
-      throw new AppError('A partida ja comecou - nao e mais possivel sair', 409);
+      throw new AppError('A partida já começou - não é mais possível sair', 409);
     }
 
     await refundSeats(tx, [seat]);
@@ -311,7 +311,7 @@ async function advanceTable(tx: Tx, table: DominoTable, seats: DominoSeat[], fir
 async function lockPlayingTable(tx: Tx, tableId: string) {
   const table = await lockTable(tx, tableId);
   if (!table) {
-    throw new AppError('Mesa nao encontrada', 404);
+    throw new AppError('Mesa não encontrada', 404);
   }
   const seats = await tx.dominoSeat.findMany({ where: { tableId } });
   return { table, seats };
@@ -323,10 +323,10 @@ export async function playMove(userId: string, tableId: string, action: DominoAc
     const { table, seats } = await lockPlayingTable(tx, tableId);
     const mySeat = seats.find((seat) => seat.userId === userId);
     if (!mySeat) {
-      throw new AppError('Voce nao esta nesta mesa', 403);
+      throw new AppError('Você não está nesta mesa', 403);
     }
     if (table.status !== 'PLAYING' || !table.state) {
-      throw new AppError('A partida nao esta em andamento', 409);
+      throw new AppError('A partida não está em andamento', 409);
     }
 
     if (mySeat.timeouts > 0 || mySeat.isAway) {
@@ -370,7 +370,7 @@ export async function handleTurnTimeout(tableId: string, now = new Date()): Prom
       seat.timeouts = timeouts;
       seat.isAway = isAway;
       if (isAway) {
-        logger.info('Jogador de domino marcado como ausente', { tableId, seat: seat.seat });
+        logger.info('Jogador de dominó marcado como ausente', { tableId, seat: seat.seat });
       }
     }
 
@@ -394,7 +394,7 @@ export async function returnToTable(userId: string, tableId: string) {
     const { table, seats } = await lockPlayingTable(tx, tableId);
     const mySeat = seats.find((seat) => seat.userId === userId);
     if (!mySeat) {
-      throw new AppError('Voce nao esta nesta mesa', 403);
+      throw new AppError('Você não está nesta mesa', 403);
     }
     if (table.status !== 'PLAYING' || !table.state) {
       return null;
@@ -442,7 +442,7 @@ export async function getActiveTable(userId: string) {
 export async function getTableForPlayer(userId: string, tableId: string) {
   const table = await loadTable(tableId);
   if (!table || !table.seats.some((seat) => seat.userId === userId)) {
-    throw new AppError('Mesa nao encontrada', 404);
+    throw new AppError('Mesa não encontrada', 404);
   }
   return tableViewFor(table, userId);
 }
@@ -472,7 +472,7 @@ export async function cancelStaleQueues(now = new Date()): Promise<number> {
 
     if (userIds) {
       cancelled += 1;
-      logger.info('Mesa de domino cancelada por falta de jogadores', { tableId: candidate.id, players: userIds.length });
+      logger.info('Mesa de dominó cancelada por falta de jogadores', { tableId: candidate.id, players: userIds.length });
       await publishTable(candidate.id);
     }
   }
@@ -544,7 +544,7 @@ export async function getTableForAdmin(tableId: string) {
     },
   });
   if (!table) {
-    throw new AppError('Mesa nao encontrada', 404);
+    throw new AppError('Mesa não encontrada', 404);
   }
 
   const state = table.state as unknown as DominoState | null;

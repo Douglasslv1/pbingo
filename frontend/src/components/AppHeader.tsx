@@ -17,7 +17,7 @@ export default function AppHeader() {
 
   return (
     <header className="app-header">
-      <Link to="/" className="brand-link" aria-label="Pbingu - pagina inicial">
+      <Link to="/" className="brand-link" aria-label="Pbingu - página inicial">
         <Logo size={30} />
       </Link>
       <nav className="app-nav" aria-label="Menu principal">

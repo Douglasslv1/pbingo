@@ -17,7 +17,7 @@ import {
 
 function requireUserId(req: Request): string {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
   return req.userId;
 }

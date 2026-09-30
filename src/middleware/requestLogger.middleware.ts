@@ -46,9 +46,9 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     };
 
     if (res.statusCode >= 500) {
-      logger.error('Requisicao com erro', fields);
+      logger.error('Requisição com erro', fields);
     } else {
-      logger.info('Requisicao', fields);
+      logger.info('Requisição', fields);
     }
   });
 

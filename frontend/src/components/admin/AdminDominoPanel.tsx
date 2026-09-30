@@ -62,7 +62,7 @@ function TableDetail({ tableId, onClose }: { tableId: string; onClose: () => voi
         </p>
       )}
 
-      <h4>Jogadores e maos</h4>
+      <h4>Jogadores e mãos</h4>
       <ul className="admin-domino-players">
         {detail.players.map((player) => (
           <li key={player.seat}>
@@ -74,7 +74,7 @@ function TableDetail({ tableId, onClose }: { tableId: string; onClose: () => voi
                 <span className="label">{player.email}</span>
               </span>
               <span className="label">
-                {player.prizeAmount && `premio ${formatBrl(player.prizeAmount)} · `}
+                {player.prizeAmount && `prêmio ${formatBrl(player.prizeAmount)} · `}
                 {player.timeouts} tempo(s) esgotado(s){player.away && ' · ausente'}
               </span>
             </div>
@@ -93,7 +93,7 @@ function TableDetail({ tableId, onClose }: { tableId: string; onClose: () => voi
           <li key={move.moveNumber}>
             <span>
               <strong>{nameOf(move.seat)}</strong> {describeAction(move.action)}
-              {move.automatic && <span className="away-badge">automatica</span>}
+              {move.automatic && <span className="away-badge">automática</span>}
             </span>
             <span className="label">{new Date(move.createdAt).toLocaleTimeString('pt-BR')}</span>
           </li>

@@ -102,7 +102,7 @@ export default function AdminWithdrawalItem({ withdrawal, onReviewed }: Props) {
         <div className="admin-actions">
           <form onSubmit={handlePay}>
             <label>
-              ID da transacao Pix (E2E) enviada
+              ID da transação Pix (E2E) enviada
               <input
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}

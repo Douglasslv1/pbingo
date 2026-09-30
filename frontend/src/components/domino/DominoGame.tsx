@@ -33,7 +33,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
   const mySeat = table.mySeat;
   const nameOf = (seat: number) => {
     const player = table.players.find((p) => p.seat === seat);
-    return player?.isMe ? 'Voce' : (player?.name ?? `Lugar ${seat + 1}`);
+    return player?.isMe ? 'Você' : (player?.name ?? `Lugar ${seat + 1}`);
   };
   const isPartner = (seat: number) => table.teamMode === 'PAIRS' && seat !== mySeat && seat % 2 === mySeat % 2;
   const finished = game.status === 'FINISHED';
@@ -68,7 +68,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
     <div className="card domino-game">
       <div className="domino-header">
         <span className="label">
-          {MODE_LABELS[table.mode]} · {TEAM_LABELS[table.teamMode]} · premio {formatBrl(table.prizePool)}
+          {MODE_LABELS[table.mode]} · {TEAM_LABELS[table.teamMode]} · prêmio {formatBrl(table.prizePool)}
         </span>
         <span className="domino-header-actions">
           {table.mode === 'BURRINHO' && <span className="label">Monte: {game.boneyardSize}</span>}
@@ -110,7 +110,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
         <>
           {iAmAway && (
             <div className="banner away-banner">
-              <span>Voce ficou ausente e o sistema esta jogando por voce.</span>
+              <span>Você ficou ausente e o sistema está jogando por você.</span>
               <button type="button" onClick={onComeBack} disabled={busy}>
                 Voltei
               </button>
@@ -126,7 +126,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
           <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>
             {myTurn
               ? selected
-                ? 'Escolha a ponta: toque numa ponta destacada ou nos botoes abaixo'
+                ? 'Escolha a ponta: toque numa ponta destacada ou nos botões abaixo'
                 : `Sua vez: toque numa pedra destacada${countdown !== null ? ` (${countdown}s)` : ''}`
               : `Vez de ${nameOf(game.currentSeat)}...`}
           </p>
@@ -134,7 +134,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
           {myTurn && selected && selectedSides.length > 1 && game.ends && (
             <div className="domino-side-choice">
               <button type="button" onClick={() => playTile(selected, 'LEFT')} disabled={busy}>
-                Na ponta {game.ends.left} (inicio)
+                Na ponta {game.ends.left} (início)
               </button>
               <button type="button" onClick={() => playTile(selected, 'RIGHT')} disabled={busy}>
                 Na ponta {game.ends.right} (fim)
@@ -196,11 +196,11 @@ function DominoResult({
 
   return (
     <div className="domino-result">
-      <h3>{iWon ? `Voce venceu! +${formatBrl(me?.prizeAmount ?? 0)}` : 'Fim de partida'}</h3>
+      <h3>{iWon ? `Você venceu! +${formatBrl(me?.prizeAmount ?? 0)}` : 'Fim de partida'}</h3>
       <p>
         {result.reason === 'DOMINO'
           ? `${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} batendo.`
-          : `Jogo trancado: ${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} com menos pontos na mao.`}
+          : `Jogo trancado: ${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} com menos pontos na mão.`}
       </p>
 
       {game.revealedHands && (

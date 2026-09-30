@@ -22,6 +22,7 @@ export interface GameConfig {
   termsVersion: string;
   dominoEnabled: boolean;
   dominoTurnSeconds: number;
+  dominoQueueTimeoutMinutes: number;
 }
 
 export interface JoinRoundResult {

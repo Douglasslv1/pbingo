@@ -44,7 +44,7 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
         <div className="round-lobby">
           <div className="round-stats">
             <div>
-              <span className="label">Comeca as</span>
+              <span className="label">Começa as</span>
               <strong>{round.waitingEndsAt ? formatTime(round.waitingEndsAt) : '-'}</strong>
               {countdown !== null && <span className="label">em {formatCountdown(countdown)}</span>}
             </div>
@@ -54,11 +54,11 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
                 {round.playersCount}/{round.minPlayers}
               </strong>
               <span className="label">
-                {missingPlayers > 0 ? `faltam ${missingPlayers} para comecar` : 'minimo atingido'}
+                {missingPlayers > 0 ? `faltam ${missingPlayers} para começar` : 'mínimo atingido'}
               </span>
             </div>
             <div>
-              <span className="label">Premio atual</span>
+              <span className="label">Prêmio atual</span>
               <strong>{formatBrl(round.accumulatedPrize)}</strong>
             </div>
           </div>
@@ -71,14 +71,14 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
           </div>
 
           <p className="hint">
-            A rodada so comeca com pelo menos {round.minPlayers} jogadores. Se nao completar ate o horario, ela e
+            A rodada só começa com pelo menos {round.minPlayers} jogadores. Se não completar até o horário, ela é
             cancelada e sua chave volta para a carteira.
           </p>
 
           {inRound ? (
             <div className="round-actions">
               <button type="button" disabled>
-                Voce esta na rodada
+                Você está na rodada
               </button>
               <button type="button" className="link" onClick={onLeave} disabled={joining}>
                 Sair e recuperar a chave
@@ -94,7 +94,7 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
 
       {round.status !== 'WAITING' && (
         <p>
-          Premio da rodada: <strong>{formatBrl(round.accumulatedPrize)}</strong>
+          Prêmio da rodada: <strong>{formatBrl(round.accumulatedPrize)}</strong>
         </p>
       )}
 
@@ -102,7 +102,7 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
 
       {round.drawnNumbers.length > 0 && (
         <div className="drawn-numbers">
-          <span className="label">Numeros sorteados</span>
+          <span className="label">Números sorteados</span>
           <div className="ball-list">
             {round.drawnNumbers.map((n) => (
               <span key={n} className="ball">

@@ -28,8 +28,8 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
         next();
       })
       .catch(() => {
-        logger.warn('Conexao WebSocket com token invalido recusada');
-        next(new Error('Token de autenticacao invalido ou expirado'));
+        logger.warn('Conexão WebSocket com token inválido recusada');
+        next(new Error('Token de autenticação inválido ou expirado'));
       });
   });
 

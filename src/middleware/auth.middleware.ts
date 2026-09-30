@@ -14,7 +14,7 @@ declare global {
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
-    throw new AppError('Token de autenticacao ausente', 401);
+    throw new AppError('Token de autenticação ausente', 401);
   }
 
   authenticateToken(header.slice('Bearer '.length))

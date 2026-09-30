@@ -32,7 +32,7 @@ function applyRateLimits(app: Express): void {
   );
   app.post(
     ['/auth/forgot-password', '/auth/reset-password'],
-    createRateLimiter({ windowMs: HOUR_MS, max: 5, message: 'Muitos pedidos de redefinicao de senha. Tente mais tarde.' }),
+    createRateLimiter({ windowMs: HOUR_MS, max: 5, message: 'Muitos pedidos de redefinição de senha. Tente mais tarde.' }),
   );
   app.post(
     '/withdrawals',
@@ -40,7 +40,7 @@ function applyRateLimits(app: Express): void {
   );
   app.post(
     '/payments/pix/create',
-    createRateLimiter({ windowMs: HOUR_MS, max: 20, message: 'Muitas cobrancas Pix geradas. Tente mais tarde.' }),
+    createRateLimiter({ windowMs: HOUR_MS, max: 20, message: 'Muitas cobranças Pix geradas. Tente mais tarde.' }),
   );
 }
 
@@ -73,6 +73,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
       termsVersion: CURRENT_TERMS_VERSION,
       dominoEnabled: env.dominoEnabled,
       dominoTurnSeconds: env.dominoTurnSeconds,
+      dominoQueueTimeoutMinutes: env.dominoQueueTimeoutMinutes,
     });
   });
 

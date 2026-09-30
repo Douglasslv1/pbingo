@@ -34,7 +34,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   const { email } = forgotPasswordSchema.parse(req.body);
   // Sem await: a resposta (conteudo e tempo) nao pode revelar quais e-mails tem conta
   requestPasswordReset(email).catch((err) => {
-    logger.error('Erro ao enviar e-mail de redefinicao de senha', { requestId: req.requestId, err });
+    logger.error('Erro ao enviar e-mail de redefinição de senha', { requestId: req.requestId, err });
   });
   res.status(200).json(FORGOT_PASSWORD_RESPONSE);
 }
@@ -48,7 +48,7 @@ export async function confirmPasswordReset(req: Request, res: Response): Promise
 
 function requireUserId(req: Request): string {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
   return req.userId;
 }

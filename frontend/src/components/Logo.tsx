@@ -20,7 +20,7 @@ export function LogoMark({ size = 32 }: { size?: number }) {
         </radialGradient>
       </defs>
       <rect width="64" height="64" rx="16" fill="url(#logo-bg)" />
-      {/* Pedra de domino inclinada ao fundo */}
+      {/* Pedra de dominó inclinada ao fundo */}
       <g transform="rotate(-14 38 30)">
         <rect x="29" y="8" width="20" height="38" rx="5" fill="#f8fafc" />
         <line x1="32" y1="27" x2="46" y2="27" stroke="#94a3b8" strokeWidth="2" />

@@ -12,11 +12,11 @@ function hashToken(token: string): string {
 function buildResetEmail(name: string, link: string, ttlMinutes: number) {
   return {
     subject: 'Redefinir sua senha do Pbingu',
-    text: `Ola, ${name}!\n\nRecebemos um pedido para redefinir sua senha. Acesse o link abaixo (valido por ${ttlMinutes} minutos):\n\n${link}\n\nSe nao foi voce, ignore este e-mail - sua senha continua a mesma.`,
-    html: `<p>Ola, ${escapeHtml(name)}!</p>
+    text: `Olá, ${name}!\n\nRecebemos um pedido para redefinir sua senha. Acesse o link abaixo (válido por ${ttlMinutes} minutos):\n\n${link}\n\nSe não foi você, ignore este e-mail - sua senha continua a mesma.`,
+    html: `<p>Olá, ${escapeHtml(name)}!</p>
 <p>Recebemos um pedido para redefinir sua senha. O link abaixo vale por ${ttlMinutes} minutos:</p>
 <p><a href="${link}">Redefinir minha senha</a></p>
-<p>Se nao foi voce, ignore este e-mail - sua senha continua a mesma.</p>`,
+<p>Se não foi você, ignore este e-mail - sua senha continua a mesma.</p>`,
   };
 }
 
@@ -63,7 +63,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   return prisma.$transaction(async (tx) => {
     const resetToken = await tx.passwordResetToken.findUnique({ where: { tokenHash: hashToken(token) } });
     if (!resetToken || resetToken.expiresAt <= now) {
-      throw new AppError('Link de redefinicao invalido ou expirado', 400);
+      throw new AppError('Link de redefinição inválido ou expirado', 400);
     }
 
     // Marca como usado so se ninguem usou antes (protege contra dois envios simultaneos)
@@ -72,7 +72,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
       data: { usedAt: now },
     });
     if (consumed.count === 0) {
-      throw new AppError('Link de redefinicao invalido ou expirado', 400);
+      throw new AppError('Link de redefinição inválido ou expirado', 400);
     }
 
     await tx.user.update({

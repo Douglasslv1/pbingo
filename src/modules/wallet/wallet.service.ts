@@ -9,7 +9,7 @@ export async function getWallet(userId: string) {
   ]);
 
   if (!credits || !prizes) {
-    throw new AppError('Carteira nao encontrada para o usuario', 404);
+    throw new AppError('Carteira não encontrada para o usuário', 404);
   }
 
   return {

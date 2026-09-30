@@ -54,7 +54,7 @@ export default function DominoBoard({ line, targetSides, onPlaySide }: Props) {
 
   return (
     <div className="domino-board" ref={ref}>
-      {line.length === 0 && <p className="label">A mesa esta vazia. Quem tem a maior carroca comeca.</p>}
+      {line.length === 0 && <p className="label">A mesa está vazia. Quem tem a maior carroça começa.</p>}
       {rows.map((row, rowIndex) => {
         const reversed = rowIndex % 2 === 1;
         return (

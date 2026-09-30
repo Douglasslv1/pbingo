@@ -93,7 +93,7 @@ export default function LandingPage() {
   return (
     <div className="landing">
       <nav className="landing-nav">
-        <Link to="/" className="brand-link" aria-label="Pbingu - pagina inicial">
+        <Link to="/" className="brand-link" aria-label="Pbingu - página inicial">
           <Logo size={34} />
         </Link>
         <div className="landing-nav-links">

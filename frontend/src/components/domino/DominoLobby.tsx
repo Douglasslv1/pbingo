@@ -13,19 +13,19 @@ interface Props {
 const MODES: Array<{ value: DominoMode; title: string; description: string }> = [
   {
     value: 'SIX_TILES',
-    title: '6 pecas',
+    title: '6 peças',
     description: 'Cada um recebe 6 pedras e as 4 que sobram ficam dormindo. Sem pedra que encaixe, passa a vez.',
   },
   {
     value: 'BURRINHO',
     title: 'Burrinho',
-    description: 'Cada um recebe 6 pedras e as 4 que sobram viram o monte. Sem pedra que encaixe, compra ate poder jogar.',
+    description: 'Cada um recebe 6 pedras e as 4 que sobram viram o monte. Sem pedra que encaixe, compra até poder jogar.',
   },
 ];
 
 const TEAM_MODES: Array<{ value: DominoTeamMode; title: string; description: string }> = [
-  { value: 'INDIVIDUAL', title: 'Individual', description: 'Cada um por si. Quem bater leva o premio.' },
-  { value: 'PAIRS', title: 'Duplas', description: 'Parceiro sentado a sua frente. A dupla vencedora divide o premio.' },
+  { value: 'INDIVIDUAL', title: 'Individual', description: 'Cada um por si. Quem bater leva o prêmio.' },
+  { value: 'PAIRS', title: 'Duplas', description: 'Parceiro sentado à sua frente. A dupla vencedora divide o prêmio.' },
 ];
 
 export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
@@ -41,10 +41,10 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
 
   return (
     <div className="card">
-      <h2>Domino</h2>
+      <h2>Dominó</h2>
       <p className="hint intro-hint">
-        Mesas de 4 jogadores. Voce entra com 1 chave{ticketPrice ? ` (${ticketPrice})` : ''} e a partida comeca assim que a mesa
-        completar. Se nao completar em alguns minutos, sua chave volta.
+        Mesas de 4 jogadores. Você entra com 1 chave{ticketPrice ? ` (${ticketPrice})` : ''} e a partida começa assim que a mesa
+        completar. Se não completar em alguns minutos, sua chave volta.
       </p>
 
       <span className="label">Modalidade</span>
@@ -81,7 +81,7 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
 
       {prizeText && (
         <p className="domino-prize">
-          Premio: <strong>{prizeText}</strong>
+          Prêmio: <strong>{prizeText}</strong>
         </p>
       )}
 
@@ -91,7 +91,7 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
         </button>
       ) : (
         <p className="hint">
-          Voce nao tem chaves. <Link to="/app">Compre chaves via Pix</Link> para jogar.
+          Você não tem chaves. <Link to="/app">Compre chaves via Pix</Link> para jogar.
         </p>
       )}
       {keysBalance !== null && <p className="label domino-keys">Suas chaves: {keysBalance}</p>}

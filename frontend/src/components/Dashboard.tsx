@@ -95,11 +95,11 @@ export default function Dashboard() {
       setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, status: 'CANCELLED' } : prev));
       if (myTicketsRef.current.length > 0) {
         setMessage(
-          `Rodada cancelada: eram necessarios ${payload.minPlayers} jogadores e so ${payload.playersCount} entraram. Sua chave foi devolvida.`,
+          `Rodada cancelada: eram necessários ${payload.minPlayers} jogadores e só ${payload.playersCount} entraram. Sua chave foi devolvida.`,
         );
         refreshWallet();
       } else {
-        setMessage('Rodada cancelada por falta de jogadores. A proxima sala ja vai abrir.');
+        setMessage('Rodada cancelada por falta de jogadores. A próxima sala já vai abrir.');
       }
     }
 
@@ -114,11 +114,11 @@ export default function Dashboard() {
 
       if (myWinnings.length > 0) {
         const myPrize = myWinnings.reduce((sum, winner) => sum + winner.prize, 0);
-        const tieNote = isTie ? ` (premio dividido entre ${payload.winners.length} cartelas)` : '';
-        setMessage(`Parabens! Voce ganhou ${formatBrl(myPrize)}!${tieNote}`);
+        const tieNote = isTie ? ` (prêmio dividido entre ${payload.winners.length} cartelas)` : '';
+        setMessage(`Parabéns! Você ganhou ${formatBrl(myPrize)}!${tieNote}`);
         refreshWallet();
       } else if (isTie) {
-        setMessage(`Rodada encerrada. ${payload.winners.length} cartelas venceram e dividiram o premio.`);
+        setMessage(`Rodada encerrada. ${payload.winners.length} cartelas venceram e dividiram o prêmio.`);
       } else if (payload.winners.length === 1) {
         setMessage('Rodada encerrada. Um jogador venceu.');
       } else {
@@ -166,7 +166,7 @@ export default function Dashboard() {
       await api.leaveRound(auth.token);
       setMyTickets([]);
       await refreshWallet();
-      setMessage('Voce saiu da rodada e sua chave foi devolvida.');
+      setMessage('Você saiu da rodada e sua chave foi devolvida.');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erro ao sair da rodada');
     } finally {
@@ -178,7 +178,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <p className="greeting">Ola, {auth.user.name}</p>
+      <p className="greeting">Olá, {auth.user.name}</p>
 
       {message && <div className="banner">{message}</div>}
 

@@ -5,7 +5,7 @@ config();
 function required(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Variavel de ambiente obrigatoria ausente: ${name}`);
+    throw new Error(`Variável de ambiente obrigatória ausente: ${name}`);
   }
   return value;
 }

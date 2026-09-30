@@ -11,7 +11,7 @@ interface Props {
 
 const PIX_KEY_PLACEHOLDERS: Record<PixKeyType, string> = {
   CPF: '000.000.000-00',
-  EMAIL: 'voce@exemplo.com',
+  EMAIL: 'você@exemplo.com',
   PHONE: '(11) 98765-4321',
   RANDOM: '123e4567-e89b-12d3-a456-426614174000',
 };
@@ -36,7 +36,7 @@ export default function WithdrawForm({ onWithdrawn }: Props) {
       const res = await api.withdraw(auth.token, { amount, cpf, pixKeyType, pixKey });
       await onWithdrawn();
       setAmount(0);
-      setInfo(`Saque solicitado! Ele sera pago via Pix apos analise. Saldo restante: ${formatBrl(res.remainingBalance)}`);
+      setInfo(`Saque solicitado! Ele será pago via Pix após análise. Saldo restante: ${formatBrl(res.remainingBalance)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao solicitar saque');
     } finally {
@@ -47,7 +47,7 @@ export default function WithdrawForm({ onWithdrawn }: Props) {
   return (
     <form onSubmit={handleSubmit} className="withdraw-form">
       <label>
-        Sacar premio (R$)
+        Sacar prêmio (R$)
         <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
       </label>
       <label>

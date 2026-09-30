@@ -26,7 +26,7 @@ function toView(withdrawal: Withdrawal) {
  */
 export async function requestWithdrawal(userId: string, input: WithdrawalInput) {
   if (input.amount < env.minWithdrawalBrl) {
-    throw new AppError(`O valor minimo para saque e R$ ${env.minWithdrawalBrl.toFixed(2)}`, 400);
+    throw new AppError(`O valor mínimo para saque é R$ ${env.minWithdrawalBrl.toFixed(2)}`, 400);
   }
 
   return prisma.$transaction(async (tx) => {
@@ -36,7 +36,7 @@ export async function requestWithdrawal(userId: string, input: WithdrawalInput) 
     const currentBalance = Number(rows[0]?.balance_fiat ?? 0);
 
     if (currentBalance < input.amount) {
-      throw new AppError('Saldo de premios insuficiente para o saque solicitado', 400);
+      throw new AppError('Saldo de prêmios insuficiente para o saque solicitado', 400);
     }
 
     const prize = await tx.userPrize.update({
@@ -99,10 +99,10 @@ async function lockPendingWithdrawal(tx: Prisma.TransactionClient, withdrawalId:
     SELECT status FROM withdrawals WHERE id = ${withdrawalId}::uuid FOR UPDATE
   `;
   if (rows.length === 0) {
-    throw new AppError('Saque nao encontrado', 404);
+    throw new AppError('Saque não encontrado', 404);
   }
   if (rows[0].status !== 'PENDING') {
-    throw new AppError('Este saque ja foi revisado', 409);
+    throw new AppError('Este saque já foi revisado', 409);
   }
 }
 

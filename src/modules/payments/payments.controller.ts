@@ -9,10 +9,10 @@ import { createPixCharge, getPixChargeStatus, handleMercadoPagoWebhook } from '.
 
 export async function mockPix(req: Request, res: Response): Promise<void> {
   if (env.isProduction) {
-    throw new AppError('Endpoint de pagamento simulado desabilitado em producao', 403);
+    throw new AppError('Endpoint de pagamento simulado desabilitado em produção', 403);
   }
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
 
   const input = mockPixSchema.parse(req.body);
@@ -22,7 +22,7 @@ export async function mockPix(req: Request, res: Response): Promise<void> {
 
 export async function createPix(req: Request, res: Response): Promise<void> {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
 
   const input = createPixChargeSchema.parse(req.body);
@@ -32,7 +32,7 @@ export async function createPix(req: Request, res: Response): Promise<void> {
 
 export async function getPixStatus(req: Request, res: Response): Promise<void> {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
 
   const result = await getPixChargeStatus(req.userId, req.params.transactionId);
@@ -69,7 +69,7 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
 
     if (!valid) {
       // Nada aqui e secreto: o x-signature e so o hash da mensagem, nao a chave.
-      logger.warn('Assinatura de webhook do Mercado Pago invalida, ignorando notificacao', {
+      logger.warn('Assinatura de webhook do Mercado Pago inválida, ignorando notificação', {
         error: lastError,
         query: req.query,
         xSignature: req.headers['x-signature'],

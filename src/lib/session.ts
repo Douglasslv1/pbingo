@@ -11,7 +11,7 @@ export async function authenticateToken(token: string): Promise<string> {
   try {
     payload = verifyAuthToken(token);
   } catch {
-    throw new AppError('Token de autenticacao invalido ou expirado', 401);
+    throw new AppError('Token de autenticação inválido ou expirado', 401);
   }
 
   const user = await prisma.user.findUnique({
@@ -19,7 +19,7 @@ export async function authenticateToken(token: string): Promise<string> {
     select: { passwordChangedAt: true },
   });
   if (!user) {
-    throw new AppError('Token de autenticacao invalido ou expirado', 401);
+    throw new AppError('Token de autenticação inválido ou expirado', 401);
   }
 
   const changedAtSeconds = user.passwordChangedAt ? Math.floor(user.passwordChangedAt.getTime() / 1000) : null;

@@ -105,8 +105,8 @@ describe('Jogadas', () => {
     });
 
     expect(() => applyAction(state, 1, play([5, 5]))).toThrow(DominoRuleError);
-    expect(() => applyAction(state, 0, play([4, 4]))).toThrow(/Jogada invalida/);
-    expect(() => applyAction(state, 0, play([2, 6]))).toThrow(/Jogada invalida/);
+    expect(() => applyAction(state, 0, play([4, 4]))).toThrow(/Jogada inválida/);
+    expect(() => applyAction(state, 0, play([2, 6]))).toThrow(/Jogada inválida/);
   });
 
   it('no 6 pecas, quem nao tem pedra que encaixa so pode passar', () => {

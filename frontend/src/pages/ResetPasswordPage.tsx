@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
     event.preventDefault();
     setError(null);
     if (password !== confirmation) {
-      setError('As senhas nao conferem');
+      setError('As senhas não conferem');
       return;
     }
     setLoading(true);
@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
       logout();
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro de conexao com o servidor');
+      setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
     } finally {
       setLoading(false);
     }
@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
         <div className="card auth-card">
           <h2>Nova senha</h2>
           {!token ? (
-            <p className="error">Link invalido. Peca um novo link em "Esqueci minha senha".</p>
+            <p className="error">Link inválido. Peça um novo link em "Esqueci minha senha".</p>
           ) : done ? (
             <>
               <p className="info">Senha redefinida com sucesso!</p>

@@ -122,12 +122,12 @@ export async function leaveWaitingRound(userId: string) {
       select: { id: true },
     });
     if (!waiting) {
-      throw new AppError('Voce nao esta em nenhuma rodada aguardando inicio', 409);
+      throw new AppError('Você não está em nenhuma rodada aguardando início', 409);
     }
 
     const round = await lockRound(tx, waiting.id);
     if (!round || round.status !== 'WAITING') {
-      throw new AppError('A rodada ja comecou - nao e mais possivel sair', 409);
+      throw new AppError('A rodada já começou - não é mais possível sair', 409);
     }
 
     const tickets = await tx.ticket.findMany({

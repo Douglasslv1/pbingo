@@ -40,7 +40,7 @@ export default function AuthForm() {
           : await api.register({ name, email, password, birthDate, acceptTerms });
       login(result);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro de conexao com o servidor');
+      setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
     } finally {
       setLoading(false);
     }

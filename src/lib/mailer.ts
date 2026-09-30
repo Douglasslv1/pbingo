@@ -71,6 +71,6 @@ export const mailer = {
     if (env.isProduction) {
       throw new Error('Nenhum provedor de e-mail configurado (RESEND_API_KEY ou BREVO_API_KEY)');
     }
-    logger.info('E-mail de desenvolvimento (nao enviado)', { to: message.to, subject: message.subject, text: message.text });
+    logger.info('E-mail de desenvolvimento (não enviado)', { to: message.to, subject: message.subject, text: message.text });
   },
 };

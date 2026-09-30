@@ -4,11 +4,11 @@ export const PIX_KEY_LABELS: Record<PixKeyType, string> = {
   CPF: 'CPF',
   EMAIL: 'E-mail',
   PHONE: 'Celular',
-  RANDOM: 'Chave aleatoria',
+  RANDOM: 'Chave aleatória',
 };
 
 export const WITHDRAWAL_STATUS_LABELS: Record<WithdrawalStatus, string> = {
-  PENDING: 'Em analise',
+  PENDING: 'Em análise',
   PAID: 'Pago',
   REJECTED: 'Recusado',
 };

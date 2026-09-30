@@ -103,7 +103,7 @@ export class RoundEngine {
     this.stopDrawTimer();
     this.drawTimer = setInterval(() => {
       this.drawNumber(roundId).catch((err) => {
-        logger.error('Erro ao sortear numero', { roundId, err });
+        logger.error('Erro ao sortear número', { roundId, err });
       });
     }, env.drawIntervalMs);
   }
@@ -192,7 +192,7 @@ export class RoundEngine {
   }
 
   private scheduleNextRound(): void {
-    this.schedule(() => this.ensureWaitingRound(), env.nextRoundDelayMs, 'Erro ao abrir proxima rodada');
+    this.schedule(() => this.ensureWaitingRound(), env.nextRoundDelayMs, 'Erro ao abrir próxima rodada');
   }
 }
 

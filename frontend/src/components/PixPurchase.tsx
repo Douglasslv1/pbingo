@@ -56,7 +56,7 @@ export default function PixPurchase({ onWalletChange }: Props) {
         } else if (result.status === 'FAILED') {
           stopPolling();
           setCharge(null);
-          setError('Pagamento nao aprovado. Tente gerar uma nova cobranca.');
+          setError('Pagamento não aprovado. Tente gerar uma nova cobrança.');
         } else if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           stopPolling();
         }
@@ -81,7 +81,7 @@ export default function PixPurchase({ onWalletChange }: Props) {
       });
       startPolling(result.transactionId);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao gerar cobranca Pix');
+      setError(err instanceof ApiError ? err.message : 'Erro ao gerar cobrança Pix');
     } finally {
       setBusy(false);
     }
@@ -109,11 +109,11 @@ export default function PixPurchase({ onWalletChange }: Props) {
           <div className="pix-copy">
             <textarea readOnly value={charge.qrCode} rows={3} />
             <button type="button" onClick={handleCopy}>
-              {copied ? 'Copiado!' : 'Copiar codigo'}
+              {copied ? 'Copiado!' : 'Copiar código'}
             </button>
           </div>
         )}
-        <p className="info">Aguardando confirmacao do pagamento...</p>
+        <p className="info">Aguardando confirmação do pagamento...</p>
         <button type="button" className="link" onClick={handleCancel}>
           Cancelar
         </button>
@@ -134,7 +134,7 @@ export default function PixPurchase({ onWalletChange }: Props) {
       )}
       {error && <p className="error">{error}</p>}
       <button type="submit" disabled={busy}>
-        {busy ? 'Gerando cobranca...' : 'Gerar cobranca Pix'}
+        {busy ? 'Gerando cobrança...' : 'Gerar cobrança Pix'}
       </button>
     </form>
   );

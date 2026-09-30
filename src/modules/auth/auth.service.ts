@@ -21,7 +21,7 @@ function toPublicUser(user: UserRecord) {
 export async function registerUser(input: RegisterInput) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) {
-    throw new AppError('E-mail ja cadastrado', 409);
+    throw new AppError('E-mail já cadastrado', 409);
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -66,7 +66,7 @@ export async function loginUser(input: LoginInput) {
 export async function getCurrentUser(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    throw new AppError('Usuario nao encontrado', 404);
+    throw new AppError('Usuário não encontrado', 404);
   }
   return toPublicUser(user);
 }

@@ -10,7 +10,7 @@ export async function requireTermsAccepted(req: Request, res: Response, next: Ne
     : null;
 
   if (!user || !hasAcceptedCurrentTerms(user)) {
-    throw new AppError('Aceite os Termos de Uso e a Politica de Privacidade para continuar', 403);
+    throw new AppError('Aceite os Termos de Uso e a Política de Privacidade para continuar', 403);
   }
   next();
 }

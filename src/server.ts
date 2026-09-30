@@ -9,14 +9,14 @@ import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
 
 if (env.isProduction && env.corsOrigins.length === 0) {
-  logger.warn('CORS_ORIGINS nao configurada: a API esta aceitando requisicoes de qualquer origem');
+  logger.warn('CORS_ORIGINS não configurada: a API está aceitando requisições de qualquer origem');
 }
 
 process.on('unhandledRejection', (reason) => {
   logger.error('Promise rejeitada sem tratamento', { err: reason });
 });
 process.on('uncaughtException', (err) => {
-  logger.error('Excecao nao capturada - encerrando', { err });
+  logger.error('Exceção não capturada - encerrando', { err });
   process.exit(1);
 });
 
@@ -29,11 +29,11 @@ async function promoteBootstrapAdmin(): Promise<void> {
 
   const promoted = await setUserRole(env.bootstrapAdminEmail, 'ADMIN');
   if (promoted) {
-    logger.warn('Conta promovida a admin via BOOTSTRAP_ADMIN_EMAIL - remova a variavel', {
+    logger.warn('Conta promovida a admin via BOOTSTRAP_ADMIN_EMAIL - remova a variável', {
       email: env.bootstrapAdminEmail,
     });
   } else {
-    logger.error('BOOTSTRAP_ADMIN_EMAIL nao corresponde a nenhuma conta', { email: env.bootstrapAdminEmail });
+    logger.error('BOOTSTRAP_ADMIN_EMAIL não corresponde a nenhuma conta', { email: env.bootstrapAdminEmail });
   }
 }
 
@@ -54,7 +54,7 @@ const DOMINO_QUEUE_SWEEP_MS = 30 * 1000;
 /** Cancela, a cada 30s, mesas de domino que nao completaram jogadores no prazo (tambem apos reinicio). */
 function scheduleDominoQueueSweep(): void {
   const sweep = () =>
-    cancelStaleQueues().catch((err) => logger.error('Erro ao cancelar mesas de domino paradas', { err }));
+    cancelStaleQueues().catch((err) => logger.error('Erro ao cancelar mesas de dominó paradas', { err }));
   sweep();
   setInterval(sweep, DOMINO_QUEUE_SWEEP_MS).unref();
 }
@@ -72,8 +72,8 @@ httpServer.listen(env.port, () => {
   schedulePurgeOfAccessLogs();
   scheduleDominoQueueSweep();
   restoreTurnTimers()
-    .then((count) => count > 0 && logger.info('Cronometros de domino religados apos o inicio', { tables: count }))
-    .catch((err) => logger.error('Erro ao religar cronometros do domino', { err }));
+    .then((count) => count > 0 && logger.info('Cronometros de dominó religados após o início', { tables: count }))
+    .catch((err) => logger.error('Erro ao religar cronometros do dominó', { err }));
   promoteBootstrapAdmin().catch((err) => {
     logger.error('Erro ao promover BOOTSTRAP_ADMIN_EMAIL', { err });
   });

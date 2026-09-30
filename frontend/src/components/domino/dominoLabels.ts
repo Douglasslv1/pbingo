@@ -1,7 +1,7 @@
 import type { DominoMode, DominoTeamMode } from '../../types';
 
 export const MODE_LABELS: Record<DominoMode, string> = {
-  SIX_TILES: '6 pecas',
+  SIX_TILES: '6 peças',
   BURRINHO: 'Burrinho',
 };
 

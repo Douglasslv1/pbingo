@@ -24,7 +24,7 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().regex(/^[0-9a-f]{64}$/, 'Link de redefinicao invalido'),
+  token: z.string().regex(/^[0-9a-f]{64}$/, 'Link de redefinição inválido'),
   password: z.string().min(8).max(72),
 });
 

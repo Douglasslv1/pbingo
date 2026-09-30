@@ -26,7 +26,7 @@ export default function TermsConsentFields({ birthDate, onBirthDateChange, accep
           </Link>{' '}
           e a{' '}
           <Link to="/privacidade" target="_blank">
-            Politica de Privacidade
+            Política de Privacidade
           </Link>
           .
         </span>

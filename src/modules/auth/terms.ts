@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Versao vigente dos Termos de Uso e da Politica de Privacidade. Mudou o texto? Mude a versao: todos aceitam de novo. */
-export const CURRENT_TERMS_VERSION = '2026-09-30';
+export const CURRENT_TERMS_VERSION = '2026-09-30.2';
 
 export const MINIMUM_AGE = 18;
 
@@ -23,14 +23,14 @@ export const birthDateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de nascimento deve estar no formato AAAA-MM-DD')
   .transform((value) => new Date(`${value}T00:00:00Z`))
   .refine((date) => !Number.isNaN(date.getTime()) && date.getUTCFullYear() >= 1900, {
-    message: 'Data de nascimento invalida',
+    message: 'Data de nascimento inválida',
   })
   .refine((date) => ageOn(date, new Date()) >= MINIMUM_AGE, {
-    message: `O Pbingu e permitido apenas para maiores de ${MINIMUM_AGE} anos`,
+    message: `O Pbingu é permitido apenas para maiores de ${MINIMUM_AGE} anos`,
   });
 
 export const acceptTermsField = z.literal(true, {
-  errorMap: () => ({ message: 'E preciso aceitar os Termos de Uso e a Politica de Privacidade' }),
+  errorMap: () => ({ message: 'É preciso aceitar os Termos de Uso e a Política de Privacidade' }),
 });
 
 export function hasAcceptedCurrentTerms(user: { termsVersion: string | null; birthDate: Date | null }): boolean {

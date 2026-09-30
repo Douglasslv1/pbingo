@@ -5,7 +5,7 @@ import { historyQuerySchema } from '../../utils/pagination';
 
 export async function getMyWallet(req: Request, res: Response): Promise<void> {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
 
   const wallet = await getWallet(req.userId);
@@ -14,7 +14,7 @@ export async function getMyWallet(req: Request, res: Response): Promise<void> {
 
 export async function getMyTransactions(req: Request, res: Response): Promise<void> {
   if (!req.userId) {
-    throw new AppError('Nao autenticado', 401);
+    throw new AppError('Não autenticado', 401);
   }
 
   const page = historyQuerySchema.parse(req.query);

@@ -56,7 +56,7 @@ function findOpening(hands: Tile[][]): { seat: number; tile: Tile } {
     }
   }
   // Impossivel: das 7 carrocas, no maximo 4 ficam fora das maos
-  throw new Error('Nenhuma carroca distribuida');
+  throw new Error('Nenhuma carroça distribuida');
 }
 
 /** Embaralha e distribui 6 pedras para cada um dos 4 lugares. */
@@ -172,15 +172,15 @@ function normalizeTile(tile: Tile): Tile {
 /** Aplica a jogada e devolve o novo estado (o estado recebido nao e alterado). */
 export function applyAction(state: DominoState, seat: number, action: DominoAction): DominoState {
   if (state.status !== 'PLAYING') {
-    throw new DominoRuleError('A partida ja terminou');
+    throw new DominoRuleError('A partida já terminou');
   }
   if (seat !== state.currentSeat) {
-    throw new DominoRuleError('Nao e a sua vez');
+    throw new DominoRuleError('Não é a sua vez');
   }
 
   const normalized: DominoAction = action.type === 'PLAY' ? { ...action, tile: normalizeTile(action.tile) } : action;
   if (!legalActions(state, seat).some((legal) => sameAction(legal, normalized))) {
-    throw new DominoRuleError('Jogada invalida');
+    throw new DominoRuleError('Jogada inválida');
   }
 
   if (normalized.type === 'DRAW') {
@@ -229,7 +229,7 @@ export function applyAction(state: DominoState, seat: number, action: DominoActi
 export function autoAction(state: DominoState, seat: number): DominoAction {
   const actions = legalActions(state, seat);
   if (actions.length === 0) {
-    throw new DominoRuleError('Nao e a vez deste lugar');
+    throw new DominoRuleError('Não é a vez deste lugar');
   }
   const plays = actions.filter((action): action is Extract<DominoAction, { type: 'PLAY' }> => action.type === 'PLAY');
   if (plays.length === 0) {

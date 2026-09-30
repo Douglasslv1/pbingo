@@ -20,8 +20,8 @@ export default function AdminPage() {
         ) : (
           <>
             <div className="admin-sections">
-              <h1>{section === 'withdrawals' ? 'Saques' : 'Mesas de domino'}</h1>
-              <nav className="app-nav" aria-label="Secoes do admin">
+              <h1>{section === 'withdrawals' ? 'Saques' : 'Mesas de dominó'}</h1>
+              <nav className="app-nav" aria-label="Seções do admin">
                 <button
                   type="button"
                   className={section === 'withdrawals' ? 'nav-link active' : 'nav-link'}
@@ -34,7 +34,7 @@ export default function AdminPage() {
                   className={section === 'domino' ? 'nav-link active' : 'nav-link'}
                   onClick={() => setSection('domino')}
                 >
-                  Domino
+                  Dominó
                 </button>
               </nav>
             </div>

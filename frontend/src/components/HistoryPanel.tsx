@@ -16,7 +16,7 @@ interface TransactionView {
 }
 
 const WITHDRAWAL_STATUS_NOTES: Record<string, string> = {
-  PENDING: 'Em analise',
+  PENDING: 'Em análise',
   COMPLETED: 'Pago',
   REJECTED: 'Recusado - valor devolvido',
 };
@@ -55,8 +55,8 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
       return {
         title: byGame(
           transaction,
-          'Chave devolvida (rodada cancelada ou saida)',
-          'Chave devolvida (mesa cancelada ou saida)',
+          'Chave devolvida (rodada cancelada ou saída)',
+          'Chave devolvida (mesa cancelada ou saída)',
           'Chave devolvida',
         ),
         amount: `+${keys(transaction.amountCredits)}`,
@@ -75,7 +75,7 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
 function describeRoundResult(round: RoundHistoryItem): string {
   if (round.status === 'CANCELLED') return 'Cancelada - chave devolvida';
   if (round.status !== 'FINISHED') return 'Em andamento';
-  if (round.winningTickets === 0) return 'Nao ganhou';
+  if (round.winningTickets === 0) return 'Não ganhou';
   return `Ganhou ${formatBrl(round.prizeWon)}`;
 }
 
@@ -95,7 +95,7 @@ function usePagedList<T>(fetchPage: (cursor?: string) => Promise<Page<T>>) {
         setItems((prev) => (cursor ? [...prev, ...page.items] : page.items));
         setNextCursor(page.nextCursor);
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Erro ao carregar o historico');
+        setError(err instanceof ApiError ? err.message : 'Erro ao carregar o histórico');
       } finally {
         setLoading(false);
       }
@@ -119,7 +119,7 @@ const TABS: Array<{ value: Tab; label: string }> = [
 
 const DOMINO_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
   WON: 'Venceu',
-  LOST: 'Nao venceu',
+  LOST: 'Não venceu',
   CANCELLED: 'Cancelada - chave devolvida',
 };
 
@@ -148,7 +148,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
 
   return (
     <div className="card">
-      <h2>Historico</h2>
+      <h2>Histórico</h2>
       <div className="tabs">
         {TABS.map((option) => (
           <button
@@ -197,7 +197,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
                 </strong>
               </div>
               <span className="label">
-                {formatDateTime(round.startedAt)} · premio da rodada {formatBrl(round.accumulatedPrize)}
+                {formatDateTime(round.startedAt)} · prêmio da rodada {formatBrl(round.accumulatedPrize)}
               </span>
             </li>
           ))}

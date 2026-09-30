@@ -34,11 +34,11 @@ export default function WalletPanel({ wallet, onWalletChange }: Props) {
       <h2>Carteira</h2>
       <div className="wallet-balances">
         <div>
-          <span className="label">Chaves (nao sacavel)</span>
+          <span className="label">Chaves (não sacável)</span>
           <strong>{wallet?.credits.balance ?? '-'}</strong>
         </div>
         <div>
-          <span className="label">Premios (sacavel)</span>
+          <span className="label">Prêmios (sacável)</span>
           <strong>{wallet ? formatBrl(wallet.prizes.balanceFiat) : '-'}</strong>
         </div>
       </div>

@@ -7,12 +7,12 @@ const amountInReais = z
   .number()
   .positive()
   .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6, {
-    message: 'Valor deve ter no maximo 2 casas decimais',
+    message: 'Valor deve ter no máximo 2 casas decimais',
   });
 
 const cpfField = z
   .string()
-  .refine(isValidCpf, { message: 'CPF invalido' })
+  .refine(isValidCpf, { message: 'CPF inválido' })
   .transform(onlyDigits);
 
 /** Normaliza a chave Pix conforme o tipo; retorna null se ela for invalida. */
@@ -46,7 +46,7 @@ export const withdrawalSchema = z
   .transform((input, ctx) => {
     const pixKey = normalizePixKey(input.pixKeyType, input.pixKey);
     if (!pixKey) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pixKey'], message: 'Chave Pix invalida para o tipo informado' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pixKey'], message: 'Chave Pix inválida para o tipo informado' });
       return z.NEVER;
     }
     return { ...input, pixKey };

@@ -45,7 +45,7 @@ function collect(socket: Socket) {
 
 describe('WebSocket do domino', () => {
   it('recusa conexao com token invalido', async () => {
-    await expect(open('token-falso')).rejects.toThrow(/invalido/);
+    await expect(open('token-falso')).rejects.toThrow(/inválido/);
   });
 
   it('cada jogador recebe apenas a propria mao; conexoes anonimas nao recebem nada do domino', async () => {

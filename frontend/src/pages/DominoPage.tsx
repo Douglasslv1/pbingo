@@ -33,7 +33,7 @@ function DominoRoom() {
     try {
       await action();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro de conexao com o servidor');
+      setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
     } finally {
       setBusy(false);
     }

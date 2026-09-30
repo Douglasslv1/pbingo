@@ -4,6 +4,13 @@ import AppHeader from './AppHeader';
 
 export const CONTACT_EMAIL = 'douglas.aarq@gmail.com';
 
+/** Versao no formato AAAA-MM-DD, com revisao opcional no mesmo dia (AAAA-MM-DD.2). */
+function describeVersion(version: string): string {
+  const [day, revision] = version.split('.');
+  const date = new Date(`${day}T12:00:00Z`).toLocaleDateString('pt-BR');
+  return revision ? `Versão de ${date} (revisão ${revision})` : `Versão de ${date}`;
+}
+
 export interface LegalSection {
   title: string;
   content: ReactNode;
@@ -24,10 +31,10 @@ export default function LegalDocument({ title, version, intro, sections }: Props
       <main>
         <article className="card legal">
           <h1>{title}</h1>
-          <p className="label">Versao de {new Date(`${version}T12:00:00Z`).toLocaleDateString('pt-BR')}</p>
+          <p className="label">{describeVersion(version)}</p>
           <div className="legal-intro">{intro}</div>
 
-          <nav className="legal-toc" aria-label="Indice">
+          <nav className="legal-toc" aria-label="Índice">
             <ol>
               {sections.map((section, index) => (
                 <li key={section.title}>
@@ -47,8 +54,8 @@ export default function LegalDocument({ title, version, intro, sections }: Props
           ))}
 
           <p className="legal-footer">
-            Duvidas? Escreva para <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Veja tambem os{' '}
-            <Link to="/termos">Termos de Uso</Link> e a <Link to="/privacidade">Politica de Privacidade</Link>.
+            Dúvidas? Escreva para <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Veja também os{' '}
+            <Link to="/termos">Termos de Uso</Link> e a <Link to="/privacidade">Política de Privacidade</Link>.
           </p>
         </article>
       </main>

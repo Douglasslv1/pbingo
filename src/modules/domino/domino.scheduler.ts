@@ -25,7 +25,7 @@ export function scheduleTurnTimeout(tableId: string, deadline: Date | null): voi
     handler(tableId)
       .then((next) => scheduleTurnTimeout(tableId, next))
       .catch((err) => {
-        logger.error('Erro ao jogar automaticamente no domino', { tableId, err });
+        logger.error('Erro ao jogar automaticamente no dominó', { tableId, err });
         // Tenta de novo em instantes para a mesa nunca ficar travada
         scheduleTurnTimeout(tableId, new Date(Date.now() + 5000));
       });

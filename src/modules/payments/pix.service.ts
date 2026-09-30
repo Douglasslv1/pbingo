@@ -10,7 +10,7 @@ const ORDER_FAILED_STATUSES = ['failed', 'canceled', 'expired'];
 
 function assertMercadoPagoConfigured(): void {
   if (!env.mercadoPagoAccessToken) {
-    throw new AppError('Integracao com Mercado Pago nao configurada (MERCADOPAGO_ACCESS_TOKEN ausente)', 503);
+    throw new AppError('Integração com Mercado Pago não configurada (MERCADOPAGO_ACCESS_TOKEN ausente)', 503);
   }
 }
 
@@ -62,15 +62,15 @@ export async function createPixCharge(userId: string, creditsAmount: number) {
     };
   } catch (err) {
     await prisma.transaction.update({ where: { id: transaction.id }, data: { status: 'FAILED' } });
-    logger.error('Erro ao criar cobranca Pix no Mercado Pago', { transactionId: transaction.id, err });
-    throw new AppError('Nao foi possivel gerar a cobranca Pix no Mercado Pago', 502);
+    logger.error('Erro ao criar cobrança Pix no Mercado Pago', { transactionId: transaction.id, err });
+    throw new AppError('Não foi possível gerar a cobrança Pix no Mercado Pago', 502);
   }
 }
 
 export async function getPixChargeStatus(userId: string, transactionId: string) {
   const transaction = await prisma.transaction.findFirst({ where: { id: transactionId, userId } });
   if (!transaction) {
-    throw new AppError('Cobranca nao encontrada', 404);
+    throw new AppError('Cobrança não encontrada', 404);
   }
 
   return {
@@ -106,7 +106,7 @@ export async function handleMercadoPagoWebhook(orderId: string): Promise<void> {
       const paidCents = Math.round(Number(order.total_amount) * 100);
       const expectedCents = Math.round(Number(pending.amountFiat) * 100);
       if (paidCents !== expectedCents) {
-        logger.error('Valor pago no Mercado Pago diferente do cobrado - chaves nao creditadas', {
+        logger.error('Valor pago no Mercado Pago diferente do cobrado - chaves não creditadas', {
           transactionId,
           orderId,
           status,
