@@ -97,6 +97,7 @@ export interface TransactionItem {
   status: string;
   amountFiat: string;
   amountCredits: number;
+  game: 'BINGO' | 'DOMINO' | null;
   createdAt: string;
 }
 
@@ -160,4 +161,46 @@ export interface DominoTableView {
   players: Array<{ seat: number; name: string; isMe: boolean; away: boolean; prizeAmount: string | null }>;
   turnDeadline: string | null;
   game: DominoGameView | null;
+}
+
+export interface DominoMatchItem {
+  tableId: string;
+  mode: DominoMode;
+  teamMode: DominoTeamMode;
+  status: 'FINISHED' | 'CANCELLED';
+  playedAt: string;
+  outcome: 'WON' | 'LOST' | 'CANCELLED';
+  reason: 'DOMINO' | 'BLOCKED' | null;
+  prizeWon: string;
+}
+
+export interface AdminDominoTableSummary {
+  id: string;
+  mode: DominoMode;
+  teamMode: DominoTeamMode;
+  status: DominoTableView['status'];
+  prizePool: string;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  moveCount: number;
+  players: Array<{ seat: number; name: string; email: string }>;
+}
+
+export interface AdminDominoTableDetail extends Omit<AdminDominoTableSummary, 'players' | 'moveCount'> {
+  turnDeadline: string | null;
+  players: Array<{
+    seat: number;
+    name: string;
+    email: string;
+    timeouts: number;
+    away: boolean;
+    prizeAmount: string | null;
+    hand: DominoTile[] | null;
+  }>;
+  line: DominoPlacedTile[];
+  boneyard: DominoTile[];
+  currentSeat: number | null;
+  result: DominoGameView['result'];
+  moves: Array<{ moveNumber: number; seat: number; action: DominoAction; automatic: boolean; createdAt: string }>;
 }

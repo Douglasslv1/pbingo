@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
-import type { Page, RoundHistoryItem, TransactionItem } from '../types';
+import type { DominoMatchItem, Page, RoundHistoryItem, TransactionItem } from '../types';
 import { formatDateTime } from '../withdrawalFormat';
+import { MODE_LABELS, TEAM_LABELS } from './domino/dominoLabels';
 
-type Tab = 'transactions' | 'rounds';
+export type Tab = 'transactions' | 'rounds' | 'domino';
 
 interface TransactionView {
   title: string;
@@ -20,6 +21,13 @@ const WITHDRAWAL_STATUS_NOTES: Record<string, string> = {
   REJECTED: 'Recusado - valor devolvido',
 };
 
+/** Rotulo conforme o jogo; movimentacoes antigas sem jogo registrado recebem um rotulo neutro. */
+function byGame(transaction: TransactionItem, bingo: string, domino: string, unknown: string): string {
+  if (transaction.game === 'BINGO') return bingo;
+  if (transaction.game === 'DOMINO') return domino;
+  return unknown;
+}
+
 function describeTransaction(transaction: TransactionItem): TransactionView {
   const keys = (count: number) => `${count} ${count === 1 ? 'chave' : 'chaves'}`;
 
@@ -32,12 +40,25 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
         note: formatBrl(transaction.amountFiat),
       };
     case 'SPEND_KEY':
-      return { title: 'Cartela comprada', amount: `-${keys(transaction.amountCredits)}`, positive: false };
+      return {
+        title: byGame(transaction, 'Cartela de bingo', 'Entrada em mesa de domino', 'Chave usada'),
+        amount: `-${keys(transaction.amountCredits)}`,
+        positive: false,
+      };
     case 'PRIZE_PAYOUT':
-      return { title: 'Premio recebido', amount: `+${formatBrl(transaction.amountFiat)}`, positive: true };
+      return {
+        title: byGame(transaction, 'Premio no bingo', 'Premio no domino', 'Premio recebido'),
+        amount: `+${formatBrl(transaction.amountFiat)}`,
+        positive: true,
+      };
     case 'KEY_REFUND':
       return {
-        title: 'Chave devolvida (rodada cancelada ou saida)',
+        title: byGame(
+          transaction,
+          'Chave devolvida (rodada cancelada ou saida)',
+          'Chave devolvida (mesa cancelada ou saida)',
+          'Chave devolvida',
+        ),
         amount: `+${keys(transaction.amountCredits)}`,
         positive: true,
       };
@@ -90,16 +111,34 @@ function usePagedList<T>(fetchPage: (cursor?: string) => Promise<Page<T>>) {
   return { items, nextCursor, loading, error, reload, loadMore };
 }
 
-export default function HistoryPanel() {
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: 'transactions', label: 'Extrato' },
+  { value: 'rounds', label: 'Bingo' },
+  { value: 'domino', label: 'Domino' },
+];
+
+const DOMINO_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
+  WON: 'Venceu',
+  LOST: 'Nao venceu',
+  CANCELLED: 'Cancelada - chave devolvida',
+};
+
+interface Props {
+  initialTab?: Tab;
+}
+
+export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
   const { auth } = useAuth();
-  const [tab, setTab] = useState<Tab>('transactions');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const token = auth?.token ?? '';
 
   const fetchTransactions = useCallback((cursor?: string) => api.getMyTransactions(token, cursor), [token]);
   const fetchRounds = useCallback((cursor?: string) => api.getMyRoundHistory(token, cursor), [token]);
+  const fetchMatches = useCallback((cursor?: string) => api.getMyDominoMatches(token, cursor), [token]);
   const transactions = usePagedList(fetchTransactions);
   const rounds = usePagedList(fetchRounds);
-  const active = tab === 'transactions' ? transactions : rounds;
+  const matches = usePagedList(fetchMatches);
+  const active = tab === 'transactions' ? transactions : tab === 'rounds' ? rounds : matches;
   const { reload } = active;
 
   // Recarrega ao trocar de aba para mostrar movimentacoes recentes
@@ -111,16 +150,16 @@ export default function HistoryPanel() {
     <div className="card">
       <h2>Historico</h2>
       <div className="tabs">
-        <button
-          type="button"
-          className={tab === 'transactions' ? 'tab active' : 'tab'}
-          onClick={() => setTab('transactions')}
-        >
-          Extrato
-        </button>
-        <button type="button" className={tab === 'rounds' ? 'tab active' : 'tab'} onClick={() => setTab('rounds')}>
-          Rodadas
-        </button>
+        {TABS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={tab === option.value ? 'tab active' : 'tab'}
+            onClick={() => setTab(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {active.error && <p className="error">{active.error}</p>}
@@ -129,37 +168,57 @@ export default function HistoryPanel() {
       )}
 
       <ul className="history-list">
-        {tab === 'transactions'
-          ? transactions.items.map((transaction) => {
-              const view = describeTransaction(transaction);
-              return (
-                <li key={transaction.id}>
-                  <div className="withdrawal-row">
-                    <span>{view.title}</span>
-                    <strong className={view.positive ? 'amount-in' : 'amount-out'}>{view.amount}</strong>
-                  </div>
-                  <span className="label">
-                    {formatDateTime(transaction.createdAt)}
-                    {view.note && ` · ${view.note}`}
-                  </span>
-                </li>
-              );
-            })
-          : rounds.items.map((round) => (
-              <li key={round.roundId}>
+        {tab === 'transactions' &&
+          transactions.items.map((transaction) => {
+            const view = describeTransaction(transaction);
+            return (
+              <li key={transaction.id}>
                 <div className="withdrawal-row">
-                  <span>
-                    {round.ticketsCount} {round.ticketsCount === 1 ? 'cartela' : 'cartelas'}
-                  </span>
-                  <strong className={round.winningTickets > 0 ? 'amount-in' : undefined}>
-                    {describeRoundResult(round)}
-                  </strong>
+                  <span>{view.title}</span>
+                  <strong className={view.positive ? 'amount-in' : 'amount-out'}>{view.amount}</strong>
                 </div>
                 <span className="label">
-                  {formatDateTime(round.startedAt)} · premio da rodada {formatBrl(round.accumulatedPrize)}
+                  {formatDateTime(transaction.createdAt)}
+                  {view.note && ` · ${view.note}`}
                 </span>
               </li>
-            ))}
+            );
+          })}
+
+        {tab === 'rounds' &&
+          rounds.items.map((round) => (
+            <li key={round.roundId}>
+              <div className="withdrawal-row">
+                <span>
+                  {round.ticketsCount} {round.ticketsCount === 1 ? 'cartela' : 'cartelas'}
+                </span>
+                <strong className={round.winningTickets > 0 ? 'amount-in' : undefined}>
+                  {describeRoundResult(round)}
+                </strong>
+              </div>
+              <span className="label">
+                {formatDateTime(round.startedAt)} · premio da rodada {formatBrl(round.accumulatedPrize)}
+              </span>
+            </li>
+          ))}
+
+        {tab === 'domino' &&
+          matches.items.map((match) => (
+            <li key={match.tableId}>
+              <div className="withdrawal-row">
+                <span>
+                  {MODE_LABELS[match.mode]} · {TEAM_LABELS[match.teamMode]}
+                </span>
+                <strong className={match.outcome === 'WON' ? 'amount-in' : undefined}>
+                  {match.outcome === 'WON' ? `Venceu +${formatBrl(match.prizeWon)}` : DOMINO_OUTCOME[match.outcome]}
+                </strong>
+              </div>
+              <span className="label">
+                {formatDateTime(match.playedAt)}
+                {match.reason && ` · ${match.reason === 'DOMINO' ? 'terminou em batida' : 'jogo trancado'}`}
+              </span>
+            </li>
+          ))}
       </ul>
 
       {active.nextCursor && (

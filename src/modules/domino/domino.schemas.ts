@@ -13,4 +13,8 @@ export const dominoActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('PASS') }),
 ]);
 
+export const tableStatusFilterSchema = z.object({
+  status: z.enum(['WAITING', 'PLAYING', 'FINISHED', 'CANCELLED']).optional(),
+});
+
 export const tableIdParamSchema = z.object({ id: z.string().uuid() });

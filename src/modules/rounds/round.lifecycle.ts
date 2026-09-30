@@ -48,7 +48,13 @@ async function refundTickets(tx: Prisma.TransactionClient, tickets: RefundableTi
       data: { balance: { increment: ticket.creditsSpent } },
     });
     await tx.transaction.create({
-      data: { userId: ticket.userId, type: 'KEY_REFUND', amountCredits: ticket.creditsSpent, status: 'COMPLETED' },
+      data: {
+        userId: ticket.userId,
+        type: 'KEY_REFUND',
+        amountCredits: ticket.creditsSpent,
+        status: 'COMPLETED',
+        game: 'BINGO',
+      },
     });
   }
 }

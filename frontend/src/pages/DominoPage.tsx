@@ -6,6 +6,7 @@ import AuthForm from '../components/AuthForm';
 import DominoGame from '../components/domino/DominoGame';
 import DominoLobby from '../components/domino/DominoLobby';
 import DominoWaiting from '../components/domino/DominoWaiting';
+import HistoryPanel from '../components/HistoryPanel';
 import { useAuth } from '../hooks/useAuth';
 import { useDominoTable } from '../hooks/useDominoTable';
 import type { DominoAction, DominoMode, DominoTeamMode } from '../types';
@@ -81,6 +82,7 @@ function DominoRoom() {
       )}
       {error && <p className="error">{error}</p>}
       <DominoLobby keysBalance={keysBalance} joining={busy} onJoin={join} />
+      <HistoryPanel initialTab="domino" />
     </>
   );
 }

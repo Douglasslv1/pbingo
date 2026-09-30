@@ -40,6 +40,7 @@ export async function joinCurrentRound(userId: string) {
       data: {
         userId,
         type: 'SPEND_KEY',
+        game: 'BINGO',
         amountCredits: env.ticketPriceCredits,
         status: 'COMPLETED',
       },

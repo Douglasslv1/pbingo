@@ -123,6 +123,7 @@ model Transaction {
   amountCredits     Int             @default(0) @map("amount_credits")
   status            String          @default("COMPLETED") @db.VarChar(50)
   providerReference String?         @map("provider_reference") @db.VarChar(255)
+  game              String?         @db.VarChar(20)
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
   user       User        @relation(fields: [userId], references: [id])

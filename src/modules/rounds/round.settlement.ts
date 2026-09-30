@@ -79,6 +79,7 @@ export async function settleRoundIfWon(roundId: string): Promise<WinnerPayout[] 
         data: {
           userId: payout.userId,
           type: 'PRIZE_PAYOUT',
+          game: 'BINGO',
           amountFiat: payout.prize,
           status: 'COMPLETED',
         },

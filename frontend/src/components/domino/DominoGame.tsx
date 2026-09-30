@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatBrl } from '../../format';
 import type { DominoAction, DominoSide, DominoTableView, DominoTile as Tile } from '../../types';
 import { useCountdown } from '../../hooks/useCountdown';
+import { useTurnAlert } from '../../hooks/useTurnAlert';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import DominoBoard from './DominoBoard';
 import DominoTile, { DominoTileBack } from './DominoTile';
@@ -22,6 +23,9 @@ const pipsOf = (hand: Tile[]) => hand.reduce((sum, tile) => sum + tile[0] + tile
 export default function DominoGame({ table, busy, error, onAction, onComeBack, onBackToLobby }: Props) {
   const [selected, setSelected] = useState<Tile | null>(null);
   const countdown = useCountdown(table.status === 'PLAYING' ? table.turnDeadline : null);
+  const { soundOn, toggleSound } = useTurnAlert(
+    table.status === 'PLAYING' && table.game?.status === 'PLAYING' && table.game.currentSeat === table.mySeat,
+  );
   const turnSeconds = useGameConfig()?.dominoTurnSeconds ?? 30;
   const game = table.game;
   if (!game || table.mySeat === null) return null;
@@ -66,7 +70,12 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
         <span className="label">
           {MODE_LABELS[table.mode]} · {TEAM_LABELS[table.teamMode]} · premio {formatBrl(table.prizePool)}
         </span>
-        {table.mode === 'BURRINHO' && <span className="label">Monte: {game.boneyardSize}</span>}
+        <span className="domino-header-actions">
+          {table.mode === 'BURRINHO' && <span className="label">Monte: {game.boneyardSize}</span>}
+          <button type="button" className="link" onClick={toggleSound} aria-pressed={soundOn}>
+            {soundOn ? 'Som: ligado' : 'Som: desligado'}
+          </button>
+        </span>
       </div>
 
       <div className="domino-opponents">

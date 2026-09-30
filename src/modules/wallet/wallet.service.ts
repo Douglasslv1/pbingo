@@ -40,6 +40,7 @@ export async function listMyTransactions(userId: string, { limit, cursor }: Hist
     status: transaction.status,
     amountFiat: transaction.amountFiat.toString(),
     amountCredits: transaction.amountCredits,
+    game: transaction.game,
     createdAt: transaction.createdAt.toISOString(),
   }));
 

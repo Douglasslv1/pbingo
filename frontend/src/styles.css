@@ -1255,3 +1255,70 @@ label.checkbox input {
   color: #fef9c3;
   flex-shrink: 0;
 }
+
+.domino-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.domino-slot {
+  display: inline-flex;
+}
+
+/* Admin: secoes e detalhe das mesas de domino */
+
+.admin-sections {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-sections h1 {
+  margin: 0;
+}
+
+.admin-domino-detail h3,
+.admin-domino-detail h4 {
+  margin: 0 0 8px;
+}
+
+.admin-domino-detail h4 {
+  margin-top: 16px;
+}
+
+.admin-domino-players,
+.admin-domino-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.admin-domino-players {
+  list-style: none;
+  padding: 0;
+}
+
+.admin-domino-players li {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.admin-domino-moves {
+  padding-left: 22px;
+  font-size: 0.9rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.admin-domino-moves li span:first-child {
+  margin-right: 8px;
+}
+
+.admin-domino-moves .away-badge {
+  margin-left: 6px;
+}

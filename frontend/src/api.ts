@@ -1,7 +1,10 @@
 import type {
   AuthResult,
+  AdminDominoTableDetail,
+  AdminDominoTableSummary,
   AuthUser,
   DominoAction,
+  DominoMatchItem,
   DominoMode,
   DominoTableView,
   DominoTeamMode,
@@ -130,6 +133,15 @@ export const api = {
 
   dominoComeBack: (token: string, tableId: string) =>
     request<DominoTableView>(`/domino/tables/${tableId}/back`, { method: 'POST' }, token),
+
+  getMyDominoMatches: (token: string, cursor?: string) =>
+    request<Page<DominoMatchItem>>(`/domino/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+
+  adminDominoTables: (token: string, status?: string) =>
+    request<AdminDominoTableSummary[]>(`/admin/domino/tables${status ? `?status=${status}` : ''}`, {}, token),
+
+  adminDominoTable: (token: string, tableId: string) =>
+    request<AdminDominoTableDetail>(`/admin/domino/tables/${tableId}`, {}, token),
 
   getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
 

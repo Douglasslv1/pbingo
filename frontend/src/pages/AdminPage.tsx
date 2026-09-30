@@ -1,38 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError } from '../api';
-import AdminWithdrawalItem from '../components/AdminWithdrawalItem';
+import { useState } from 'react';
+import AdminDominoPanel from '../components/admin/AdminDominoPanel';
+import AdminWithdrawalsPanel from '../components/admin/AdminWithdrawalsPanel';
 import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import { useAuth } from '../hooks/useAuth';
-import type { WithdrawalForReview, WithdrawalStatus } from '../types';
-import { WITHDRAWAL_STATUS_LABELS } from '../withdrawalFormat';
 
-const STATUS_TABS: WithdrawalStatus[] = ['PENDING', 'PAID', 'REJECTED'];
+type Section = 'withdrawals' | 'domino';
 
 export default function AdminPage() {
   const { auth } = useAuth();
-  const [status, setStatus] = useState<WithdrawalStatus>('PENDING');
-  const [withdrawals, setWithdrawals] = useState<WithdrawalForReview[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadWithdrawals = useCallback(async () => {
-    if (!auth) return;
-    setLoading(true);
-    setError(null);
-    try {
-      setWithdrawals(await api.getWithdrawalsForReview(auth.token, status));
-    } catch (err) {
-      setWithdrawals([]);
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar saques');
-    } finally {
-      setLoading(false);
-    }
-  }, [auth, status]);
-
-  useEffect(() => {
-    loadWithdrawals();
-  }, [loadWithdrawals]);
+  const [section, setSection] = useState<Section>('withdrawals');
 
   return (
     <div className="app-shell">
@@ -42,31 +19,26 @@ export default function AdminPage() {
           <AuthForm />
         ) : (
           <>
-            <h1>Saques</h1>
-            <div className="tabs admin-tabs">
-              {STATUS_TABS.map((tab) => (
+            <div className="admin-sections">
+              <h1>{section === 'withdrawals' ? 'Saques' : 'Mesas de domino'}</h1>
+              <nav className="app-nav" aria-label="Secoes do admin">
                 <button
-                  key={tab}
                   type="button"
-                  className={tab === status ? 'tab active' : 'tab'}
-                  onClick={() => setStatus(tab)}
+                  className={section === 'withdrawals' ? 'nav-link active' : 'nav-link'}
+                  onClick={() => setSection('withdrawals')}
                 >
-                  {WITHDRAWAL_STATUS_LABELS[tab]}
+                  Saques
                 </button>
-              ))}
-              <button type="button" className="link" onClick={loadWithdrawals} disabled={loading}>
-                Atualizar
-              </button>
+                <button
+                  type="button"
+                  className={section === 'domino' ? 'nav-link active' : 'nav-link'}
+                  onClick={() => setSection('domino')}
+                >
+                  Domino
+                </button>
+              </nav>
             </div>
-
-            {error && <p className="error">{error}</p>}
-            {!error && !loading && withdrawals.length === 0 && <p className="label">Nenhum saque nesta lista.</p>}
-
-            <ul className="admin-withdrawals">
-              {withdrawals.map((withdrawal) => (
-                <AdminWithdrawalItem key={withdrawal.id} withdrawal={withdrawal} onReviewed={loadWithdrawals} />
-              ))}
-            </ul>
+            {section === 'withdrawals' ? <AdminWithdrawalsPanel /> : <AdminDominoPanel />}
           </>
         )}
       </main>

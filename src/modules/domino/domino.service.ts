@@ -3,6 +3,7 @@ import { env } from '../../config/env';
 import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/errors';
+import { HistoryPage } from '../../utils/pagination';
 import { emitToUser } from '../../websocket/socket';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { applyAction, autoAction, dealGame, DominoRuleError, hasOnlyForcedAction, viewFor } from './domino.engine';
@@ -50,7 +51,13 @@ async function refundSeats(tx: Tx, seats: DominoSeat[]): Promise<void> {
   for (const seat of seats) {
     await tx.userCredit.update({ where: { userId: seat.userId }, data: { balance: { increment: seat.creditsSpent } } });
     await tx.transaction.create({
-      data: { userId: seat.userId, type: 'KEY_REFUND', amountCredits: seat.creditsSpent, status: 'COMPLETED' },
+      data: {
+        userId: seat.userId,
+        type: 'KEY_REFUND',
+        amountCredits: seat.creditsSpent,
+        status: 'COMPLETED',
+        game: 'DOMINO',
+      },
     });
   }
 }
@@ -69,7 +76,7 @@ async function payWinners(tx: Tx, table: DominoTable, state: DominoState, seats:
     await tx.dominoSeat.update({ where: { id: seat.id }, data: { prizeAmount: prize } });
     await tx.userPrize.update({ where: { userId: seat.userId }, data: { balanceFiat: { increment: prize } } });
     await tx.transaction.create({
-      data: { userId: seat.userId, type: 'PRIZE_PAYOUT', amountFiat: prize, status: 'COMPLETED' },
+      data: { userId: seat.userId, type: 'PRIZE_PAYOUT', amountFiat: prize, status: 'COMPLETED', game: 'DOMINO' },
     });
   }
 }
@@ -170,7 +177,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
 
     await tx.userCredit.update({ where: { userId }, data: { balance: { decrement: env.ticketPriceCredits } } });
     await tx.transaction.create({
-      data: { userId, type: 'SPEND_KEY', amountCredits: env.ticketPriceCredits, status: 'COMPLETED' },
+      data: { userId, type: 'SPEND_KEY', amountCredits: env.ticketPriceCredits, status: 'COMPLETED', game: 'DOMINO' },
     });
     await tx.dominoSeat.create({
       data: {
@@ -470,4 +477,108 @@ export async function cancelStaleQueues(now = new Date()): Promise<number> {
     }
   }
   return cancelled;
+}
+
+/** Partidas encerradas do jogador (vencidas, perdidas ou canceladas), da mais recente para a mais antiga. */
+export async function listMyMatches(userId: string, { limit, cursor }: HistoryPage) {
+  const tables = await prisma.dominoTable.findMany({
+    where: { status: { in: ['FINISHED', 'CANCELLED'] }, seats: { some: { userId } } },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: { seats: { where: { userId } } },
+  });
+
+  const hasMore = tables.length > limit;
+  const items = tables.slice(0, limit).map((table) => {
+    const mySeat = table.seats[0];
+    const state = table.state as unknown as DominoState | null;
+    const won = state?.result?.winnerSeats.includes(mySeat.seat) ?? false;
+    return {
+      tableId: table.id,
+      mode: table.mode,
+      teamMode: table.teamMode,
+      status: table.status,
+      playedAt: (table.startedAt ?? table.createdAt).toISOString(),
+      outcome: table.status === 'CANCELLED' ? 'CANCELLED' : won ? 'WON' : 'LOST',
+      reason: state?.result?.reason ?? null,
+      prizeWon: mySeat.prizeAmount?.toString() ?? '0',
+    };
+  });
+
+  return { items, nextCursor: hasMore ? items[items.length - 1].tableId : null };
+}
+
+/** Lista de mesas para o painel admin, com os jogadores. */
+export async function listTablesForAdmin(status?: DominoTable['status']) {
+  const tables = await prisma.dominoTable.findMany({
+    where: status ? { status } : {},
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    include: { seats: { include: { user: { select: { name: true, email: true } } } } },
+  });
+
+  return tables.map((table) => ({
+    id: table.id,
+    mode: table.mode,
+    teamMode: table.teamMode,
+    status: table.status,
+    prizePool: table.prizePool.toString(),
+    createdAt: table.createdAt.toISOString(),
+    startedAt: table.startedAt?.toISOString() ?? null,
+    finishedAt: table.finishedAt?.toISOString() ?? null,
+    moveCount: (table.state as unknown as DominoState | null)?.moveCount ?? 0,
+    players: table.seats
+      .sort((a, b) => a.seat - b.seat)
+      .map((seat) => ({ seat: seat.seat, name: seat.user.name, email: seat.user.email })),
+  }));
+}
+
+/** Tudo sobre uma mesa, para resolver reclamacoes: maos de todos, placar e cada jogada registrada. */
+export async function getTableForAdmin(tableId: string) {
+  const table = await prisma.dominoTable.findUnique({
+    where: { id: tableId },
+    include: {
+      seats: { include: { user: { select: { name: true, email: true } } } },
+      moves: { orderBy: { moveNumber: 'asc' } },
+    },
+  });
+  if (!table) {
+    throw new AppError('Mesa nao encontrada', 404);
+  }
+
+  const state = table.state as unknown as DominoState | null;
+  return {
+    id: table.id,
+    mode: table.mode,
+    teamMode: table.teamMode,
+    status: table.status,
+    prizePool: table.prizePool.toString(),
+    createdAt: table.createdAt.toISOString(),
+    startedAt: table.startedAt?.toISOString() ?? null,
+    finishedAt: table.finishedAt?.toISOString() ?? null,
+    turnDeadline: table.turnDeadline?.toISOString() ?? null,
+    players: table.seats
+      .sort((a, b) => a.seat - b.seat)
+      .map((seat) => ({
+        seat: seat.seat,
+        name: seat.user.name,
+        email: seat.user.email,
+        timeouts: seat.timeouts,
+        away: seat.isAway,
+        prizeAmount: seat.prizeAmount?.toString() ?? null,
+        hand: state?.hands[seat.seat] ?? null,
+      })),
+    line: state?.line ?? [],
+    boneyard: state?.boneyard ?? [],
+    currentSeat: state?.currentSeat ?? null,
+    result: state?.result ?? null,
+    moves: table.moves.map((move) => ({
+      moveNumber: move.moveNumber,
+      seat: move.seat,
+      action: move.action,
+      automatic: move.automatic,
+      createdAt: move.createdAt.toISOString(),
+    })),
+  };
 }
