@@ -84,13 +84,23 @@ export default function Dashboard() {
       setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, accumulatedPrize: payload.accumulatedPrize } : prev));
     }
 
-    function onFinished(payload: { roundId: string; winnerUserId: string | null; prize: number | null }) {
+    function onFinished(payload: {
+      roundId: string;
+      winners: Array<{ userId: string; ticketId: string; prize: number }>;
+    }) {
       setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, status: 'FINISHED' } : prev));
 
-      if (payload.winnerUserId && payload.winnerUserId === currentUserId) {
-        setMessage(`Parabens! Voce ganhou R$ ${Number(payload.prize).toFixed(2)}!`);
+      const myWinnings = payload.winners.filter((winner) => winner.userId === currentUserId);
+      const isTie = payload.winners.length > 1;
+
+      if (myWinnings.length > 0) {
+        const myPrize = myWinnings.reduce((sum, winner) => sum + winner.prize, 0);
+        const tieNote = isTie ? ` (premio dividido entre ${payload.winners.length} cartelas)` : '';
+        setMessage(`Parabens! Voce ganhou R$ ${myPrize.toFixed(2)}!${tieNote}`);
         refreshWallet();
-      } else if (payload.winnerUserId) {
+      } else if (isTie) {
+        setMessage(`Rodada encerrada. ${payload.winners.length} cartelas venceram e dividiram o premio.`);
+      } else if (payload.winners.length === 1) {
         setMessage('Rodada encerrada. Um jogador venceu.');
       } else {
         setMessage('Rodada encerrada sem ganhador.');

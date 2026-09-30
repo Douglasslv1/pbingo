@@ -22,7 +22,7 @@ describe('Rounds', () => {
     expect(res.status).toBe(400);
   });
 
-  it('compra uma cartela, debita 1 chave e acumula o premio da rodada', async () => {
+  it('compra uma cartela, debita 1 chave e acumula o premio da rodada descontada a comissao da casa', async () => {
     const { token, user } = await registerTestUser();
     const round = await createWaitingRound();
     await setCreditBalance(user.id, 3);
@@ -32,7 +32,7 @@ describe('Rounds', () => {
     expect(res.status).toBe(201);
     expect(res.body.roundId).toBe(round.id);
     expect(res.body.numbersMatrix).toHaveLength(5);
-    expect(res.body.accumulatedPrize).toBe('1');
+    expect(res.body.accumulatedPrize).toBe('0.8');
 
     const credit = await prisma.userCredit.findUnique({ where: { userId: user.id } });
     expect(credit?.balance).toBe(2);

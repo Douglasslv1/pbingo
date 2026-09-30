@@ -1,17 +1,51 @@
+import { randomInt } from 'crypto';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { broadcast } from '../../websocket/socket';
-import { BingoMatrix, isMatrixComplete } from './ticket.util';
+import { settleRoundIfWon, WinnerPayout } from './round.settlement';
 
 const BALL_MIN = 1;
 const BALL_MAX = 75;
 
-class RoundEngine {
+export class RoundEngine {
   private drawTimer: NodeJS.Timeout | null = null;
+  private pendingTimeouts = new Set<NodeJS.Timeout>();
   private isDrawing = false;
 
+  /**
+   * Ao subir o servidor, retoma a rodada que estava em sorteio (ex.: apos um deploy ou queda)
+   * em vez de deixa-la presa em IN_PROGRESS com as chaves dos jogadores ja gastas.
+   */
   async start(): Promise<void> {
+    const interruptedRound = await prisma.round.findFirst({
+      where: { status: 'IN_PROGRESS' },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    if (interruptedRound) {
+      console.log(`Retomando sorteio da rodada ${interruptedRound.id}`);
+      await this.runDrawPhase(interruptedRound.id);
+      return;
+    }
+
     await this.ensureWaitingRound();
+  }
+
+  /** Cancela todos os timers pendentes. */
+  stop(): void {
+    this.stopDrawTimer();
+    this.pendingTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.pendingTimeouts.clear();
+  }
+
+  private schedule(task: () => Promise<void>, delayMs: number, errorMessage: string): void {
+    const timeout = setTimeout(() => {
+      this.pendingTimeouts.delete(timeout);
+      task().catch((err) => {
+        console.error(errorMessage, err);
+      });
+    }, delayMs);
+    this.pendingTimeouts.add(timeout);
   }
 
   private async ensureWaitingRound(): Promise<void> {
@@ -33,27 +67,33 @@ class RoundEngine {
       endsAt: new Date(endsAt).toISOString(),
     });
 
-    setTimeout(() => {
-      this.startDrawPhase(roundId).catch((err) => {
-        console.error('Erro ao iniciar fase de sorteio', err);
-      });
-    }, remainingMs);
+    this.schedule(() => this.startDrawPhase(roundId), remainingMs, 'Erro ao iniciar fase de sorteio');
   }
 
   private async startDrawPhase(roundId: string): Promise<void> {
-    const round = await prisma.round.update({
+    await prisma.round.update({
       where: { id: roundId },
       data: { status: 'IN_PROGRESS' },
-      include: { tickets: true },
     });
 
-    broadcast('round:started', { roundId: round.id });
+    await this.runDrawPhase(roundId);
+  }
 
-    if (round.tickets.length === 0) {
-      await this.finishRoundWithoutWinner(roundId, null);
+  private async runDrawPhase(roundId: string): Promise<void> {
+    broadcast('round:started', { roundId });
+
+    const ticketsCount = await prisma.ticket.count({ where: { roundId } });
+    if (ticketsCount === 0) {
+      await this.finishRoundWithoutWinner(roundId);
       return;
     }
 
+    // Numa retomada, o ultimo numero pode ter sido sorteado sem que o premio fosse pago
+    if (await this.settleIfWon(roundId)) {
+      return;
+    }
+
+    this.stopDrawTimer();
     this.drawTimer = setInterval(() => {
       this.drawNumber(roundId).catch((err) => {
         console.error('Erro ao sortear numero', err);
@@ -83,11 +123,11 @@ class RoundEngine {
 
       if (remainingNumbers.length === 0) {
         this.stopDrawTimer();
-        await this.finishRoundWithoutWinner(roundId, null);
+        await this.finishRoundWithoutWinner(roundId);
         return;
       }
 
-      const number = remainingNumbers[Math.floor(Math.random() * remainingNumbers.length)];
+      const number = remainingNumbers[randomInt(remainingNumbers.length)];
       const updatedRound = await prisma.round.update({
         where: { id: roundId },
         data: { drawnNumbers: { push: number } },
@@ -99,18 +139,7 @@ class RoundEngine {
         drawnNumbers: updatedRound.drawnNumbers,
       });
 
-      const tickets = await prisma.ticket.findMany({
-        where: { roundId, isWinner: false },
-      });
-
-      const winningTicket = tickets.find((ticket) =>
-        isMatrixComplete(ticket.numbersMatrix as unknown as BingoMatrix, updatedRound.drawnNumbers),
-      );
-
-      if (winningTicket) {
-        this.stopDrawTimer();
-        await this.payoutWinner(roundId, winningTicket.id, winningTicket.userId);
-      }
+      await this.settleIfWon(roundId);
     } finally {
       this.isDrawing = false;
     }
@@ -123,68 +152,40 @@ class RoundEngine {
     }
   }
 
-  private async payoutWinner(roundId: string, ticketId: string, winnerUserId: string): Promise<void> {
-    const prizeAmount = await prisma.$transaction(async (tx) => {
-      const lockedRounds = await tx.$queryRaw<Array<{ status: string; accumulated_prize: string }>>`
-        SELECT status, accumulated_prize FROM rounds WHERE id = ${roundId}::uuid FOR UPDATE
-      `;
-      const lockedRound = lockedRounds[0];
-      if (!lockedRound || lockedRound.status !== 'IN_PROGRESS') {
-        return null;
-      }
-
-      const prize = Number(lockedRound.accumulated_prize);
-
-      await tx.round.update({
-        where: { id: roundId },
-        data: { status: 'FINISHED', winnerUserId, endedAt: new Date() },
-      });
-
-      await tx.ticket.update({ where: { id: ticketId }, data: { isWinner: true } });
-
-      await tx.$queryRaw`SELECT balance_fiat FROM user_prizes WHERE user_id = ${winnerUserId}::uuid FOR UPDATE`;
-
-      await tx.userPrize.update({
-        where: { userId: winnerUserId },
-        data: { balanceFiat: { increment: prize } },
-      });
-
-      await tx.transaction.create({
-        data: {
-          userId: winnerUserId,
-          type: 'PRIZE_PAYOUT',
-          amountFiat: prize,
-          status: 'COMPLETED',
-        },
-      });
-
-      return prize;
-    });
-
-    if (prizeAmount === null) {
-      return;
+  private async settleIfWon(roundId: string): Promise<boolean> {
+    const payouts = await settleRoundIfWon(roundId);
+    if (!payouts) {
+      return false;
     }
 
-    broadcast('round:finished', { roundId, winnerUserId, prize: prizeAmount });
+    this.stopDrawTimer();
+    this.broadcastFinished(roundId, payouts);
     this.scheduleNextRound();
+    return true;
   }
 
-  private async finishRoundWithoutWinner(roundId: string, winnerUserId: string | null): Promise<void> {
+  private broadcastFinished(roundId: string, winners: WinnerPayout[]): void {
+    const totalPrize = winners.reduce((sum, winner) => sum + Math.round(winner.prize * 100), 0) / 100;
+    broadcast('round:finished', {
+      roundId,
+      winnerUserId: winners[0]?.userId ?? null,
+      prize: winners.length > 0 ? totalPrize : null,
+      winners,
+    });
+  }
+
+  private async finishRoundWithoutWinner(roundId: string): Promise<void> {
     await prisma.round.update({
       where: { id: roundId },
       data: { status: 'FINISHED', endedAt: new Date() },
     });
 
-    broadcast('round:finished', { roundId, winnerUserId, prize: null });
+    this.broadcastFinished(roundId, []);
     this.scheduleNextRound();
   }
 
   private scheduleNextRound(): void {
-    setTimeout(() => {
-      this.ensureWaitingRound().catch((err) => {
-        console.error('Erro ao abrir proxima rodada', err);
-      });
-    }, env.nextRoundDelayMs);
+    this.schedule(() => this.ensureWaitingRound(), env.nextRoundDelayMs, 'Erro ao abrir proxima rodada');
   }
 }
 

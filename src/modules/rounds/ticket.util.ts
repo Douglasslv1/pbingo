@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 const COLUMN_RANGES: Array<[number, number]> = [
   [1, 15],
   [16, 30],
@@ -18,7 +20,7 @@ function pickUniqueRandom(min: number, max: number, count: number): number[] {
     pool.push(n);
   }
   for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   return pool.slice(0, count);

@@ -10,7 +10,7 @@ const FAQ_ITEMS = [
   {
     question: 'Como funciona uma rodada?',
     answer:
-      'Cada rodada abre por 1 minuto para os jogadores comprarem cartelas usando chaves. Depois disso o sorteio comeca: numeros sao sorteados automaticamente e transmitidos em tempo real. Quem completar a cartela primeiro leva o premio acumulado.',
+      'Cada rodada abre por 1 minuto para os jogadores comprarem cartelas usando chaves. Depois disso o sorteio comeca: numeros sao sorteados automaticamente e transmitidos em tempo real. Quem completar a cartela primeiro leva o premio acumulado. Se mais de uma cartela completar no mesmo numero, o premio e dividido igualmente entre elas.',
   },
   {
     question: 'Como comprar chaves?',

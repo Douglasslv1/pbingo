@@ -75,6 +75,7 @@ model Ticket {
   numbersMatrix Json     @map("numbers_matrix")
   markedNumbers Int[]    @default([]) @map("marked_numbers")
   isWinner      Boolean  @default(false) @map("is_winner")
+  prizeAmount   Decimal? @map("prize_amount") @db.Decimal(10, 2)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
