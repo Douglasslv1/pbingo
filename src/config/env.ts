@@ -66,6 +66,6 @@ export const env = {
   frontendUrl: (process.env.FRONTEND_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
   resendApiKey: process.env.RESEND_API_KEY ?? '',
   brevoApiKey: process.env.BREVO_API_KEY ?? '',
-  emailFrom: process.env.EMAIL_FROM ?? 'Pbingo <onboarding@resend.dev>',
+  emailFrom: process.env.EMAIL_FROM ?? 'Pbingu <onboarding@resend.dev>',
   passwordResetTtlMs: optionalNumber('PASSWORD_RESET_TTL_MS', 60 * 60 * 1000),
 };

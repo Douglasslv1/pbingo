@@ -12,7 +12,7 @@ export default function AppHeader() {
   return (
     <header className="app-header">
       <Link to="/" className="brand">
-        Pbingo
+        Pbingu
       </Link>
       <nav className="app-nav" aria-label="Menu principal">
         <NavLink to="/app" className={navClass}>

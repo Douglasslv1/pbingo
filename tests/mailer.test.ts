@@ -18,14 +18,14 @@ afterEach(() => {
 
 describe('parseAddress', () => {
   it('separa nome e e-mail', () => {
-    expect(parseAddress('Pbingo <pbingo@gmail.com>')).toEqual({ name: 'Pbingo', email: 'pbingo@gmail.com' });
-    expect(parseAddress('pbingo@gmail.com')).toEqual({ email: 'pbingo@gmail.com' });
+    expect(parseAddress('Pbingu <pbingu@gmail.com>')).toEqual({ name: 'Pbingu', email: 'pbingu@gmail.com' });
+    expect(parseAddress('pbingu@gmail.com')).toEqual({ email: 'pbingu@gmail.com' });
   });
 });
 
 describe('mailer', () => {
   it('usa o Brevo quando so BREVO_API_KEY esta configurada', async () => {
-    Object.assign(env, { resendApiKey: '', brevoApiKey: 'brevo-key', emailFrom: 'Pbingo <pbingo@gmail.com>' });
+    Object.assign(env, { resendApiKey: '', brevoApiKey: 'brevo-key', emailFrom: 'Pbingu <pbingu@gmail.com>' });
     const fetchMock = stubFetch();
 
     await mailer.send(message);
@@ -34,7 +34,7 @@ describe('mailer', () => {
     expect(url).toBe('https://api.brevo.com/v3/smtp/email');
     expect(init.headers['api-key']).toBe('brevo-key');
     expect(JSON.parse(init.body)).toEqual({
-      sender: { name: 'Pbingo', email: 'pbingo@gmail.com' },
+      sender: { name: 'Pbingu', email: 'pbingu@gmail.com' },
       to: [{ email: 'jogador@example.com' }],
       subject: 'Assunto',
       htmlContent: '<p>Oi</p>',

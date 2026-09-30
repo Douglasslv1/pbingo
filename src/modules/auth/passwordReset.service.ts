@@ -11,7 +11,7 @@ function hashToken(token: string): string {
 
 function buildResetEmail(name: string, link: string, ttlMinutes: number) {
   return {
-    subject: 'Redefinir sua senha do Pbingo',
+    subject: 'Redefinir sua senha do Pbingu',
     text: `Ola, ${name}!\n\nRecebemos um pedido para redefinir sua senha. Acesse o link abaixo (valido por ${ttlMinutes} minutos):\n\n${link}\n\nSe nao foi voce, ignore este e-mail - sua senha continua a mesma.`,
     html: `<p>Ola, ${escapeHtml(name)}!</p>
 <p>Recebemos um pedido para redefinir sua senha. O link abaixo vale por ${ttlMinutes} minutos:</p>

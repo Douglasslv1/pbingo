@@ -38,7 +38,7 @@ export default function LandingPage() {
   return (
     <div className="landing">
       <nav className="landing-nav">
-        <span className="brand">Pbingo</span>
+        <span className="brand">Pbingu</span>
         <div className="landing-nav-links">
           <a href="#como-funciona">Como funciona</a>
           <Link to="/suporte">Suporte</Link>
@@ -61,7 +61,7 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          O Pbingo e uma plataforma de bingo com rodadas cronometradas de 1 minuto, sorteio em tempo real e premios
+          O Pbingu e uma plataforma de bingo com rodadas cronometradas de 1 minuto, sorteio em tempo real e premios
           sacaveis em dinheiro. Compre suas chaves via Pix, entre na rodada e acompanhe cada numero sendo sorteado na
           hora.
         </motion.p>
@@ -119,7 +119,7 @@ export default function LandingPage() {
 
       <footer className="landing-footer">
         <Link to="/suporte">Central de ajuda</Link>
-        <span>© {new Date().getFullYear()} Pbingo</span>
+        <span>© {new Date().getFullYear()} Pbingu</span>
       </footer>
     </div>
   );

@@ -95,7 +95,27 @@ export async function handleMercadoPagoWebhook(orderId: string): Promise<void> {
   }
 
   if (ORDER_PAID_STATUSES.includes(order.status)) {
+    const status = order.status;
     await prisma.$transaction(async (tx) => {
+      const pending = await tx.transaction.findFirst({ where: { id: transactionId, status: 'PENDING' } });
+      if (!pending) {
+        return;
+      }
+
+      // So credita se o valor pago no Mercado Pago bate com o valor cobrado
+      const paidCents = Math.round(Number(order.total_amount) * 100);
+      const expectedCents = Math.round(Number(pending.amountFiat) * 100);
+      if (paidCents !== expectedCents) {
+        logger.error('Valor pago no Mercado Pago diferente do cobrado - chaves nao creditadas', {
+          transactionId,
+          orderId,
+          status,
+          paid: order.total_amount,
+          expected: pending.amountFiat.toString(),
+        });
+        return;
+      }
+
       const updated = await tx.transaction.updateMany({
         where: { id: transactionId, status: 'PENDING' },
         data: { status: 'COMPLETED' },
@@ -105,10 +125,14 @@ export async function handleMercadoPagoWebhook(orderId: string): Promise<void> {
         return;
       }
 
-      const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
       await tx.userCredit.update({
-        where: { userId: transaction.userId },
-        data: { balance: { increment: transaction.amountCredits } },
+        where: { userId: pending.userId },
+        data: { balance: { increment: pending.amountCredits } },
+      });
+      logger.info('Pagamento Pix confirmado - chaves creditadas', {
+        transactionId,
+        orderId,
+        credits: pending.amountCredits,
       });
     });
   } else if (ORDER_FAILED_STATUSES.includes(order.status)) {
