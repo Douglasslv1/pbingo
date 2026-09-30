@@ -211,15 +211,16 @@ enum DominoTableStatus {
 }
 
 model DominoTable {
-  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mode       String            @db.VarChar(20)
-  teamMode   String            @map("team_mode") @db.VarChar(20)
-  status     DominoTableStatus @default(WAITING)
-  state      Json?
-  prizePool  Decimal           @default(0.00) @map("prize_pool") @db.Decimal(10, 2)
-  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  startedAt  DateTime?         @map("started_at") @db.Timestamptz
-  finishedAt DateTime?         @map("finished_at") @db.Timestamptz
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mode         String            @db.VarChar(20)
+  teamMode     String            @map("team_mode") @db.VarChar(20)
+  status       DominoTableStatus @default(WAITING)
+  state        Json?
+  prizePool    Decimal           @default(0.00) @map("prize_pool") @db.Decimal(10, 2)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  startedAt    DateTime?         @map("started_at") @db.Timestamptz
+  finishedAt   DateTime?         @map("finished_at") @db.Timestamptz
+  turnDeadline DateTime?         @map("turn_deadline") @db.Timestamptz
 
   seats DominoSeat[]
   moves DominoMove[]
@@ -236,6 +237,8 @@ model DominoSeat {
   creditsSpent      Int      @map("credits_spent")
   prizeContribution Decimal  @map("prize_contribution") @db.Decimal(10, 2)
   prizeAmount       Decimal? @map("prize_amount") @db.Decimal(10, 2)
+  timeouts          Int      @default(0)
+  isAway            Boolean  @default(false) @map("is_away")
   joinedAt          DateTime @default(now()) @map("joined_at") @db.Timestamptz
 
   table DominoTable @relation(fields: [tableId], references: [id], onDelete: Cascade)

@@ -128,6 +128,9 @@ export const api = {
   playDomino: (token: string, tableId: string, action: DominoAction) =>
     request<DominoTableView>(`/domino/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token),
 
+  dominoComeBack: (token: string, tableId: string) =>
+    request<DominoTableView>(`/domino/tables/${tableId}/back`, { method: 'POST' }, token),
+
   getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
 
   getWithdrawalsForReview: (token: string, status?: WithdrawalStatus) =>

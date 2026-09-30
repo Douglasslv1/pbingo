@@ -21,6 +21,7 @@ export interface GameConfig {
   houseFeePercent: number;
   termsVersion: string;
   dominoEnabled: boolean;
+  dominoTurnSeconds: number;
 }
 
 export interface JoinRoundResult {
@@ -156,6 +157,7 @@ export interface DominoTableView {
   prizePool: string;
   queueExpiresAt: string | null;
   mySeat: number | null;
-  players: Array<{ seat: number; name: string; isMe: boolean; prizeAmount: string | null }>;
+  players: Array<{ seat: number; name: string; isMe: boolean; away: boolean; prizeAmount: string | null }>;
+  turnDeadline: string | null;
   game: DominoGameView | null;
 }

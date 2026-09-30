@@ -45,6 +45,10 @@ function DominoRoom() {
       await api.leaveDominoQueue(token);
       setTable(null);
     });
+  const comeBack = () =>
+    run(async () => {
+      if (table) setTable(await api.dominoComeBack(token, table.id));
+    });
   const play = (action: DominoAction) =>
     run(async () => {
       if (table) setTable(await api.playDomino(token, table.id, action));
@@ -58,7 +62,16 @@ function DominoRoom() {
     return <DominoWaiting table={table} leaving={busy} onLeave={leave} />;
   }
   if (table && (table.status === 'PLAYING' || table.status === 'FINISHED')) {
-    return <DominoGame table={table} busy={busy} error={error} onAction={play} onBackToLobby={() => setTable(null)} />;
+    return (
+      <DominoGame
+        table={table}
+        busy={busy}
+        error={error}
+        onAction={play}
+        onComeBack={comeBack}
+        onBackToLobby={() => setTable(null)}
+      />
+    );
   }
 
   return (

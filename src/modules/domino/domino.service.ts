@@ -6,6 +6,7 @@ import { AppError } from '../../utils/errors';
 import { emitToUser } from '../../websocket/socket';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { applyAction, autoAction, dealGame, DominoRuleError, hasOnlyForcedAction, viewFor } from './domino.engine';
+import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './domino.scheduler';
 import { DominoAction, DominoMode, DominoState, SEATS, TeamMode } from './domino.types';
 
 type Tx = Prisma.TransactionClient;
@@ -19,6 +20,16 @@ export interface QueueChoice {
 const ACTIVE_STATUSES = ['WAITING', 'PLAYING'] as const;
 
 const queueTimeoutMs = () => env.dominoQueueTimeoutMinutes * 60 * 1000;
+
+/** Jogador ausente: o sistema joga por ele depois desse intervalo curto. */
+export const AWAY_TURN_MS = 3000;
+
+/** Prazo da proxima jogada: o tempo normal, ou o intervalo curto se o jogador da vez esta ausente. */
+function nextDeadline(state: DominoState, seats: DominoSeat[], now = new Date()): Date | null {
+  if (state.status !== 'PLAYING') return null;
+  const away = seats.find((seat) => seat.seat === state.currentSeat)?.isAway ?? false;
+  return new Date(now.getTime() + (away ? AWAY_TURN_MS : env.dominoTurnSeconds * 1000));
+}
 
 /** Serializa entradas e saidas da mesma fila, para duas pessoas nao abrirem mesas separadas ao mesmo tempo. */
 async function lockQueue(tx: Tx, mode: string, teamMode: string): Promise<void> {
@@ -87,8 +98,10 @@ export function tableViewFor(table: TableWithSeats, userId: string) {
         seat: seat.seat,
         name: firstName(seat.user.name),
         isMe: seat.userId === userId,
+        away: seat.isAway,
         prizeAmount: seat.prizeAmount?.toString() ?? null,
       })),
+    turnDeadline: table.status === 'PLAYING' ? (table.turnDeadline?.toISOString() ?? null) : null,
     game: state && mySeat !== null ? viewFor(state, mySeat) : null,
   };
 }
@@ -121,7 +134,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
     }
   }
 
-  const tableId = await prisma.$transaction(async (tx) => {
+  const started = await prisma.$transaction(async (tx) => {
     // Travar a carteira primeiro serializa pedidos simultaneos do mesmo jogador
     const credits = await tx.$queryRaw<Array<{ balance: number }>>`
       SELECT balance FROM user_credits WHERE user_id = ${userId}::uuid FOR UPDATE
@@ -170,23 +183,27 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
     });
 
     const isFull = table.seats.length + 1 === SEATS;
-    await tx.dominoTable.update({
+    const dealt = isFull ? dealGame(choice.mode, choice.teamMode) : null;
+    const updated = await tx.dominoTable.update({
       where: { id: table.id },
       data: {
         prizePool: { increment: env.prizeContributionPerTicket },
-        ...(isFull
+        ...(dealt
           ? {
               status: 'PLAYING',
               startedAt: new Date(),
-              state: dealGame(choice.mode, choice.teamMode) as unknown as Prisma.InputJsonValue,
+              state: dealt as unknown as Prisma.InputJsonValue,
+              turnDeadline: new Date(Date.now() + env.dominoTurnSeconds * 1000),
             }
           : {}),
       },
     });
 
-    return table.id;
+    return { id: table.id, deadline: updated.turnDeadline };
   });
 
+  const tableId = started.id;
+  scheduleTurnTimeout(tableId, started.deadline);
   await publishTable(tableId);
   const table = await loadTable(tableId);
   return table ? tableViewFor(table, userId) : null;
@@ -226,17 +243,77 @@ export async function leaveQueue(userId: string) {
   return { tableId, refundedCredits: env.ticketPriceCredits };
 }
 
+interface Advance {
+  seat: number;
+  action: DominoAction;
+  automatic: boolean;
+}
+
 /**
- * Aplica a jogada do jogador e, em seguida, as jogadas forcadas (passar/comprar sem opcao),
- * gravando cada uma. Se a partida terminar, paga os vencedores na mesma transacao.
+ * Aplica uma jogada (do jogador ou automatica) e, em seguida, as jogadas forcadas (passar/comprar
+ * sem opcao), gravando cada uma. Define o prazo da proxima jogada e, se a partida terminar,
+ * paga os vencedores - tudo na transacao da mesa bloqueada.
  */
-export async function playMove(userId: string, tableId: string, action: DominoAction) {
-  await prisma.$transaction(async (tx) => {
-    const table = await lockTable(tx, tableId);
-    if (!table) {
-      throw new AppError('Mesa nao encontrada', 404);
+async function advanceTable(tx: Tx, table: DominoTable, seats: DominoSeat[], first: Advance): Promise<Date | null> {
+  let state = table.state as unknown as DominoState;
+  const moves: Array<Advance & { moveNumber: number }> = [];
+
+  try {
+    state = applyAction(state, first.seat, first.action);
+    moves.push({ ...first, moveNumber: state.moveCount });
+
+    while (state.status === 'PLAYING' && hasOnlyForcedAction(state)) {
+      const seat = state.currentSeat;
+      const forced = autoAction(state, seat);
+      state = applyAction(state, seat, forced);
+      moves.push({ seat, action: forced, automatic: true, moveNumber: state.moveCount });
     }
-    const seats = await tx.dominoSeat.findMany({ where: { tableId } });
+  } catch (err) {
+    if (err instanceof DominoRuleError) {
+      throw new AppError(err.message, 422);
+    }
+    throw err;
+  }
+
+  await tx.dominoMove.createMany({
+    data: moves.map((move) => ({
+      tableId: table.id,
+      seat: move.seat,
+      moveNumber: move.moveNumber,
+      action: move.action as unknown as Prisma.InputJsonValue,
+      automatic: move.automatic,
+    })),
+  });
+
+  const finished = state.status === 'FINISHED';
+  const deadline = nextDeadline(state, seats);
+  await tx.dominoTable.update({
+    where: { id: table.id },
+    data: {
+      state: state as unknown as Prisma.InputJsonValue,
+      turnDeadline: deadline,
+      ...(finished ? { status: 'FINISHED', finishedAt: new Date() } : {}),
+    },
+  });
+  if (finished) {
+    await payWinners(tx, table, state, seats);
+  }
+  return deadline;
+}
+
+async function lockPlayingTable(tx: Tx, tableId: string) {
+  const table = await lockTable(tx, tableId);
+  if (!table) {
+    throw new AppError('Mesa nao encontrada', 404);
+  }
+  const seats = await tx.dominoSeat.findMany({ where: { tableId } });
+  return { table, seats };
+}
+
+/** Jogada do jogador. Jogar tambem tira a marca de ausente e zera os tempos esgotados. */
+export async function playMove(userId: string, tableId: string, action: DominoAction) {
+  const deadline = await prisma.$transaction(async (tx) => {
+    const { table, seats } = await lockPlayingTable(tx, tableId);
     const mySeat = seats.find((seat) => seat.userId === userId);
     if (!mySeat) {
       throw new AppError('Voce nao esta nesta mesa', 403);
@@ -245,53 +322,104 @@ export async function playMove(userId: string, tableId: string, action: DominoAc
       throw new AppError('A partida nao esta em andamento', 409);
     }
 
-    let state = table.state as unknown as DominoState;
-    const moves: Array<{ seat: number; action: DominoAction; automatic: boolean; moveNumber: number }> = [];
-
-    try {
-      state = applyAction(state, mySeat.seat, action);
-      moves.push({ seat: mySeat.seat, action, automatic: false, moveNumber: state.moveCount });
-
-      while (state.status === 'PLAYING' && hasOnlyForcedAction(state)) {
-        const seat = state.currentSeat;
-        const forced = autoAction(state, seat);
-        state = applyAction(state, seat, forced);
-        moves.push({ seat, action: forced, automatic: true, moveNumber: state.moveCount });
-      }
-    } catch (err) {
-      if (err instanceof DominoRuleError) {
-        throw new AppError(err.message, 422);
-      }
-      throw err;
+    if (mySeat.timeouts > 0 || mySeat.isAway) {
+      await tx.dominoSeat.update({ where: { id: mySeat.id }, data: { timeouts: 0, isAway: false } });
+      mySeat.timeouts = 0;
+      mySeat.isAway = false;
     }
-
-    await tx.dominoMove.createMany({
-      data: moves.map((move) => ({
-        tableId,
-        seat: move.seat,
-        moveNumber: move.moveNumber,
-        action: move.action as unknown as Prisma.InputJsonValue,
-        automatic: move.automatic,
-      })),
-    });
-
-    const finished = state.status === 'FINISHED';
-    await tx.dominoTable.update({
-      where: { id: tableId },
-      data: {
-        state: state as unknown as Prisma.InputJsonValue,
-        ...(finished ? { status: 'FINISHED', finishedAt: new Date() } : {}),
-      },
-    });
-    if (finished) {
-      await payWinners(tx, table, state, seats);
-    }
+    return advanceTable(tx, table, seats, { seat: mySeat.seat, action, automatic: false });
   });
 
+  scheduleTurnTimeout(tableId, deadline);
   await publishTable(tableId);
   const table = await loadTable(tableId);
   return table ? tableViewFor(table, userId) : null;
 }
+
+/**
+ * Prazo da jogada vencido: o sistema joga pelo jogador da vez. Dois tempos esgotados seguidos
+ * marcam o jogador como ausente (o sistema passa a jogar por ele a cada poucos segundos).
+ * Retorna o prazo seguinte para o cronometro.
+ */
+export async function handleTurnTimeout(tableId: string, now = new Date()): Promise<Date | null> {
+  const result = await prisma.$transaction(async (tx) => {
+    const table = await lockTable(tx, tableId);
+    // Mesa removida ou encerrada: o cronometro simplesmente para
+    if (!table || table.status !== 'PLAYING' || !table.state || !table.turnDeadline) {
+      return { deadline: null, moved: false };
+    }
+    // O jogador pode ter jogado no ultimo instante: so age se o prazo realmente venceu
+    if (table.turnDeadline.getTime() > now.getTime()) {
+      return { deadline: table.turnDeadline, moved: false };
+    }
+
+    const seats = await tx.dominoSeat.findMany({ where: { tableId } });
+    const state = table.state as unknown as DominoState;
+    const seat = seats.find((candidate) => candidate.seat === state.currentSeat);
+    if (seat && !seat.isAway) {
+      const timeouts = seat.timeouts + 1;
+      const isAway = timeouts >= 2;
+      await tx.dominoSeat.update({ where: { id: seat.id }, data: { timeouts, isAway } });
+      seat.timeouts = timeouts;
+      seat.isAway = isAway;
+      if (isAway) {
+        logger.info('Jogador de domino marcado como ausente', { tableId, seat: seat.seat });
+      }
+    }
+
+    const deadline = await advanceTable(tx, table, seats, {
+      seat: state.currentSeat,
+      action: autoAction(state, state.currentSeat),
+      automatic: true,
+    });
+    return { deadline, moved: true };
+  });
+
+  if (result.moved) {
+    await publishTable(tableId);
+  }
+  return result.deadline;
+}
+
+/** O jogador ausente volta: retoma o controle, com o prazo normal se for a vez dele. */
+export async function returnToTable(userId: string, tableId: string) {
+  const deadline = await prisma.$transaction(async (tx) => {
+    const { table, seats } = await lockPlayingTable(tx, tableId);
+    const mySeat = seats.find((seat) => seat.userId === userId);
+    if (!mySeat) {
+      throw new AppError('Voce nao esta nesta mesa', 403);
+    }
+    if (table.status !== 'PLAYING' || !table.state) {
+      return null;
+    }
+
+    await tx.dominoSeat.update({ where: { id: mySeat.id }, data: { timeouts: 0, isAway: false } });
+    const state = table.state as unknown as DominoState;
+    if (state.currentSeat !== mySeat.seat) {
+      return table.turnDeadline;
+    }
+    const fresh = new Date(Date.now() + env.dominoTurnSeconds * 1000);
+    await tx.dominoTable.update({ where: { id: tableId }, data: { turnDeadline: fresh } });
+    return fresh;
+  });
+
+  scheduleTurnTimeout(tableId, deadline);
+  await publishTable(tableId);
+  const table = await loadTable(tableId);
+  return table ? tableViewFor(table, userId) : null;
+}
+
+/** Ao iniciar o servidor, religa os cronometros das partidas em andamento a partir do banco. */
+export async function restoreTurnTimers(): Promise<number> {
+  const playing = await prisma.dominoTable.findMany({
+    where: { status: 'PLAYING', turnDeadline: { not: null } },
+    select: { id: true, turnDeadline: true },
+  });
+  playing.forEach((table) => scheduleTurnTimeout(table.id, table.turnDeadline));
+  return playing.length;
+}
+
+registerTurnTimeoutHandler((tableId) => handleTurnTimeout(tableId));
 
 /** Mesa ativa do jogador (aguardando ou em jogo), ou null. */
 export async function getActiveTable(userId: string) {

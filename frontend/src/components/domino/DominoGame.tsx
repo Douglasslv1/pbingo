@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { formatBrl } from '../../format';
 import type { DominoAction, DominoSide, DominoTableView, DominoTile as Tile } from '../../types';
+import { useCountdown } from '../../hooks/useCountdown';
+import { useGameConfig } from '../../hooks/useGameConfig';
 import DominoBoard from './DominoBoard';
 import DominoTile, { DominoTileBack } from './DominoTile';
 import { MODE_LABELS, TEAM_LABELS } from './dominoLabels';
@@ -10,14 +12,17 @@ interface Props {
   busy: boolean;
   error: string | null;
   onAction: (action: DominoAction) => void;
+  onComeBack: () => void;
   onBackToLobby: () => void;
 }
 
 const sameTile = (a: Tile, b: Tile) => a[0] === b[0] && a[1] === b[1];
 const pipsOf = (hand: Tile[]) => hand.reduce((sum, tile) => sum + tile[0] + tile[1], 0);
 
-export default function DominoGame({ table, busy, error, onAction, onBackToLobby }: Props) {
+export default function DominoGame({ table, busy, error, onAction, onComeBack, onBackToLobby }: Props) {
   const [selected, setSelected] = useState<Tile | null>(null);
+  const countdown = useCountdown(table.status === 'PLAYING' ? table.turnDeadline : null);
+  const turnSeconds = useGameConfig()?.dominoTurnSeconds ?? 30;
   const game = table.game;
   if (!game || table.mySeat === null) return null;
 
@@ -29,6 +34,9 @@ export default function DominoGame({ table, busy, error, onAction, onBackToLobby
   const isPartner = (seat: number) => table.teamMode === 'PAIRS' && seat !== mySeat && seat % 2 === mySeat % 2;
   const finished = game.status === 'FINISHED';
   const myTurn = !finished && game.currentSeat === mySeat;
+  const iAmAway = table.players.find((p) => p.isMe)?.away ?? false;
+  const isAway = (seat: number) => table.players.find((p) => p.seat === seat)?.away ?? false;
+  const urgent = countdown !== null && countdown <= 10;
 
   const plays = game.legalActions.filter((a): a is Extract<DominoAction, { type: 'PLAY' }> => a.type === 'PLAY');
   const sidesFor = (tile: Tile): DominoSide[] => plays.filter((play) => sameTile(play.tile, tile)).map((p) => p.side);
@@ -68,6 +76,10 @@ export default function DominoGame({ table, busy, error, onAction, onBackToLobby
               {nameOf(seat)}
               {isPartner(seat) && <span className="partner-badge">parceiro</span>}
             </strong>
+            {isAway(seat) && <span className="away-badge">ausente</span>}
+            {!finished && game.currentSeat === seat && countdown !== null && (
+              <span className={urgent ? 'turn-timer urgent' : 'turn-timer'}>{countdown}s</span>
+            )}
             <div className="domino-backs" aria-label={`${game.handSizes[seat]} pedras`}>
               {Array.from({ length: game.handSizes[seat] }, (_, i) => (
                 <DominoTileBack key={i} />
@@ -87,11 +99,26 @@ export default function DominoGame({ table, busy, error, onAction, onBackToLobby
         <DominoResult table={table} nameOf={nameOf} onBackToLobby={onBackToLobby} />
       ) : (
         <>
+          {iAmAway && (
+            <div className="banner away-banner">
+              <span>Voce ficou ausente e o sistema esta jogando por voce.</span>
+              <button type="button" onClick={onComeBack} disabled={busy}>
+                Voltei
+              </button>
+            </div>
+          )}
+
+          {myTurn && countdown !== null && (
+            <div className={urgent ? 'turn-bar urgent' : 'turn-bar'} aria-hidden="true">
+              <div style={{ width: `${Math.min((countdown / turnSeconds) * 100, 100)}%` }} />
+            </div>
+          )}
+
           <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>
             {myTurn
               ? selected
                 ? 'Escolha a ponta: toque numa ponta destacada ou nos botoes abaixo'
-                : 'Sua vez: toque numa pedra destacada'
+                : `Sua vez: toque numa pedra destacada${countdown !== null ? ` (${countdown}s)` : ''}`
               : `Vez de ${nameOf(game.currentSeat)}...`}
           </p>
 

@@ -72,6 +72,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
       houseFeePercent: env.houseFeePercent,
       termsVersion: CURRENT_TERMS_VERSION,
       dominoEnabled: env.dominoEnabled,
+      dominoTurnSeconds: env.dominoTurnSeconds,
     });
   });
 

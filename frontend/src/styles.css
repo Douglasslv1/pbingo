@@ -1200,3 +1200,58 @@ label.checkbox input {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Cronometro e ausencia no domino */
+
+.turn-timer {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.turn-timer.urgent {
+  color: var(--danger);
+}
+
+.away-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 6px;
+  align-self: flex-start;
+}
+
+.turn-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.turn-bar div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+
+.turn-bar.urgent div {
+  background: var(--danger);
+}
+
+.away-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #facc15;
+  color: #422006;
+}
+
+.away-banner button {
+  background: #422006;
+  color: #fef9c3;
+  flex-shrink: 0;
+}

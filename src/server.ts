@@ -4,7 +4,7 @@ import { env } from './config/env';
 import { logger } from './lib/logger';
 import { purgeExpiredAccessLogs } from './modules/auth/accessLog.service';
 import { setUserRole } from './modules/auth/userRole.service';
-import { cancelStaleQueues } from './modules/domino/domino.service';
+import { cancelStaleQueues, restoreTurnTimers } from './modules/domino/domino.service';
 import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
 
@@ -71,6 +71,9 @@ httpServer.listen(env.port, () => {
   });
   schedulePurgeOfAccessLogs();
   scheduleDominoQueueSweep();
+  restoreTurnTimers()
+    .then((count) => count > 0 && logger.info('Cronometros de domino religados apos o inicio', { tables: count }))
+    .catch((err) => logger.error('Erro ao religar cronometros do domino', { err }));
   promoteBootstrapAdmin().catch((err) => {
     logger.error('Erro ao promover BOOTSTRAP_ADMIN_EMAIL', { err });
   });

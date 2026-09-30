@@ -45,6 +45,7 @@ export const env = {
   // Mesa de domino que nao completa 4 jogadores nesse prazo e cancelada, com as chaves devolvidas
   // Enquanto false, so administradores jogam domino (liberacao gradual)
   dominoEnabled: process.env.DOMINO_ENABLED === 'true',
+  dominoTurnSeconds: optionalNumber('DOMINO_TURN_SECONDS', 30),
   dominoQueueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),
   nextRoundDelayMs: optionalNumber('NEXT_ROUND_DELAY_MS', 5_000),
