@@ -3,7 +3,7 @@ import { prisma } from '../src/lib/prisma';
 
 async function truncateAll(): Promise<void> {
   await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE access_logs, password_reset_tokens, withdrawals, transactions, tickets, rounds, user_prizes, user_credits, users
+    TRUNCATE TABLE domino_moves, domino_seats, domino_tables, access_logs, password_reset_tokens, withdrawals, transactions, tickets, rounds, user_prizes, user_credits, users
     RESTART IDENTITY CASCADE
   `);
 }

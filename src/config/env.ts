@@ -42,6 +42,8 @@ export const env = {
   // Rodadas comecam em horarios fixos (ex.: :00, :15, :30, :45) se houver o minimo de jogadores
   roundIntervalMinutes: optionalNumber('ROUND_INTERVAL_MINUTES', 15),
   minPlayersPerRound: optionalNumber('MIN_PLAYERS_PER_ROUND', 5),
+  // Mesa de domino que nao completa 4 jogadores nesse prazo e cancelada, com as chaves devolvidas
+  dominoQueueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),
   nextRoundDelayMs: optionalNumber('NEXT_ROUND_DELAY_MS', 5_000),
 

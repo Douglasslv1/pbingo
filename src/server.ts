@@ -4,6 +4,7 @@ import { env } from './config/env';
 import { logger } from './lib/logger';
 import { purgeExpiredAccessLogs } from './modules/auth/accessLog.service';
 import { setUserRole } from './modules/auth/userRole.service';
+import { cancelStaleQueues } from './modules/domino/domino.service';
 import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
 
@@ -48,6 +49,16 @@ function schedulePurgeOfAccessLogs(): void {
   setInterval(purge, DAY_MS).unref();
 }
 
+const DOMINO_QUEUE_SWEEP_MS = 30 * 1000;
+
+/** Cancela, a cada 30s, mesas de domino que nao completaram jogadores no prazo (tambem apos reinicio). */
+function scheduleDominoQueueSweep(): void {
+  const sweep = () =>
+    cancelStaleQueues().catch((err) => logger.error('Erro ao cancelar mesas de domino paradas', { err }));
+  sweep();
+  setInterval(sweep, DOMINO_QUEUE_SWEEP_MS).unref();
+}
+
 const app = createApp();
 const httpServer = createServer(app);
 
@@ -59,6 +70,7 @@ httpServer.listen(env.port, () => {
     logger.error('Erro ao iniciar o motor de rodadas', { err });
   });
   schedulePurgeOfAccessLogs();
+  scheduleDominoQueueSweep();
   promoteBootstrapAdmin().catch((err) => {
     logger.error('Erro ao promover BOOTSTRAP_ADMIN_EMAIL', { err });
   });

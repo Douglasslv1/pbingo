@@ -28,6 +28,7 @@ model User {
   reviewedWithdrawals Withdrawal[]         @relation("WithdrawalReviewer")
   PasswordResetToken  PasswordResetToken[]
   AccessLog           AccessLog[]
+  DominoSeat          DominoSeat[]
 
   @@map("users")
 }
@@ -198,4 +199,65 @@ model AccessLog {
   @@index([userId])
   @@index([createdAt])
   @@map("access_logs")
+}
+
+enum DominoTableStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CANCELLED
+
+  @@map("domino_table_status")
+}
+
+model DominoTable {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mode       String            @db.VarChar(20)
+  teamMode   String            @map("team_mode") @db.VarChar(20)
+  status     DominoTableStatus @default(WAITING)
+  state      Json?
+  prizePool  Decimal           @default(0.00) @map("prize_pool") @db.Decimal(10, 2)
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  startedAt  DateTime?         @map("started_at") @db.Timestamptz
+  finishedAt DateTime?         @map("finished_at") @db.Timestamptz
+
+  seats DominoSeat[]
+  moves DominoMove[]
+
+  @@index([status, mode, teamMode, createdAt], map: "idx_domino_tables_queue")
+  @@map("domino_tables")
+}
+
+model DominoSeat {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tableId           String   @map("table_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  seat              Int
+  creditsSpent      Int      @map("credits_spent")
+  prizeContribution Decimal  @map("prize_contribution") @db.Decimal(10, 2)
+  prizeAmount       Decimal? @map("prize_amount") @db.Decimal(10, 2)
+  joinedAt          DateTime @default(now()) @map("joined_at") @db.Timestamptz
+
+  table DominoTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id])
+
+  @@unique([tableId, seat], map: "unique_domino_seat")
+  @@unique([tableId, userId], map: "unique_domino_player")
+  @@index([userId], map: "idx_domino_seats_user_id")
+  @@map("domino_seats")
+}
+
+model DominoMove {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tableId    String   @map("table_id") @db.Uuid
+  moveNumber Int      @map("move_number")
+  seat       Int
+  action     Json
+  automatic  Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  table DominoTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([tableId, moveNumber], map: "unique_domino_move")
+  @@map("domino_moves")
 }

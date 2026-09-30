@@ -7,6 +7,7 @@ import { createRateLimiter } from './middleware/rateLimit.middleware';
 import { requestLogger } from './middleware/requestLogger.middleware';
 import { authRouter } from './modules/auth/auth.routes';
 import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
+import { dominoRouter } from './modules/domino/domino.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
 import { walletRouter } from './modules/wallet/wallet.routes';
@@ -83,6 +84,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/rounds', roundsRouter);
   app.use('/withdrawals', withdrawalsRouter);
   app.use('/admin/withdrawals', adminWithdrawalsRouter);
+  app.use('/domino', dominoRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
