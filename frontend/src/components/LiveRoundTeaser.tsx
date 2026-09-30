@@ -67,19 +67,19 @@ export default function LiveRoundTeaser() {
   return (
     <div className="live-teaser">
       <span className="live-dot" />
-      {!round && <span>Conectando na rodada ao vivo...</span>}
+      {!round && <span>Conectando aos Números da sorte ao vivo...</span>}
       {round?.status === 'WAITING' && (
         <span>
-          Proxima rodada as {round.waitingEndsAt ? formatTime(round.waitingEndsAt) : '...'}
+          Números da sorte: próxima rodada às {round.waitingEndsAt ? formatTime(round.waitingEndsAt) : '...'}
           {countdown !== null && ` (em ${formatCountdown(countdown)})`} - {round.playersCount}/{round.minPlayers}{' '}
           jogadores
         </span>
       )}
       {round?.status === 'IN_PROGRESS' && (
-        <span>Sorteio em andamento{lastNumber ? ` - ultimo numero: ${lastNumber}` : ''}</span>
+        <span>Números da sorte: sorteio ao vivo{lastNumber ? ` · último número ${lastNumber}` : ''}</span>
       )}
-      {round?.status === 'FINISHED' && <span>Rodada encerrada - a proxima sala abre em instantes</span>}
-      {round?.status === 'CANCELLED' && <span>Rodada cancelada por falta de jogadores - nova sala abrindo</span>}
+      {round?.status === 'FINISHED' && <span>Números da sorte: rodada encerrada - a próxima abre em instantes</span>}
+      {round?.status === 'CANCELLED' && <span>Números da sorte: rodada cancelada por falta de jogadores - nova sala abrindo</span>}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
 
   return (
     <div className="card">
-      <h2>Rodada</h2>
+      <h2>Números da sorte</h2>
       <p>
         <strong>{STATUS_LABELS[round.status]}</strong>
       </p>

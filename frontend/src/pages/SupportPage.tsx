@@ -10,7 +10,7 @@ const FAQ_ITEMS = [
       'Chaves sao creditos de participacao comprados via Pix - servem so para entrar nas rodadas e nunca podem ser sacadas. Premios sao o saldo em reais que voce ganha ao vencer uma rodada, e esse sim pode ser sacado para sua conta.',
   },
   {
-    question: 'Como funciona uma rodada?',
+    question: 'Como funciona uma rodada dos Numeros da sorte?',
     answer:
       'As rodadas acontecem em horarios fixos, a cada 15 minutos (:00, :15, :30 e :45). Voce entra na sala usando 1 chave e pode sair antes do inicio recuperando a chave. A rodada so comeca com pelo menos 5 jogadores - se nao completar ate o horario, ela e cancelada e as chaves voltam para todos. Com o minimo atingido, o sorteio comeca: numeros sao sorteados automaticamente e transmitidos em tempo real. Quem completar a cartela primeiro leva o premio acumulado. Se mais de uma cartela completar no mesmo numero, o premio e dividido igualmente entre elas.',
   },

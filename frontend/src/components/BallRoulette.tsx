@@ -16,14 +16,6 @@ interface Props {
 const SPIN_DURATION_MS = 1100;
 const SPIN_TICK_MS = 70;
 
-function bingoLetterFor(n: number): string {
-  if (n <= 15) return 'B';
-  if (n <= 30) return 'I';
-  if (n <= 45) return 'N';
-  if (n <= 60) return 'G';
-  return 'O';
-}
-
 export default function BallRoulette({ lastDrawn, ballMin = 1, ballMax = 75 }: Props) {
   const [displayNumber, setDisplayNumber] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -65,8 +57,6 @@ export default function BallRoulette({ lastDrawn, ballMin = 1, ballMax = 75 }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastDrawn?.seq, lastDrawn?.animate]);
 
-  const letter = displayNumber !== null ? bingoLetterFor(displayNumber) : null;
-
   return (
     <div className="roulette">
       <div className={spinning ? 'roulette-window spinning' : 'roulette-window settled'}>
@@ -87,7 +77,6 @@ export default function BallRoulette({ lastDrawn, ballMin = 1, ballMax = 75 }: P
                 spinning ? { duration: 0.07, ease: 'linear' } : { type: 'spring', stiffness: 320, damping: 14 }
               }
             >
-              <span className="roulette-letter">{letter}</span>
               <span className="roulette-number">{displayNumber}</span>
             </motion.div>
           )}

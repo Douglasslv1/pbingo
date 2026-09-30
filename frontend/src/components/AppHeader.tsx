@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
+import Logo from './Logo';
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -16,16 +17,16 @@ export default function AppHeader() {
 
   return (
     <header className="app-header">
-      <Link to="/" className="brand">
-        Pbingu
+      <Link to="/" className="brand-link" aria-label="Pbingu - pagina inicial">
+        <Logo size={30} />
       </Link>
       <nav className="app-nav" aria-label="Menu principal">
         <NavLink to="/app" className={navClass}>
-          Bingo
+          Números da sorte
         </NavLink>
         {showDomino && (
           <NavLink to="/domino" className={navClass}>
-            Domino
+            Dominó
           </NavLink>
         )}
         {isAdmin && (

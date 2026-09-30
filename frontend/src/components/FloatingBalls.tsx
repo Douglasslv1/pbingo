@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 
-const LETTERS = ['B', 'I', 'N', 'G', 'O'];
-
 interface FloatingBall {
   id: number;
   label: string;
@@ -14,11 +12,10 @@ interface FloatingBall {
 }
 
 function buildBall(seed: number): FloatingBall {
-  const letter = LETTERS[seed % LETTERS.length];
   const number = 1 + Math.floor(Math.random() * 75);
   return {
     id: seed,
-    label: `${letter}${number}`,
+    label: String(number),
     left: Math.random() * 100,
     top: Math.random() * 100,
     size: 34 + Math.random() * 26,

@@ -41,13 +41,13 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
       };
     case 'SPEND_KEY':
       return {
-        title: byGame(transaction, 'Cartela de bingo', 'Entrada em mesa de domino', 'Chave usada'),
+        title: byGame(transaction, 'Cartela - Números da sorte', 'Entrada em mesa de Dominó', 'Chave usada'),
         amount: `-${keys(transaction.amountCredits)}`,
         positive: false,
       };
     case 'PRIZE_PAYOUT':
       return {
-        title: byGame(transaction, 'Premio no bingo', 'Premio no domino', 'Premio recebido'),
+        title: byGame(transaction, 'Prêmio - Números da sorte', 'Prêmio no Dominó', 'Prêmio recebido'),
         amount: `+${formatBrl(transaction.amountFiat)}`,
         positive: true,
       };
@@ -113,8 +113,8 @@ function usePagedList<T>(fetchPage: (cursor?: string) => Promise<Page<T>>) {
 
 const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'transactions', label: 'Extrato' },
-  { value: 'rounds', label: 'Bingo' },
-  { value: 'domino', label: 'Domino' },
+  { value: 'rounds', label: 'Números da sorte' },
+  { value: 'domino', label: 'Dominó' },
 ];
 
 const DOMINO_OUTCOME: Record<DominoMatchItem['outcome'], string> = {

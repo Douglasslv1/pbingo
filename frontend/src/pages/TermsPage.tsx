@@ -48,7 +48,7 @@ export default function TermsPage() {
       ),
     },
     {
-      title: 'Como funcionam as rodadas',
+      title: 'Como funcionam os Numeros da sorte',
       content: (
         <ul>
           <li>
@@ -114,7 +114,7 @@ export default function TermsPage() {
       title: 'Jogo responsavel',
       content: (
         <ul>
-          <li>Jogue apenas com dinheiro que voce pode perder. O bingo e entretenimento, nao uma fonte de renda.</li>
+          <li>Jogue apenas com dinheiro que voce pode perder. Os jogos sao entretenimento, nao uma fonte de renda.</li>
           <li>
             Se quiser uma pausa ou encerrar sua conta para evitar jogar, peca pelo e-mail{' '}
             <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> e atenderemos o quanto antes.
@@ -171,7 +171,7 @@ export default function TermsPage() {
       version={config.termsVersion}
       intro={
         <p>
-          Estes termos explicam as regras para usar o Pbingu, plataforma de bingo online com rodadas em horarios fixos e
+          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Numeros da sorte e Domino) com
           premios em dinheiro. Ao criar sua conta, voce concorda com eles.
         </p>
       }
