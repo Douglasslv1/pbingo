@@ -45,8 +45,9 @@ function applyRateLimits(app: Express): void {
 export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOptions = {}): Express {
   const app = express();
 
-  // Railway coloca um proxy na frente: sem isso, req.ip seria o IP do proxy para todos os jogadores
-  app.set('trust proxy', 1);
+  // Quantos proxies do Railway ficam na frente: com o valor errado, req.ip vira o IP do proxy
+  // e todos os jogadores passam a dividir o mesmo limite de tentativas
+  app.set('trust proxy', env.trustProxyHops);
 
   app.use(requestLogger);
   app.use(helmet());

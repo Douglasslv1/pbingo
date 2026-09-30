@@ -60,6 +60,7 @@ export const env = {
     .map((origin) => origin.trim().replace(/\/$/, ''))
     .filter(Boolean),
   rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
+  trustProxyHops: optionalNumber('TRUST_PROXY_HOPS', 2),
 
   frontendUrl: (process.env.FRONTEND_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
   resendApiKey: process.env.RESEND_API_KEY ?? '',

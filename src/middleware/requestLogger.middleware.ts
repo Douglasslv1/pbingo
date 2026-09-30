@@ -24,6 +24,14 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     return;
   }
 
+  // Ajuda a calibrar TRUST_PROXY_HOPS: mostra a cadeia de proxies que chegou ate o servidor
+  logger.debug('Cabecalhos de proxy', {
+    requestId,
+    forwardedFor: req.header('x-forwarded-for'),
+    realIp: req.header('x-real-ip'),
+    resolvedIp: req.ip,
+  });
+
   const startedAt = process.hrtime.bigint();
   res.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
