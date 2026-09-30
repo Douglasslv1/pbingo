@@ -8,32 +8,68 @@ export interface EmailMessage {
 }
 
 const RESEND_URL = 'https://api.resend.com/emails';
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
-async function sendWithResend(message: EmailMessage): Promise<void> {
-  const res = await fetch(RESEND_URL, {
+/** Separa "Nome <email@dominio>" em nome e e-mail; aceita tambem so o e-mail. */
+export function parseAddress(address: string): { name?: string; email: string } {
+  const match = address.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (!match) {
+    return { email: address.trim() };
+  }
+  return { name: match[1] || undefined, email: match[2].trim() };
+}
+
+async function postJson(url: string, headers: Record<string, string>, body: unknown, provider: string) {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.resendApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from: env.emailFrom, ...message, to: [message.to] }),
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    throw new Error(`Resend recusou o envio (${res.status}): ${await res.text()}`);
+    throw new Error(`${provider} recusou o envio (${res.status}): ${await res.text()}`);
   }
 }
 
+function sendWithResend(message: EmailMessage): Promise<void> {
+  return postJson(
+    RESEND_URL,
+    { Authorization: `Bearer ${env.resendApiKey}` },
+    { from: env.emailFrom, to: [message.to], subject: message.subject, html: message.html, text: message.text },
+    'Resend',
+  );
+}
+
+function sendWithBrevo(message: EmailMessage): Promise<void> {
+  return postJson(
+    BREVO_URL,
+    { 'api-key': env.brevoApiKey },
+    {
+      sender: parseAddress(env.emailFrom),
+      to: [{ email: message.to }],
+      subject: message.subject,
+      htmlContent: message.html,
+      textContent: message.text,
+    },
+    'Brevo',
+  );
+}
+
 export const mailer = {
-  /** Envia pelo Resend; sem RESEND_API_KEY (desenvolvimento), apenas registra o e-mail no console. */
+  /**
+   * Envia pelo Resend (dominio proprio) ou, na falta dele, pelo Brevo (API HTTPS, funciona sem dominio).
+   * Sem nenhuma chave, em desenvolvimento apenas registra o e-mail no console.
+   */
   async send(message: EmailMessage): Promise<void> {
-    if (!env.resendApiKey) {
-      if (env.isProduction) {
-        throw new Error('RESEND_API_KEY nao configurada: e-mail nao enviado');
-      }
-      console.log(`[e-mail de desenvolvimento] para ${message.to}: ${message.subject}\n${message.text}`);
-      return;
+    if (env.resendApiKey) {
+      return sendWithResend(message);
     }
-    await sendWithResend(message);
+    if (env.brevoApiKey) {
+      return sendWithBrevo(message);
+    }
+    if (env.isProduction) {
+      throw new Error('Nenhum provedor de e-mail configurado (RESEND_API_KEY ou BREVO_API_KEY)');
+    }
+    console.log(`[e-mail de desenvolvimento] para ${message.to}: ${message.subject}\n${message.text}`);
   },
 };
