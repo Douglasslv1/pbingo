@@ -271,15 +271,17 @@ async function advanceTable(tx: Tx, table: GameTable, seats: GameSeat[], first: 
   let state = table.state as unknown;
   const moves: Array<Advance & { moveNumber: number }> = [];
 
-  try {
-    state = adapter.apply(state, first.seat, first.action);
-    moves.push({ ...first, moveNumber: adapter.moveCount(state) });
+  const step = (move: Advance) => {
+    const recorded = adapter.record ? adapter.record(state, move.seat, move.action) : move.action;
+    state = adapter.apply(state, move.seat, move.action);
+    moves.push({ ...move, action: recorded, moveNumber: adapter.moveCount(state) });
+  };
 
+  try {
+    step(first);
     while (!adapter.isFinished(state) && adapter.isForced(state)) {
       const seat = adapter.actingSeat(state);
-      const forced = adapter.autoAction(state, seat);
-      state = adapter.apply(state, seat, forced);
-      moves.push({ seat, action: forced, automatic: true, moveNumber: adapter.moveCount(state) });
+      step({ seat, action: adapter.autoAction(state, seat), automatic: true });
     }
   } catch (err) {
     if (err instanceof GameRuleError) {

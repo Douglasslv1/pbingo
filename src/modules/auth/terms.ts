@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Versao vigente dos Termos de Uso e da Politica de Privacidade. Mudou o texto? Mude a versao: todos aceitam de novo. */
-export const CURRENT_TERMS_VERSION = '2026-09-30.2';
+export const CURRENT_TERMS_VERSION = '2026-10-01';
 
 export const MINIMUM_AGE = 18;
 

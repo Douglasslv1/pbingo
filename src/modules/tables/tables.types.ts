@@ -46,4 +46,6 @@ export interface GameAdapter<S = unknown, A = unknown> {
   handOf(state: S, seat: number): unknown;
   /** Resumo do resultado para o historico e o admin (motivo, placar). */
   summary(state: S): Record<string, unknown>;
+  /** Como a acao fica gravada no registro de jogadas (ex.: com a carta jogada, nao so a posicao). */
+  record?(stateBefore: S, seat: number, action: A): unknown;
 }

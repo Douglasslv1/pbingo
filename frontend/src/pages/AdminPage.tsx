@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
 import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
+import AdminTrucoPanel from '../components/admin/AdminTrucoPanel';
 import AdminWithdrawalsPanel from '../components/admin/AdminWithdrawalsPanel';
 import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
@@ -10,6 +11,7 @@ const SECTIONS = [
   { label: 'Visão geral', title: 'Visão geral', Panel: AdminOverviewPanel },
   { label: 'Saques', title: 'Saques', Panel: AdminWithdrawalsPanel },
   { label: 'Dominó', title: 'Mesas de dominó', Panel: AdminDominoPanel },
+  { label: 'Truco', title: 'Mesas de truco', Panel: AdminTrucoPanel },
 ];
 
 export default function AdminPage() {

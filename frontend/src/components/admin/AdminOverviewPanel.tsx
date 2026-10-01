@@ -51,7 +51,7 @@ export default function AdminOverviewPanel() {
   if (error) return <p className="error">{error}</p>;
   if (!stats) return <p className="label">Carregando...</p>;
 
-  const { users, money, bingoRounds, dominoTables } = stats;
+  const { users, money, bingoRounds, dominoTables, trucoTables } = stats;
   const pending = money.withdrawals.PENDING;
 
   return (
@@ -62,6 +62,7 @@ export default function AdminOverviewPanel() {
           ['Jogadores online', users.onlineUsers],
           ['Conexões abertas', users.onlineConnections, 'inclui visitantes'],
           ['Mesas de dominó em jogo', dominoTables.PLAYING ?? 0, `${dominoTables.WAITING ?? 0} aguardando`],
+          ['Mesas de truco em jogo', trucoTables.PLAYING ?? 0, `${trucoTables.WAITING ?? 0} aguardando`],
         ]}
       />
       <StatGroup
@@ -86,6 +87,7 @@ export default function AdminOverviewPanel() {
         items={[
           ['Rodadas encerradas', bingoRounds.FINISHED ?? 0, `${bingoRounds.CANCELLED ?? 0} canceladas`],
           ['Partidas de dominó', dominoTables.FINISHED ?? 0, `${dominoTables.CANCELLED ?? 0} canceladas`],
+          ['Partidas de truco', trucoTables.FINISHED ?? 0, `${trucoTables.CANCELLED ?? 0} canceladas`],
         ]}
       />
 

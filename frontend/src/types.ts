@@ -257,10 +257,11 @@ export interface TrucoGameView {
 
 export type TrucoTableView = GameTableView<TrucoGameView, 'PAULISTA', TrucoTeamMode>;
 
-export interface AdminDominoTableSummary {
+export interface AdminTableSummary {
   id: string;
-  mode: DominoMode;
-  teamMode: DominoTeamMode;
+  mode: string;
+  teamMode: string;
+  stake: number;
   status: DominoTableView['status'];
   prizePool: string;
   createdAt: string;
@@ -270,7 +271,8 @@ export interface AdminDominoTableSummary {
   players: Array<{ seat: number; name: string; email: string }>;
 }
 
-export interface AdminDominoTableDetail extends Omit<AdminDominoTableSummary, 'players' | 'moveCount'> {
+/** Detalhe de uma mesa no admin: `H` e a mao de cada jogador e `A` a acao gravada de cada jogada. */
+interface AdminTableDetail<H, A> extends Omit<AdminTableSummary, 'players' | 'moveCount'> {
   turnDeadline: string | null;
   players: Array<{
     seat: number;
@@ -279,13 +281,23 @@ export interface AdminDominoTableDetail extends Omit<AdminDominoTableSummary, 'p
     timeouts: number;
     away: boolean;
     prizeAmount: string | null;
-    hand: DominoTile[] | null;
+    hand: H | null;
   }>;
-  line: DominoPlacedTile[];
-  boneyard: DominoTile[];
-  currentSeat: number | null;
+  moves: Array<{ moveNumber: number; seat: number; action: A; automatic: boolean; createdAt: string }>;
+}
+
+export interface AdminDominoTableDetail extends AdminTableDetail<DominoTile[], DominoAction> {
+  mode: DominoMode;
+  teamMode: DominoTeamMode;
   result: DominoGameView['result'];
-  moves: Array<{ moveNumber: number; seat: number; action: DominoAction; automatic: boolean; createdAt: string }>;
+}
+
+export interface AdminTrucoTableDetail
+  extends AdminTableDetail<TrucoCard[], TrucoAction & { hand: number; vira: TrucoCard; card?: TrucoCard; value?: number }> {
+  teamMode: TrucoTeamMode;
+  score?: [number, number];
+  handNumber?: number;
+  vira?: TrucoCard;
 }
 
 export interface AdminStats {
@@ -306,5 +318,6 @@ export interface AdminStats {
   };
   bingoRounds: Partial<Record<RoundStatus, number>>;
   dominoTables: Partial<Record<DominoTableView['status'], number>>;
+  trucoTables: Partial<Record<DominoTableView['status'], number>>;
   recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }>;
 }

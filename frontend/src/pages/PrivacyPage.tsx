@@ -2,7 +2,7 @@ import LegalDocument, { CONTACT_EMAIL, LegalSection } from '../components/LegalD
 import { useGameConfig } from '../hooks/useGameConfig';
 
 export default function PrivacyPage() {
-  const version = useGameConfig()?.termsVersion ?? '2026-09-30.2';
+  const version = useGameConfig()?.termsVersion ?? '2026-10-01';
   const email = <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>;
 
   const sections: LegalSection[] = [

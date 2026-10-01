@@ -138,6 +138,12 @@ describe('Mesas de truco', () => {
       const paidCents = winners.reduce((sum, seat) => sum + Math.round(Number(seat.prizeAmount) * 100), 0);
       expect(paidCents).toBe(Math.round(Number(table.prizePool) * 100));
       expect(await prisma.gameMove.count({ where: { tableId } })).toBe(state.moveCount);
+      // Cada carta jogada fica registrada com a carta (nao so a posicao), a mao e a vira
+      const firstPlay = await prisma.gameMove.findFirstOrThrow({
+        where: { tableId, action: { path: ['type'], equals: 'PLAY' } },
+        orderBy: { moveNumber: 'asc' },
+      });
+      expect(firstPlay.action).toMatchObject({ hand: expect.any(Number), vira: expect.any(String), card: expect.any(String) });
 
       const history = await request(app).get('/truco/history/me').set(auth(players[0]));
       expect(history.body.items[0]).toMatchObject({ tableId, stake: 5, score: state.score });

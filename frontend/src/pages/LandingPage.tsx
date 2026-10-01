@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import DominoTile from '../components/domino/DominoTile';
+import PlayingCard from '../components/truco/PlayingCard';
 import FloatingBalls from '../components/FloatingBalls';
 import LiveRoundTeaser from '../components/LiveRoundTeaser';
 import Logo from '../components/Logo';
@@ -89,6 +90,8 @@ export default function LandingPage() {
   const interval = config?.roundIntervalMinutes ?? 15;
   const dominoOpen = config?.dominoEnabled ?? false;
   const dominoPrize = config ? formatBrl(config.prizeContributionPerTicket * 4) : null;
+  const trucoOpen = config?.trucoEnabled ?? false;
+  const trucoPrize = config ? formatBrl(config.prizeContributionPerTicket * 2 * 5) : null;
 
   return (
     <div className="landing">
@@ -222,6 +225,36 @@ export default function LandingPage() {
             {dominoOpen ? (
               <Link to="/domino" className="cta-button">
                 Jogar Dominó
+              </Link>
+            ) : (
+              <span className="cta-disabled">Disponível em breve</span>
+            )}
+          </motion.article>
+
+          <motion.article
+            className="game-card truco"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp}
+            transition={{ delay: 0.2 }}
+          >
+            {!trucoOpen && <span className="soon-badge">Em breve</span>}
+            <div className="game-card-art tiles">
+              <PlayingCard card="4P" />
+              <PlayingCard card="7C" />
+              <PlayingCard card="AE" />
+            </div>
+            <h3>Truco</h3>
+            <p>Truco Paulista com manilha pela vira: blefe, leitura do adversário e o famoso grito de truco.</p>
+            <ul>
+              <li>Mano a mano ou em duplas, até 12 pontos</li>
+              <li>Mesas de 1, 2 ou 5 chaves</li>
+              <li>{trucoPrize ? `Prêmio de até ${trucoPrize} por mesa` : 'Prêmio para quem vencer'}</li>
+            </ul>
+            {trucoOpen ? (
+              <Link to="/truco" className="cta-button">
+                Jogar Truco
               </Link>
             ) : (
               <span className="cta-disabled">Disponível em breve</span>

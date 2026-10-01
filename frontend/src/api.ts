@@ -1,7 +1,6 @@
 import type {
   AuthResult,
-  AdminDominoTableDetail,
-  AdminDominoTableSummary,
+  AdminTableSummary,
   AdminStats,
   AuthUser,
   GameConfig,
@@ -137,11 +136,11 @@ export const api = {
 
   adminStats: (token: string) => request<AdminStats>('/admin/stats', {}, token),
 
-  adminDominoTables: (token: string, status?: string) =>
-    request<AdminDominoTableSummary[]>(`/admin/domino/tables${status ? `?status=${status}` : ''}`, {}, token),
+  adminTables: (game: TableGame, token: string, status?: string) =>
+    request<AdminTableSummary[]>(`/admin/${game}/tables${status ? `?status=${status}` : ''}`, {}, token),
 
-  adminDominoTable: (token: string, tableId: string) =>
-    request<AdminDominoTableDetail>(`/admin/domino/tables/${tableId}`, {}, token),
+  adminTable: <D>(game: TableGame, token: string, tableId: string) =>
+    request<D>(`/admin/${game}/tables/${tableId}`, {}, token),
 
   getMyWithdrawals: (token: string) => request<Withdrawal[]>('/withdrawals/me', {}, token),
 

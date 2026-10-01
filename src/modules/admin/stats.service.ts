@@ -34,7 +34,7 @@ export async function getPlatformStats(now = new Date()) {
     sumFiat({ type: 'PRIZE_PAYOUT' }),
     prisma.withdrawal.groupBy({ by: ['status'], _count: { _all: true }, _sum: { amountFiat: true } }),
     prisma.round.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.gameTable.groupBy({ by: ['status'], where: { game: 'DOMINO' }, _count: { _all: true } }),
+    prisma.gameTable.groupBy({ by: ['game', 'status'], _count: { _all: true } }),
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 10,
@@ -55,7 +55,8 @@ export async function getPlatformStats(now = new Date()) {
       ),
     },
     bingoRounds: byStatus(rounds),
-    dominoTables: byStatus(tables),
+    dominoTables: byStatus(tables.filter((row) => row.game === 'DOMINO')),
+    trucoTables: byStatus(tables.filter((row) => row.game === 'TRUCO')),
     recentUsers: recentUsers.map((user) => ({ ...user, createdAt: user.createdAt.toISOString() })),
   };
 }

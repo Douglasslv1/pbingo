@@ -10,7 +10,7 @@ const FALLBACK = {
   houseFeePercent: 20,
   minPlayersPerRound: 5,
   roundIntervalMinutes: 15,
-  termsVersion: '2026-09-30.2',
+  termsVersion: '2026-10-01',
   dominoTurnSeconds: 30,
   queueTimeoutMinutes: 10,
   trucoEnabled: false,
@@ -241,7 +241,7 @@ export default function TermsPage() {
       version={config.termsVersion}
       intro={
         <p>
-          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte e Dominó) com
+          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte, Dominó e Truco) com
           prêmios em dinheiro. Ao criar sua conta, você concorda com eles.
         </p>
       }
