@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import LegalDocument, { CONTACT_EMAIL, LegalSection } from '../components/LegalDocument';
+import TrucoRules from '../components/truco/TrucoRules';
 import { formatBrl } from '../format';
 import { useGameConfig } from '../hooks/useGameConfig';
 
@@ -12,6 +13,7 @@ const FALLBACK = {
   termsVersion: '2026-09-30.2',
   dominoTurnSeconds: 30,
   queueTimeoutMinutes: 10,
+  trucoEnabled: false,
 };
 
 export default function TermsPage() {
@@ -85,9 +87,9 @@ export default function TermsPage() {
       content: (
         <ul>
           <li>
-            As mesas são de 4 jogadores, ou de 2 no mano a mano. Você entra com 1 chave e a partida começa assim que a mesa completar. Se ela não
-            completar em {config.queueTimeoutMinutes} minutos, é cancelada e todas as chaves são devolvidas. Antes do
-            início, você pode sair e recuperar a sua chave.
+            As mesas são de 4 jogadores, ou de 2 no mano a mano. Você entra com o valor da mesa (1, 2 ou 5 chaves) e a
+            partida começa assim que a mesa completar. Se ela não completar em {config.queueTimeoutMinutes} minutos, é
+            cancelada e todas as chaves são devolvidas. Antes do início, você pode sair e recuperar as suas chaves.
           </li>
           <li>
             Modalidades: <strong>6 peças</strong> (cada jogador recebe 6 pedras e as 4 restantes ficam fora do jogo) e{' '}
@@ -125,6 +127,23 @@ export default function TermsPage() {
         </ul>
       ),
     },
+    ...(config.trucoEnabled
+      ? [
+          {
+            title: 'Como funciona o Truco',
+            content: (
+              <>
+                <TrucoRules />
+                <p>
+                  De cada entrada, {prizeShare}% vai para o prêmio da mesa e {config.houseFeePercent}% fica com o Pbingu
+                  como taxa de serviço. Sair no meio da partida não devolve as chaves. Todas as jogadas ficam registradas
+                  e podem ser consultadas pela nossa equipe em caso de reclamação.
+                </p>
+              </>
+            ),
+          },
+        ]
+      : []),
     {
       title: 'Prêmios e saques',
       content: (

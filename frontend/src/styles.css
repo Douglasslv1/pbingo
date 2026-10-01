@@ -1692,3 +1692,278 @@ label.checkbox input {
     flex-shrink: 0;
   }
 }
+
+/* Truco: cartas, placar, mesa e regras */
+
+.playing-card {
+  --w: 44px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--w);
+  height: calc(var(--w) * 1.4);
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.playing-card.small {
+  --w: 30px;
+}
+
+.playing-card.large {
+  --w: 64px;
+}
+
+.playing-card.red {
+  color: #dc2626;
+}
+
+.playing-card.back {
+  background: repeating-linear-gradient(45deg, #1d4ed8 0 4px, #1e40af 4px 8px);
+  border-color: #93c5fd;
+}
+
+.playing-card.manilha {
+  box-shadow: 0 0 0 2px #facc15;
+}
+
+.playing-card.highlighted {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.playing-card.manilha.highlighted {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px #facc15;
+}
+
+.playing-card.dimmed {
+  opacity: 0.45;
+}
+
+.playing-card.clickable {
+  cursor: pointer;
+}
+
+.playing-card.clickable:hover {
+  transform: translateY(-3px);
+  filter: none;
+}
+
+.card-corner {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: calc(var(--w) * 0.26);
+  line-height: 1;
+  text-align: center;
+}
+
+.card-suit {
+  font-size: calc(var(--w) * 0.5);
+  margin-top: calc(var(--w) * 0.15);
+}
+
+.truco-score {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.truco-score > div {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.truco-score > div.mine {
+  border-color: var(--accent);
+}
+
+.truco-score strong {
+  font-size: 1.6rem;
+}
+
+.truco-score > div:not(.truco-value) .label {
+  text-transform: capitalize;
+}
+
+.truco-value strong {
+  font-size: 1.1rem;
+}
+
+.truco-vira {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.truco-vira p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.truco-rounds {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.truco-rounds li {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.truco-rounds strong {
+  text-transform: capitalize;
+}
+
+.truco-rounds li.won {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.truco-rounds li.lost {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.truco-backs {
+  display: flex;
+  gap: 4px;
+}
+
+.truco-table {
+  min-height: 130px;
+  background: #064e3b;
+  border: 1px solid #065f46;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.truco-table .label {
+  color: #a7f3d0;
+}
+
+.truco-table.previous .truco-play {
+  opacity: 0.6;
+}
+
+.truco-table-title {
+  width: 100%;
+  text-align: center;
+}
+
+.truco-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.truco-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.truco-actions button.secondary {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button.truco-call {
+  background: #f59e0b;
+  color: #1c1300;
+}
+
+.truco-hand {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.truco-hand.partner {
+  margin-bottom: 12px;
+}
+
+.truco-hand-cards {
+  display: flex;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.truco-cover {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.truco-rules {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 14px 10px;
+  margin: 10px 0 14px;
+  font-size: 0.9rem;
+}
+
+.truco-rules h3 {
+  font-size: 1rem;
+  margin: 14px 0 6px;
+}
+
+.truco-rules p,
+.truco-rules ul {
+  margin: 0 0 6px;
+}
+
+.truco-rules-cards,
+.truco-rules-example {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+
+@media (max-width: 480px) {
+  .truco-score {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .truco-value {
+    grid-column: span 2;
+  }
+
+  .playing-card.large {
+    --w: 56px;
+  }
+}

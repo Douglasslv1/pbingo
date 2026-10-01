@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
-import type { DominoMatchItem, Page, RoundHistoryItem, TransactionItem } from '../types';
+import { useGameConfig } from '../hooks/useGameConfig';
+import type { DominoMatchItem, Page, RoundHistoryItem, TransactionItem, TrucoMatchItem } from '../types';
 import { formatDateTime } from '../withdrawalFormat';
 import { MODE_LABELS, TEAM_LABELS } from './domino/dominoLabels';
 
-export type Tab = 'transactions' | 'rounds' | 'domino';
+export type Tab = 'transactions' | 'rounds' | 'domino' | 'truco';
 
 interface TransactionView {
   title: string;
@@ -22,10 +23,8 @@ const WITHDRAWAL_STATUS_NOTES: Record<string, string> = {
 };
 
 /** Rotulo conforme o jogo; movimentacoes antigas sem jogo registrado recebem um rotulo neutro. */
-function byGame(transaction: TransactionItem, bingo: string, domino: string, unknown: string): string {
-  if (transaction.game === 'BINGO') return bingo;
-  if (transaction.game === 'DOMINO') return domino;
-  return unknown;
+function byGame(transaction: TransactionItem, labels: Record<'BINGO' | 'DOMINO' | 'TRUCO', string>, unknown: string): string {
+  return labels[transaction.game as keyof typeof labels] ?? unknown;
 }
 
 function describeTransaction(transaction: TransactionItem): TransactionView {
@@ -41,13 +40,21 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
       };
     case 'SPEND_KEY':
       return {
-        title: byGame(transaction, 'Cartela - Números da sorte', 'Entrada em mesa de Dominó', 'Chave usada'),
+        title: byGame(
+          transaction,
+          { BINGO: 'Cartela - Números da sorte', DOMINO: 'Entrada em mesa de Dominó', TRUCO: 'Entrada em mesa de Truco' },
+          'Chave usada',
+        ),
         amount: `-${keys(transaction.amountCredits)}`,
         positive: false,
       };
     case 'PRIZE_PAYOUT':
       return {
-        title: byGame(transaction, 'Prêmio - Números da sorte', 'Prêmio no Dominó', 'Prêmio recebido'),
+        title: byGame(
+          transaction,
+          { BINGO: 'Prêmio - Números da sorte', DOMINO: 'Prêmio no Dominó', TRUCO: 'Prêmio no Truco' },
+          'Prêmio recebido',
+        ),
         amount: `+${formatBrl(transaction.amountFiat)}`,
         positive: true,
       };
@@ -55,8 +62,11 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
       return {
         title: byGame(
           transaction,
-          'Chave devolvida (rodada cancelada ou saída)',
-          'Chave devolvida (mesa cancelada ou saída)',
+          {
+            BINGO: 'Chave devolvida (rodada cancelada ou saída)',
+            DOMINO: 'Chave devolvida (mesa cancelada ou saída)',
+            TRUCO: 'Chave devolvida (mesa cancelada ou saída)',
+          },
           'Chave devolvida',
         ),
         amount: `+${keys(transaction.amountCredits)}`,
@@ -115,13 +125,30 @@ const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'transactions', label: 'Extrato' },
   { value: 'rounds', label: 'Números da sorte' },
   { value: 'domino', label: 'Dominó' },
+  { value: 'truco', label: 'Truco' },
 ];
 
-const DOMINO_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
+const MATCH_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
   WON: 'Venceu',
   LOST: 'Não venceu',
   CANCELLED: 'Cancelada - chave devolvida',
 };
+
+/** Titulo e detalhe de uma partida de domino ou truco no historico. */
+function describeMatch(match: DominoMatchItem | TrucoMatchItem): { title: string; note: string | null } {
+  const stake = match.stake > 1 ? ` · mesa de ${match.stake} chaves` : '';
+  if ('reason' in match) {
+    return {
+      title: `${MODE_LABELS[match.mode]} · ${TEAM_LABELS[match.teamMode]}${stake}`,
+      note: match.reason && (match.reason === 'DOMINO' ? 'terminou em batida' : 'jogo trancado'),
+    };
+  }
+  const mine = match.mySeat % 2;
+  return {
+    title: `Truco · ${TEAM_LABELS[match.teamMode]}${stake}`,
+    note: match.score ? `placar ${match.score[mine]} × ${match.score[1 - mine]}` : null,
+  };
+}
 
 interface Props {
   initialTab?: Tab;
@@ -129,16 +156,27 @@ interface Props {
 
 export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
   const { auth } = useAuth();
+  const config = useGameConfig();
   const [tab, setTab] = useState<Tab>(initialTab);
+  const showTruco = config?.trucoEnabled || auth?.user.role === 'ADMIN';
   const token = auth?.token ?? '';
 
   const fetchTransactions = useCallback((cursor?: string) => api.getMyTransactions(token, cursor), [token]);
   const fetchRounds = useCallback((cursor?: string) => api.getMyRoundHistory(token, cursor), [token]);
-  const fetchMatches = useCallback((cursor?: string) => api.getMyDominoMatches(token, cursor), [token]);
-  const transactions = usePagedList(fetchTransactions);
-  const rounds = usePagedList(fetchRounds);
-  const matches = usePagedList(fetchMatches);
-  const active = tab === 'transactions' ? transactions : tab === 'rounds' ? rounds : matches;
+  const fetchDomino = useCallback(
+    (cursor?: string) => api.getMyMatches<DominoMatchItem>('domino', token, cursor),
+    [token],
+  );
+  const fetchTruco = useCallback((cursor?: string) => api.getMyMatches<TrucoMatchItem>('truco', token, cursor), [token]);
+  const lists = {
+    transactions: usePagedList(fetchTransactions),
+    rounds: usePagedList(fetchRounds),
+    domino: usePagedList(fetchDomino),
+    truco: usePagedList(fetchTruco),
+  };
+  const { transactions, rounds } = lists;
+  const active = lists[tab];
+  const matches = tab === 'domino' ? lists.domino.items : tab === 'truco' ? lists.truco.items : [];
   const { reload } = active;
 
   // Recarrega ao trocar de aba para mostrar movimentacoes recentes
@@ -150,7 +188,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
     <div className="card">
       <h2>Histórico</h2>
       <div className="tabs">
-        {TABS.map((option) => (
+        {TABS.filter((option) => option.value !== 'truco' || showTruco).map((option) => (
           <button
             key={option.value}
             type="button"
@@ -202,23 +240,25 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
             </li>
           ))}
 
-        {tab === 'domino' &&
-          matches.items.map((match) => (
+        {matches.map((match) => {
+          const { title, note } = describeMatch(match);
+          return (
             <li key={match.tableId}>
               <div className="withdrawal-row">
-                <span>
-                  {MODE_LABELS[match.mode]} · {TEAM_LABELS[match.teamMode]}
-                </span>
+                <span>{title}</span>
                 <strong className={match.outcome === 'WON' ? 'amount-in' : undefined}>
-                  {match.outcome === 'WON' ? `Venceu +${formatBrl(match.prizeWon)}` : DOMINO_OUTCOME[match.outcome]}
+                  {match.outcome === 'WON' && Number(match.prizeWon) > 0
+                    ? `Venceu +${formatBrl(match.prizeWon)}`
+                    : MATCH_OUTCOME[match.outcome]}
                 </strong>
               </div>
               <span className="label">
                 {formatDateTime(match.playedAt)}
-                {match.reason && ` · ${match.reason === 'DOMINO' ? 'terminou em batida' : 'jogo trancado'}`}
+                {note && ` · ${note}`}
               </span>
             </li>
-          ))}
+          );
+        })}
       </ul>
 
       {active.nextCursor && (

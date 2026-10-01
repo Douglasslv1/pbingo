@@ -12,8 +12,9 @@ export default function AppHeader() {
   const { auth, logout } = useAuth();
   const config = useGameConfig();
   const isAdmin = auth?.user.role === 'ADMIN';
-  // Liberacao gradual: enquanto desligado, so administradores veem o domino
+  // Liberacao gradual: enquanto desligados, so administradores veem o domino e o truco
   const showDomino = config?.dominoEnabled || isAdmin;
+  const showTruco = config?.trucoEnabled || isAdmin;
 
   return (
     <header className="app-header">
@@ -27,6 +28,11 @@ export default function AppHeader() {
         {showDomino && (
           <NavLink to="/domino" className={navClass}>
             Dominó
+          </NavLink>
+        )}
+        {showTruco && (
+          <NavLink to="/truco" className={navClass}>
+            Truco
           </NavLink>
         )}
         {isAdmin && (

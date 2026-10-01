@@ -4,16 +4,12 @@ import type {
   AdminDominoTableSummary,
   AdminStats,
   AuthUser,
-  DominoAction,
-  DominoMatchItem,
-  DominoMode,
-  DominoTableView,
-  DominoTeamMode,
   GameConfig,
   JoinRoundResult,
   Page,
   RoundHistoryItem,
   RoundView,
+  TableGame,
   Ticket,
   TransactionItem,
   Wallet,
@@ -121,22 +117,23 @@ export const api = {
   getMyRoundHistory: (token: string, cursor?: string) =>
     request<Page<RoundHistoryItem>>(`/rounds/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
 
-  getMyDominoTable: (token: string) => request<DominoTableView | null>('/domino/tables/me', {}, token),
+  // Mesas (domino e truco): o mesmo formato de rotas, com o jogo no caminho
+  getMyTable: <V>(game: TableGame, token: string) => request<V | null>(`/${game}/tables/me`, {}, token),
 
-  joinDominoQueue: (token: string, mode: DominoMode, teamMode: DominoTeamMode) =>
-    request<DominoTableView>('/domino/queue', { method: 'POST', body: JSON.stringify({ mode, teamMode }) }, token),
+  joinTable: <V>(game: TableGame, token: string, choice: Record<string, unknown>) =>
+    request<V>(`/${game}/queue`, { method: 'POST', body: JSON.stringify(choice) }, token),
 
-  leaveDominoQueue: (token: string) =>
-    request<{ tableId: string; refundedCredits: number }>('/domino/queue/leave', { method: 'POST' }, token),
+  leaveTable: (game: TableGame, token: string) =>
+    request<{ tableId: string; refundedCredits: number }>(`/${game}/queue/leave`, { method: 'POST' }, token),
 
-  playDomino: (token: string, tableId: string, action: DominoAction) =>
-    request<DominoTableView>(`/domino/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token),
+  playTable: <V>(game: TableGame, token: string, tableId: string, action: unknown) =>
+    request<V>(`/${game}/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token),
 
-  dominoComeBack: (token: string, tableId: string) =>
-    request<DominoTableView>(`/domino/tables/${tableId}/back`, { method: 'POST' }, token),
+  comeBackToTable: <V>(game: TableGame, token: string, tableId: string) =>
+    request<V>(`/${game}/tables/${tableId}/back`, { method: 'POST' }, token),
 
-  getMyDominoMatches: (token: string, cursor?: string) =>
-    request<Page<DominoMatchItem>>(`/domino/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+  getMyMatches: <M>(game: TableGame, token: string, cursor?: string) =>
+    request<Page<M>>(`/${game}/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
 
   adminStats: (token: string) => request<AdminStats>('/admin/stats', {}, token),
 

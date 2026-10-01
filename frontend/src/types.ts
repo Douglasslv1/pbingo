@@ -156,29 +156,106 @@ export interface DominoGameView {
   legalActions: DominoAction[];
 }
 
-export interface DominoTableView {
+/** Jogos de mesa: o nome tambem e o caminho na API (/domino, /truco). */
+export type TableGame = 'domino' | 'truco';
+
+/** Mesa de qualquer jogo; `game` e a visao do motor do jogo para este jogador. */
+export interface GameTableView<G, M extends string = string, T extends string = string> {
   id: string;
-  mode: DominoMode;
-  teamMode: DominoTeamMode;
+  kind: 'DOMINO' | 'TRUCO';
+  mode: M;
+  teamMode: T;
+  stake: number;
   status: 'WAITING' | 'PLAYING' | 'FINISHED' | 'CANCELLED';
   prizePool: string;
   queueExpiresAt: string | null;
   mySeat: number | null;
   players: Array<{ seat: number; name: string; isMe: boolean; away: boolean; prizeAmount: string | null }>;
   turnDeadline: string | null;
-  game: DominoGameView | null;
+  game: G | null;
 }
 
-export interface DominoMatchItem {
+export type DominoTableView = GameTableView<DominoGameView, DominoMode, DominoTeamMode>;
+
+interface MatchItem<M extends string, T extends string> {
   tableId: string;
-  mode: DominoMode;
-  teamMode: DominoTeamMode;
+  mode: M;
+  teamMode: T;
+  stake: number;
   status: 'FINISHED' | 'CANCELLED';
   playedAt: string;
   outcome: 'WON' | 'LOST' | 'CANCELLED';
-  reason: 'DOMINO' | 'BLOCKED' | null;
+  mySeat: number;
   prizeWon: string;
 }
+
+export interface DominoMatchItem extends MatchItem<DominoMode, DominoTeamMode> {
+  reason: 'DOMINO' | 'BLOCKED' | null;
+}
+
+export interface TrucoMatchItem extends MatchItem<'PAULISTA', TrucoTeamMode> {
+  score?: [number, number];
+}
+
+export type TrucoRank = '4' | '5' | '6' | '7' | 'Q' | 'J' | 'K' | 'A' | '2' | '3';
+export type TrucoSuit = 'O' | 'E' | 'C' | 'P';
+export type TrucoCard = `${TrucoRank}${TrucoSuit}`;
+export type TrucoTeamMode = 'DUEL' | 'PAIRS';
+
+export type TrucoAction =
+  | { type: 'PLAY'; index: number; covered?: boolean }
+  | { type: 'TRUCO' }
+  | { type: 'ACCEPT' }
+  | { type: 'RUN' }
+  | { type: 'RAISE' };
+
+export interface TrucoPlay {
+  seat: number;
+  /** null quando a carta foi jogada coberta. */
+  card: TrucoCard | null;
+  covered: boolean;
+}
+
+export interface TrucoRound {
+  winner: 0 | 1 | null;
+  plays: TrucoPlay[];
+}
+
+export interface TrucoGameView {
+  teamMode: TrucoTeamMode;
+  seat: number;
+  myTeam: 0 | 1;
+  score: [number, number];
+  dealer: number;
+  handNumber: number;
+  value: number;
+  vira: TrucoCard;
+  manilha: TrucoRank;
+  /** null em cada posicao na mao de ferro (ninguem ve as proprias cartas). */
+  hand: Array<TrucoCard | null>;
+  partnerHand: TrucoCard[] | null;
+  handSizes: number[];
+  table: TrucoPlay[];
+  rounds: TrucoRound[];
+  currentSeat: number;
+  actingSeat: number;
+  pendingRaise: { requesterSeat: number; responderSeat: number; value: number } | null;
+  elevenDecision: { team: 0 | 1; seat: number } | null;
+  noRaises: boolean;
+  blind: boolean;
+  lastHand: {
+    winner: 0 | 1 | null;
+    points: number;
+    reason: 'ROUNDS' | 'RUN' | 'ELEVEN_RUN' | 'TIE';
+    vira: TrucoCard;
+    rounds: TrucoRound[];
+  } | null;
+  status: 'PLAYING' | 'FINISHED';
+  winner: 0 | 1 | null;
+  legalActions: TrucoAction[];
+}
+
+export type TrucoTableView = GameTableView<TrucoGameView, 'PAULISTA', TrucoTeamMode>;
 
 export interface AdminDominoTableSummary {
   id: string;

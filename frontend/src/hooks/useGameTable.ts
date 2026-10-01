@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { getSocket } from '../socket';
-import type { DominoTableView } from '../types';
+import type { GameTableView, TableGame } from '../types';
 import { useAuth } from './useAuth';
 
 /**
- * Mesa de domino do jogador: carregada pela API e mantida atualizada pelo WebSocket.
- * Uma mesa encerrada continua na tela ate o jogador voltar ao salao.
+ * Mesa do jogador em um jogo (domino ou truco): carregada pela API e mantida atualizada pelo
+ * WebSocket. Uma mesa encerrada continua na tela ate o jogador voltar ao salao.
  */
-export function useDominoTable() {
+export function useGameTable<V extends GameTableView<unknown>>(game: TableGame) {
   const { auth } = useAuth();
-  const [table, setTable] = useState<DominoTableView | null>(null);
+  const [table, setTable] = useState<V | null>(null);
   const [loading, setLoading] = useState(true);
   const token = auth?.token;
 
   const refresh = useCallback(async () => {
     if (!token) return;
-    const active = await api.getMyDominoTable(token);
+    const active = await api.getMyTable<V>(game, token);
     // Sem mesa ativa, mantem a encerrada que esta na tela (resultado da ultima partida)
     setTable((current) => active ?? (current && ['FINISHED', 'CANCELLED'].includes(current.status) ? current : null));
-  }, [token]);
+  }, [game, token]);
 
   useEffect(() => {
     setLoading(true);
@@ -32,7 +32,7 @@ export function useDominoTable() {
     const socket = getSocket();
 
     // O servidor so envia a visao das mesas em que o jogador esta sentado
-    function onTable(view: DominoTableView) {
+    function onTable(view: V) {
       setTable(view);
     }
     function onLeft(payload: { tableId: string }) {
@@ -43,15 +43,15 @@ export function useDominoTable() {
       refresh().catch(() => {});
     }
 
-    socket.on('domino:table', onTable);
-    socket.on('domino:left', onLeft);
+    socket.on(`${game}:table`, onTable);
+    socket.on(`${game}:left`, onLeft);
     socket.on('connect', onReconnect);
     return () => {
-      socket.off('domino:table', onTable);
-      socket.off('domino:left', onLeft);
+      socket.off(`${game}:table`, onTable);
+      socket.off(`${game}:left`, onLeft);
       socket.off('connect', onReconnect);
     };
-  }, [refresh]);
+  }, [game, refresh]);
 
   return { table, setTable, loading, refresh };
 }

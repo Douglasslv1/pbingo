@@ -1,33 +1,37 @@
 import { formatBrl, formatCountdown } from '../../format';
 import { useCountdown } from '../../hooks/useCountdown';
-import { useGameConfig } from '../../hooks/useGameConfig';
-import type { DominoTableView } from '../../types';
-import { MODE_LABELS, seatsFor, TEAM_LABELS } from './dominoLabels';
+import type { GameTableView } from '../../types';
 
 interface Props {
-  table: DominoTableView;
+  table: GameTableView<unknown>;
+  /** Modalidade e formato, ja traduzidos. */
+  subtitle: string;
+  seatCount: number;
+  pairs: boolean;
+  /** Entrada gratuita: nao ha chave a devolver. */
+  free: boolean;
   leaving: boolean;
   onLeave: () => void;
 }
 
-export default function DominoWaiting({ table, leaving, onLeave }: Props) {
+/** Sala de espera de qualquer jogo de mesa: lugares, prazo para completar e saida com devolucao. */
+export default function TableWaiting({ table, subtitle, seatCount, pairs, free, leaving, onLeave }: Props) {
   const countdown = useCountdown(table.queueExpiresAt);
-  const free = useGameConfig()?.dominoFree ?? false;
-  const seatCount = seatsFor(table.teamMode);
   const seats = Array.from({ length: seatCount }, (_, seat) => table.players.find((player) => player.seat === seat) ?? null);
+  const keys = `${table.stake === 1 ? 'sua chave volta' : 'suas chaves voltam'}`;
 
   return (
     <div className="card">
       <h2>Aguardando jogadores</h2>
       <p className="label">
-        {MODE_LABELS[table.mode]} · {TEAM_LABELS[table.teamMode]} · prêmio atual {formatBrl(table.prizePool)}
+        {subtitle} · prêmio atual {formatBrl(table.prizePool)}
       </p>
 
       <div className="domino-seats">
         {seats.map((player, seat) => (
           <div key={seat} className={player ? 'domino-seat filled' : 'domino-seat'}>
             <strong>{player ? (player.isMe ? 'Você' : player.name) : 'Livre'}</strong>
-            {table.teamMode === 'PAIRS' && <span className="label">Dupla {seat % 2 === 0 ? 'A' : 'B'}</span>}
+            {pairs && <span className="label">Dupla {seat % 2 === 0 ? 'A' : 'B'}</span>}
           </div>
         ))}
       </div>
@@ -38,11 +42,11 @@ export default function DominoWaiting({ table, leaving, onLeave }: Props) {
       <p className="hint intro-hint">
         {table.players.length}/{seatCount} jogadores. A partida começa sozinha quando a mesa completar.
         {countdown !== null &&
-          ` Se não completar em ${formatCountdown(countdown)}, a mesa é cancelada${free ? '' : ' e sua chave volta'}.`}
+          ` Se não completar em ${formatCountdown(countdown)}, a mesa é cancelada${free ? '' : ` e ${keys}`}.`}
       </p>
 
       <button type="button" className="link" onClick={onLeave} disabled={leaving}>
-        {leaving ? 'Saindo...' : free ? 'Sair da mesa' : 'Sair e recuperar a chave'}
+        {leaving ? 'Saindo...' : free ? 'Sair da mesa' : `Sair e recuperar ${table.stake === 1 ? 'a chave' : 'as chaves'}`}
       </button>
     </div>
   );

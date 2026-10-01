@@ -8,6 +8,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SupportPage from './pages/SupportPage';
 import TermsPage from './pages/TermsPage';
+import TrucoPage from './pages/TrucoPage';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/suporte" element={<SupportPage />} />
           <Route path="/app" element={<AppPage />} />
           <Route path="/domino" element={<DominoPage />} />
+          <Route path="/truco" element={<TrucoPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
           <Route path="/termos" element={<TermsPage />} />

@@ -1,84 +1,47 @@
-import { useEffect, useState } from 'react';
-import { api, ApiError } from '../api';
-import AcceptTermsCard from '../components/AcceptTermsCard';
-import AppHeader from '../components/AppHeader';
-import AuthForm from '../components/AuthForm';
 import DominoGame from '../components/domino/DominoGame';
 import DominoLobby from '../components/domino/DominoLobby';
+import { MODE_LABELS, seatsFor, TEAM_LABELS } from '../components/domino/dominoLabels';
 import { withOptimisticPlay } from '../components/domino/optimisticPlay';
-import DominoWaiting from '../components/domino/DominoWaiting';
 import HistoryPanel from '../components/HistoryPanel';
-import { useAuth } from '../hooks/useAuth';
-import { useDominoTable } from '../hooks/useDominoTable';
-import type { DominoAction, DominoMode, DominoTeamMode } from '../types';
+import TablePage from '../components/tables/TablePage';
+import TableWaiting from '../components/tables/TableWaiting';
+import { useGameConfig } from '../hooks/useGameConfig';
+import { useTableRoom } from '../hooks/useTableRoom';
+import type { DominoAction, DominoTableView } from '../types';
 
 function DominoRoom() {
-  const { auth } = useAuth();
-  const { table, setTable, loading, refresh } = useDominoTable();
-  const [keysBalance, setKeysBalance] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const token = auth!.token;
+  const free = useGameConfig()?.dominoFree ?? false;
+  const room = useTableRoom<DominoTableView, DominoAction>('domino', (table, action) =>
+    action.type === 'PLAY' ? withOptimisticPlay(table, action) : null,
+  );
+  const { table } = room;
 
-  // Saldo de chaves no salao (muda ao entrar, sair ou ter a mesa cancelada)
-  useEffect(() => {
-    api
-      .getWallet(token)
-      .then((wallet) => setKeysBalance(wallet.credits.balance))
-      .catch(() => setKeysBalance(null));
-  }, [token, table?.id, table?.status]);
-
-  async function run(action: () => Promise<void>) {
-    setBusy(true);
-    setError(null);
-    try {
-      await action();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const join = (mode: DominoMode, teamMode: DominoTeamMode) =>
-    run(async () => setTable(await api.joinDominoQueue(token, mode, teamMode)));
-  const leave = () =>
-    run(async () => {
-      await api.leaveDominoQueue(token);
-      setTable(null);
-    });
-  const comeBack = () =>
-    run(async () => {
-      if (table) setTable(await api.dominoComeBack(token, table.id));
-    });
-  const play = (action: DominoAction) =>
-    run(async () => {
-      if (!table) return;
-      if (action.type === 'PLAY') setTable(withOptimisticPlay(table, action));
-      try {
-        setTable(await api.playDomino(token, table.id, action));
-      } catch (err) {
-        await refresh().catch(() => setTable(table));
-        throw err;
-      }
-    });
-
-  if (loading) {
+  if (room.loading) {
     return <div className="card">Carregando...</div>;
   }
 
   if (table?.status === 'WAITING') {
-    return <DominoWaiting table={table} leaving={busy} onLeave={leave} />;
+    return (
+      <TableWaiting
+        table={table}
+        subtitle={`${MODE_LABELS[table.mode]} · ${TEAM_LABELS[table.teamMode]}`}
+        seatCount={seatsFor(table.teamMode)}
+        pairs={table.teamMode === 'PAIRS'}
+        free={free}
+        leaving={room.busy}
+        onLeave={room.leave}
+      />
+    );
   }
   if (table && (table.status === 'PLAYING' || table.status === 'FINISHED')) {
     return (
       <DominoGame
         table={table}
-        busy={busy}
-        error={error}
-        onAction={play}
-        onComeBack={comeBack}
-        onBackToLobby={() => setTable(null)}
+        busy={room.busy}
+        error={room.error}
+        onAction={room.act}
+        onComeBack={room.comeBack}
+        onBackToLobby={room.backToLobby}
       />
     );
   }
@@ -88,22 +51,17 @@ function DominoRoom() {
       {table?.status === 'CANCELLED' && (
         <div className="banner">A mesa foi cancelada por falta de jogadores. Sua chave foi devolvida.</div>
       )}
-      {error && <p className="error">{error}</p>}
-      <DominoLobby keysBalance={keysBalance} joining={busy} onJoin={join} />
+      {room.error && <p className="error">{room.error}</p>}
+      <DominoLobby keysBalance={room.keysBalance} joining={room.busy} onJoin={room.join} />
       <HistoryPanel initialTab="domino" />
     </>
   );
 }
 
 export default function DominoPage() {
-  const { auth } = useAuth();
-
   return (
-    <div className="app-shell">
-      <AppHeader />
-      <main>
-        {!auth ? <AuthForm /> : auth.user.termsAccepted === false ? <AcceptTermsCard /> : <DominoRoom />}
-      </main>
-    </div>
+    <TablePage>
+      <DominoRoom />
+    </TablePage>
   );
 }
