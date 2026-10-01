@@ -35,6 +35,9 @@ export default function AppHeader() {
             Truco
           </NavLink>
         )}
+        <NavLink to="/ranking" className={navClass}>
+          Ranking
+        </NavLink>
         {auth && (
           <NavLink to="/perfil" className={navClass}>
             Perfil

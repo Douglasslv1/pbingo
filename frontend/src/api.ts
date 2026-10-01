@@ -7,6 +7,8 @@ import type {
   JoinRoundResult,
   Page,
   Profile,
+  Ranking,
+  RankingGame,
   RoundHistoryItem,
   RoundView,
   TableGame,
@@ -71,6 +73,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ token, password }),
     }),
+
+  getRanking: (game: RankingGame, period: 'month' | 'all', token?: string) =>
+    request<Ranking>(`/ranking/${game}?period=${period}`, {}, token),
 
   getProfile: (token: string) => request<Profile>('/profile/me', {}, token),
 

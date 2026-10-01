@@ -1382,6 +1382,8 @@ label.checkbox input {
 }
 
 .partner-badge {
+  display: inline-block;
+  white-space: nowrap;
   margin-left: 6px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -1675,16 +1677,9 @@ label.checkbox input {
 
 /* Celular: menu do app em uma unica faixa deslizavel, sem quebrar linha */
 @media (max-width: 560px) {
+  /* Muitos itens: quebra em linhas (rolar para o lado escondia itens) */
   .app-header .app-nav {
     width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .app-header .app-nav::-webkit-scrollbar {
-    display: none;
   }
 
   .app-header .nav-link {
@@ -1976,4 +1971,68 @@ button.truco-call {
 
 .nickname-nudge {
   margin-bottom: 12px;
+}
+
+/* Ranking */
+
+.ranking-period {
+  margin-top: -4px;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ranking-table th,
+.ranking-table td {
+  padding: 8px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.ranking-table th:nth-child(-n + 2),
+.ranking-table td:nth-child(-n + 2) {
+  text-align: left;
+}
+
+.ranking-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.ranking-table abbr {
+  text-decoration: none;
+}
+
+.ranking-position {
+  width: 40px;
+  font-weight: 700;
+}
+
+.ranking-name {
+  overflow-wrap: anywhere;
+}
+
+/* Colunas de numeros so com a largura necessaria: o apelido fica com o resto */
+.ranking-table td:nth-child(n + 3),
+.ranking-table th:nth-child(n + 3) {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ranking-table tr.podium td {
+  font-weight: 600;
+}
+
+.ranking-table tr.me td {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.ranking-rules {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--muted);
 }

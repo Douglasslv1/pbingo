@@ -70,6 +70,26 @@ export interface GameStats {
   prizes: string;
 }
 
+export type RankingGame = 'truco' | 'domino' | 'bingo';
+
+export interface RankingEntry {
+  position: number;
+  name: string;
+  wins: number;
+  matches: number;
+  winRate: number;
+  isMe: boolean;
+}
+
+export interface Ranking {
+  period: 'month' | 'all';
+  minMatches: number;
+  maxDailyWinsVsSame: number | null;
+  testSeason: boolean;
+  entries: RankingEntry[];
+  me: RankingEntry | null;
+}
+
 export interface Profile {
   name: string;
   email: string;
