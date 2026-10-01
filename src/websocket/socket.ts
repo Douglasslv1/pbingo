@@ -50,3 +50,15 @@ export function emitToUser(userId: string, event: string, payload: unknown): voi
   }
   io.to(userRoom(userId)).emit(event, payload);
 }
+
+/** Conexoes abertas agora: usuarios logados distintos e total (inclui visitantes sem login). */
+export async function onlineCounts(): Promise<{ onlineUsers: number; onlineConnections: number }> {
+  if (!io) {
+    return { onlineUsers: 0, onlineConnections: 0 };
+  }
+  const sockets = await io.fetchSockets();
+  return {
+    onlineUsers: new Set(sockets.map((socket) => socket.data.userId).filter(Boolean)).size,
+    onlineConnections: sockets.length,
+  };
+}

@@ -1623,6 +1623,21 @@ label.checkbox input {
   margin: 0;
 }
 
+.admin-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-overview h3 {
+  margin: 0 0 12px;
+}
+
+.admin-overview .round-stats {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-bottom: 0;
+}
+
 .admin-domino-detail h3,
 .admin-domino-detail h4 {
   margin: 0 0 8px;

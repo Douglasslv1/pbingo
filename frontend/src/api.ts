@@ -2,6 +2,7 @@ import type {
   AuthResult,
   AdminDominoTableDetail,
   AdminDominoTableSummary,
+  AdminStats,
   AuthUser,
   DominoAction,
   DominoMatchItem,
@@ -136,6 +137,8 @@ export const api = {
 
   getMyDominoMatches: (token: string, cursor?: string) =>
     request<Page<DominoMatchItem>>(`/domino/history/me${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+
+  adminStats: (token: string) => request<AdminStats>('/admin/stats', {}, token),
 
   adminDominoTables: (token: string, status?: string) =>
     request<AdminDominoTableSummary[]>(`/admin/domino/tables${status ? `?status=${status}` : ''}`, {}, token),

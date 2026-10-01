@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
+import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
 import AdminWithdrawalsPanel from '../components/admin/AdminWithdrawalsPanel';
 import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import { useAuth } from '../hooks/useAuth';
 
-type Section = 'withdrawals' | 'domino';
+const SECTIONS = [
+  { label: 'Visão geral', title: 'Visão geral', Panel: AdminOverviewPanel },
+  { label: 'Saques', title: 'Saques', Panel: AdminWithdrawalsPanel },
+  { label: 'Dominó', title: 'Mesas de dominó', Panel: AdminDominoPanel },
+];
 
 export default function AdminPage() {
   const { auth } = useAuth();
-  const [section, setSection] = useState<Section>('withdrawals');
+  const [current, setCurrent] = useState(SECTIONS[0]);
 
   return (
     <div className="app-shell">
@@ -20,25 +25,21 @@ export default function AdminPage() {
         ) : (
           <>
             <div className="admin-sections">
-              <h1>{section === 'withdrawals' ? 'Saques' : 'Mesas de dominó'}</h1>
+              <h1>{current.title}</h1>
               <nav className="app-nav" aria-label="Seções do admin">
-                <button
-                  type="button"
-                  className={section === 'withdrawals' ? 'nav-link active' : 'nav-link'}
-                  onClick={() => setSection('withdrawals')}
-                >
-                  Saques
-                </button>
-                <button
-                  type="button"
-                  className={section === 'domino' ? 'nav-link active' : 'nav-link'}
-                  onClick={() => setSection('domino')}
-                >
-                  Dominó
-                </button>
+                {SECTIONS.map((section) => (
+                  <button
+                    key={section.label}
+                    type="button"
+                    className={section === current ? 'nav-link active' : 'nav-link'}
+                    onClick={() => setCurrent(section)}
+                  >
+                    {section.label}
+                  </button>
+                ))}
               </nav>
             </div>
-            {section === 'withdrawals' ? <AdminWithdrawalsPanel /> : <AdminDominoPanel />}
+            <current.Panel />
           </>
         )}
       </main>

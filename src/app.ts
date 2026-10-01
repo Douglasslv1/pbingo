@@ -5,6 +5,7 @@ import { env } from './config/env';
 import { errorMiddleware, notFoundMiddleware } from './middleware/error.middleware';
 import { createRateLimiter } from './middleware/rateLimit.middleware';
 import { requestLogger } from './middleware/requestLogger.middleware';
+import { adminStatsRouter } from './modules/admin/admin.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
 import { adminDominoRouter, dominoRouter } from './modules/domino/domino.routes';
@@ -89,6 +90,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/admin/withdrawals', adminWithdrawalsRouter);
   app.use('/domino', dominoRouter);
   app.use('/admin/domino', adminDominoRouter);
+  app.use('/admin/stats', adminStatsRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

@@ -205,3 +205,24 @@ export interface AdminDominoTableDetail extends Omit<AdminDominoTableSummary, 'p
   result: DominoGameView['result'];
   moves: Array<{ moveNumber: number; seat: number; action: DominoAction; automatic: boolean; createdAt: string }>;
 }
+
+export interface AdminStats {
+  users: {
+    total: number;
+    newToday: number;
+    newWeek: number;
+    everLoggedIn: number;
+    activeToday: number;
+    activeWeek: number;
+    onlineUsers: number;
+    onlineConnections: number;
+  };
+  money: {
+    pixIn: string;
+    prizesPaid: string;
+    withdrawals: Partial<Record<WithdrawalStatus, { count: number; amount: string }>>;
+  };
+  bingoRounds: Partial<Record<RoundStatus, number>>;
+  dominoTables: Partial<Record<DominoTableView['status'], number>>;
+  recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }>;
+}
