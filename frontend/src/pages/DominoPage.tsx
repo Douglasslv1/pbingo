@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import AuthForm from '../components/AuthForm';
 import DominoGame from '../components/domino/DominoGame';
 import DominoLobby from '../components/domino/DominoLobby';
+import { withOptimisticPlay } from '../components/domino/optimisticPlay';
 import DominoWaiting from '../components/domino/DominoWaiting';
 import HistoryPanel from '../components/HistoryPanel';
 import { useAuth } from '../hooks/useAuth';
@@ -13,7 +14,7 @@ import type { DominoAction, DominoMode, DominoTeamMode } from '../types';
 
 function DominoRoom() {
   const { auth } = useAuth();
-  const { table, setTable, loading } = useDominoTable();
+  const { table, setTable, loading, refresh } = useDominoTable();
   const [keysBalance, setKeysBalance] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +53,14 @@ function DominoRoom() {
     });
   const play = (action: DominoAction) =>
     run(async () => {
-      if (table) setTable(await api.playDomino(token, table.id, action));
+      if (!table) return;
+      if (action.type === 'PLAY') setTable(withOptimisticPlay(table, action));
+      try {
+        setTable(await api.playDomino(token, table.id, action));
+      } catch (err) {
+        await refresh().catch(() => setTable(table));
+        throw err;
+      }
     });
 
   if (loading) {

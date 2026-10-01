@@ -15,6 +15,12 @@ const SECTIONS = [
 export default function AdminPage() {
   const { auth } = useAuth();
   const [current, setCurrent] = useState(SECTIONS[0]);
+  // Abas ja abertas continuam montadas (so escondidas): voltar a elas e instantaneo
+  const [visited, setVisited] = useState(() => new Set([current]));
+  const open = (section: (typeof SECTIONS)[number]) => {
+    setCurrent(section);
+    setVisited((previous) => new Set(previous).add(section));
+  };
 
   return (
     <div className="app-shell">
@@ -32,14 +38,18 @@ export default function AdminPage() {
                     key={section.label}
                     type="button"
                     className={section === current ? 'nav-link active' : 'nav-link'}
-                    onClick={() => setCurrent(section)}
+                    onClick={() => open(section)}
                   >
                     {section.label}
                   </button>
                 ))}
               </nav>
             </div>
-            <current.Panel />
+            {SECTIONS.filter((section) => visited.has(section)).map((section) => (
+              <div key={section.label} hidden={section !== current}>
+                <section.Panel />
+              </div>
+            ))}
           </>
         )}
       </main>
