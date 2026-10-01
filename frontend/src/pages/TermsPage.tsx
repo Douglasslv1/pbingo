@@ -11,7 +11,7 @@ const FALLBACK = {
   roundIntervalMinutes: 15,
   termsVersion: '2026-09-30.2',
   dominoTurnSeconds: 30,
-  dominoQueueTimeoutMinutes: 10,
+  queueTimeoutMinutes: 10,
 };
 
 export default function TermsPage() {
@@ -86,7 +86,7 @@ export default function TermsPage() {
         <ul>
           <li>
             As mesas são de 4 jogadores, ou de 2 no mano a mano. Você entra com 1 chave e a partida começa assim que a mesa completar. Se ela não
-            completar em {config.dominoQueueTimeoutMinutes} minutos, é cancelada e todas as chaves são devolvidas. Antes do
+            completar em {config.queueTimeoutMinutes} minutos, é cancelada e todas as chaves são devolvidas. Antes do
             início, você pode sair e recuperar a sua chave.
           </li>
           <li>

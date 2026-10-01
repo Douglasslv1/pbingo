@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { env } from '../src/config/env';
 import { prisma } from '../src/lib/prisma';
 import { autoAction } from '../src/modules/domino/domino.engine';
-import { cancelStaleQueues } from '../src/modules/domino/domino.service';
+import { cancelStaleQueues } from '../src/modules/tables/tables.service';
 import { DominoAction, DominoState } from '../src/modules/domino/domino.types';
 import { registerTestUser, setCreditBalance } from './helpers';
 import { app } from './testApp';
@@ -43,13 +43,13 @@ async function fullTable(choice: Record<string, string> = SIX_INDIVIDUAL) {
     tableId = res.body.id;
     players.push(player);
   }
-  const seats = await prisma.dominoSeat.findMany({ where: { tableId } });
+  const seats = await prisma.gameSeat.findMany({ where: { tableId } });
   const bySeat = (seat: number) => players.find((p) => p.user.id === seats.find((s) => s.seat === seat)?.userId)!;
   return { tableId, players, bySeat };
 }
 
 async function tableState(tableId: string): Promise<DominoState> {
-  return (await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } })).state as unknown as DominoState;
+  return (await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } })).state as unknown as DominoState;
 }
 
 describe('Fila e mesas de domino', () => {
@@ -61,13 +61,13 @@ describe('Fila e mesas de domino', () => {
 
     const { tableId, players } = await fullTable();
     // O primeiro jogador ja estava na fila: a mesa dele fecha com mais 3 e sobra 1 numa mesa nova
-    const firstTable = await prisma.dominoTable.findUniqueOrThrow({ where: { id: waiting.body.id }, include: { seats: true } });
+    const firstTable = await prisma.gameTable.findUniqueOrThrow({ where: { id: waiting.body.id }, include: { seats: true } });
     expect(firstTable.status).toBe('PLAYING');
     expect(firstTable.seats).toHaveLength(4);
     expect(firstTable.prizePool.toString()).toBe((4 * env.prizeContributionPerTicket).toString());
     expect(await credits(first.user.id)).toBe(4);
 
-    const leftover = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } });
+    const leftover = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } });
     expect(leftover.status).toBe('WAITING');
     expect(players).toHaveLength(4);
   });
@@ -115,7 +115,7 @@ describe('Fila e mesas de domino', () => {
     const results = await Promise.all(players.map((player) => joinQueue(player)));
 
     expect(results.every((res) => res.status === 201)).toBe(true);
-    const tables = await prisma.dominoTable.findMany({ include: { seats: true }, orderBy: { createdAt: 'asc' } });
+    const tables = await prisma.gameTable.findMany({ include: { seats: true }, orderBy: { createdAt: 'asc' } });
     expect(tables.map((table) => table.seats.length)).toEqual([4, 2]);
     expect(tables.map((table) => table.status)).toEqual(['PLAYING', 'WAITING']);
   });
@@ -130,12 +130,12 @@ describe('Fila e mesas de domino', () => {
     expect(res.status).toBe(200);
     expect(await credits(leaves.user.id)).toBe(5);
 
-    const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: joined.body.id }, include: { seats: true } });
+    const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: joined.body.id }, include: { seats: true } });
     expect(table.seats).toHaveLength(1);
     expect(table.prizePool.toString()).toBe(env.prizeContributionPerTicket.toString());
 
     await request(app).post('/domino/queue/leave').set('Authorization', `Bearer ${stays.token}`);
-    const empty = await prisma.dominoTable.findUniqueOrThrow({ where: { id: joined.body.id } });
+    const empty = await prisma.gameTable.findUniqueOrThrow({ where: { id: joined.body.id } });
     expect(empty.status).toBe('CANCELLED');
   });
 
@@ -160,7 +160,7 @@ describe('Fila e mesas de domino', () => {
       expect(await prisma.transaction.count({ where: { userId: broke.user.id } })).toBe(0);
 
       const { tableId, players } = await fullTable(DUEL);
-      const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } });
+      const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } });
       expect(table.prizePool.toString()).toBe('0');
       expect(await credits(players[0].user.id)).toBe(5);
     } finally {
@@ -195,14 +195,14 @@ describe('Fila e mesas de domino', () => {
   it('cancela mesas paradas alem do prazo e devolve as chaves', async () => {
     const player = await fundedPlayer();
     const joined = await joinQueue(player);
-    await prisma.dominoTable.update({
+    await prisma.gameTable.update({
       where: { id: joined.body.id },
-      data: { createdAt: new Date(Date.now() - (env.dominoQueueTimeoutMinutes + 1) * 60_000) },
+      data: { createdAt: new Date(Date.now() - (env.queueTimeoutMinutes + 1) * 60_000) },
     });
 
     expect(await cancelStaleQueues()).toBe(1);
     expect(await credits(player.user.id)).toBe(5);
-    const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: joined.body.id } });
+    const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: joined.body.id } });
     expect(table.status).toBe('CANCELLED');
   });
 });
@@ -228,7 +228,7 @@ describe('Jogadas na mesa', () => {
     const ok = await move(current, tableId, { type: 'PLAY', tile: opening, side: 'LEFT' });
     expect(ok.status).toBe(200);
     expect(ok.body.game.line).toHaveLength(1);
-    expect(await prisma.dominoMove.count({ where: { tableId } })).toBeGreaterThanOrEqual(1);
+    expect(await prisma.gameMove.count({ where: { tableId } })).toBeGreaterThanOrEqual(1);
   });
 
   it('partida completa pela API: termina, paga os vencedores e registra todas as jogadas', async () => {
@@ -243,13 +243,13 @@ describe('Jogadas na mesa', () => {
         state = await tableState(tableId);
       }
 
-      const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
+      const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
       expect(table.status).toBe('FINISHED');
 
       const winners = table.seats.filter((seat) => state.result!.winnerSeats.includes(seat.seat));
       const paidCents = winners.reduce((sum, seat) => sum + Math.round(Number(seat.prizeAmount) * 100), 0);
       expect(paidCents).toBe(Math.round(Number(table.prizePool) * 100));
-      expect(await prisma.dominoMove.count({ where: { tableId } })).toBe(state.moveCount);
+      expect(await prisma.gameMove.count({ where: { tableId } })).toBe(state.moveCount);
 
       const view = await request(app).get(`/domino/tables/${tableId}`).set('Authorization', `Bearer ${players[0].token}`);
       expect(view.body.game.revealedHands).toHaveLength(players.length);

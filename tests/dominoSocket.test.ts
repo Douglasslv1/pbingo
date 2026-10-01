@@ -77,7 +77,7 @@ describe('WebSocket do domino', () => {
     await expect.poll(() => alice.some((e) => e.payload.game)).toBe(true);
     await expect.poll(() => bob.some((e) => e.payload.game)).toBe(true);
 
-    const state = (await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } })).state as unknown as DominoState;
+    const state = (await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } })).state as unknown as DominoState;
     const aliceView = alice.filter((e) => e.payload.game).at(-1)!.payload;
     const bobView = bob.filter((e) => e.payload.game).at(-1)!.payload;
 

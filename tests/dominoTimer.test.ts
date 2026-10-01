@@ -2,8 +2,8 @@ import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { env } from '../src/config/env';
 import { prisma } from '../src/lib/prisma';
-import { clearAllTurnTimeouts, scheduleTurnTimeout } from '../src/modules/domino/domino.scheduler';
-import { AWAY_TURN_MS, handleTurnTimeout, restoreTurnTimers } from '../src/modules/domino/domino.service';
+import { clearAllTurnTimeouts, scheduleTurnTimeout } from '../src/modules/tables/turn.scheduler';
+import { AWAY_TURN_MS, handleTurnTimeout, restoreTurnTimers } from '../src/modules/tables/tables.service';
 import { DominoState } from '../src/modules/domino/domino.types';
 import { registerTestUser, setCreditBalance } from './helpers';
 import { app } from './testApp';
@@ -30,13 +30,13 @@ async function startedTable() {
     tableId = res.body.id;
     players.push(player);
   }
-  const seats = await prisma.dominoSeat.findMany({ where: { tableId } });
+  const seats = await prisma.gameSeat.findMany({ where: { tableId } });
   const bySeat = (seat: number) => players.find((p) => p.user.id === seats.find((s) => s.seat === seat)?.userId)!;
   return { tableId, bySeat };
 }
 
 async function table(tableId: string) {
-  const row = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
+  const row = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
   return { ...row, game: row.state as unknown as DominoState };
 }
 
@@ -57,7 +57,7 @@ describe('Cronometro da jogada no domino', () => {
 
     await handleTurnTimeout(tableId, new Date());
 
-    expect(await prisma.dominoMove.count({ where: { tableId } })).toBe(0);
+    expect(await prisma.gameMove.count({ where: { tableId } })).toBe(0);
   });
 
   it('com o prazo vencido joga pelo jogador e conta o tempo esgotado', async () => {
@@ -68,7 +68,7 @@ describe('Cronometro da jogada no domino', () => {
     await handleTurnTimeout(tableId, later());
 
     const after = await table(tableId);
-    const moves = await prisma.dominoMove.findMany({ where: { tableId }, orderBy: { moveNumber: 'asc' } });
+    const moves = await prisma.gameMove.findMany({ where: { tableId }, orderBy: { moveNumber: 'asc' } });
     expect(moves[0]).toMatchObject({ seat, automatic: true });
     expect(after.game.line).toHaveLength(1);
     expect(seatOf(after, seat)).toMatchObject({ timeouts: 1, isAway: false });
@@ -112,7 +112,7 @@ describe('Cronometro da jogada no domino', () => {
     const { tableId, bySeat } = await startedTable();
     const start = await table(tableId);
     const seat = start.game.currentSeat;
-    await prisma.dominoSeat.updateMany({ where: { tableId, seat }, data: { timeouts: 2, isAway: true } });
+    await prisma.gameSeat.updateMany({ where: { tableId, seat }, data: { timeouts: 2, isAway: true } });
 
     const res = await request(app)
       .post(`/domino/tables/${tableId}/moves`)
@@ -128,8 +128,8 @@ describe('Cronometro da jogada no domino', () => {
     const { tableId, bySeat } = await startedTable();
     const start = await table(tableId);
     const seat = start.game.currentSeat;
-    await prisma.dominoSeat.updateMany({ where: { tableId, seat }, data: { timeouts: 2, isAway: true } });
-    await prisma.dominoTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() + AWAY_TURN_MS) } });
+    await prisma.gameSeat.updateMany({ where: { tableId, seat }, data: { timeouts: 2, isAway: true } });
+    await prisma.gameTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() + AWAY_TURN_MS) } });
 
     const res = await request(app)
       .post(`/domino/tables/${tableId}/back`)
@@ -143,22 +143,22 @@ describe('Cronometro da jogada no domino', () => {
 
   it('o cronometro agendado dispara a jogada automatica, inclusive apos reinicio', async () => {
     const { tableId } = await startedTable();
-    await prisma.dominoTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
+    await prisma.gameTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
 
     // Simula o servidor subindo: religa os cronometros a partir do banco
     expect(await restoreTurnTimers()).toBe(1);
 
-    await expect.poll(() => prisma.dominoMove.count({ where: { tableId } }), { timeout: 5000 }).toBeGreaterThan(0);
+    await expect.poll(() => prisma.gameMove.count({ where: { tableId } }), { timeout: 5000 }).toBeGreaterThan(0);
   });
 
   it('reagendar substitui o cronometro anterior da mesa', async () => {
     const { tableId } = await startedTable();
-    await prisma.dominoTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
+    await prisma.gameTable.update({ where: { id: tableId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
 
     scheduleTurnTimeout(tableId, new Date(Date.now() + 60_000));
     scheduleTurnTimeout(tableId, null);
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    expect(await prisma.dominoMove.count({ where: { tableId } })).toBe(0);
+    expect(await prisma.gameMove.count({ where: { tableId } })).toBe(0);
   });
 });

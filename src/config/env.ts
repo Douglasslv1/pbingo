@@ -47,8 +47,11 @@ export const env = {
   // Domino sem custo e sem premio, para testes
   dominoFree: process.env.DOMINO_FREE === 'true',
   dominoTurnSeconds: optionalNumber('DOMINO_TURN_SECONDS', 30),
-  // Mesa de domino que nao completa nesse prazo e cancelada, com as chaves devolvidas
-  dominoQueueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
+  // Enquanto false, so administradores jogam truco
+  trucoEnabled: process.env.TRUCO_ENABLED === 'true',
+  trucoTurnSeconds: optionalNumber('TRUCO_TURN_SECONDS', 30),
+  // Mesa (de qualquer jogo) que nao completa nesse prazo e cancelada, com as chaves devolvidas
+  queueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),
   nextRoundDelayMs: optionalNumber('NEXT_ROUND_DELAY_MS', 5_000),
 

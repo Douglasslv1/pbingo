@@ -34,7 +34,7 @@ export async function getPlatformStats(now = new Date()) {
     sumFiat({ type: 'PRIZE_PAYOUT' }),
     prisma.withdrawal.groupBy({ by: ['status'], _count: { _all: true }, _sum: { amountFiat: true } }),
     prisma.round.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.dominoTable.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.gameTable.groupBy({ by: ['status'], where: { game: 'DOMINO' }, _count: { _all: true } }),
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 10,

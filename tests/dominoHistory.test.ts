@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { env } from '../src/config/env';
 import { prisma } from '../src/lib/prisma';
-import { cancelStaleQueues, handleTurnTimeout } from '../src/modules/domino/domino.service';
+import { cancelStaleQueues, handleTurnTimeout } from '../src/modules/tables/tables.service';
 import { DominoState } from '../src/modules/domino/domino.types';
 import { makeAdmin, registerTestUser, setCreditBalance } from './helpers';
 import { app } from './testApp';
@@ -31,11 +31,11 @@ async function finishedTable() {
   }
   const later = new Date(Date.now() + 10 * 60_000);
   for (let guard = 0; guard < 100; guard += 1) {
-    const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } });
+    const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } });
     if (table.status !== 'PLAYING') break;
     await handleTurnTimeout(tableId, later);
   }
-  const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
+  const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId }, include: { seats: true } });
   return { tableId, players, table, state: table.state as unknown as DominoState };
 }
 
@@ -85,9 +85,9 @@ describe('Historico de partidas de domino', () => {
   it('mostra mesas canceladas e nao mostra mesas ainda em espera', async () => {
     const cancelled = await fundedPlayer();
     const joined = await joinQueue(cancelled);
-    await prisma.dominoTable.update({
+    await prisma.gameTable.update({
       where: { id: joined.body.id },
-      data: { createdAt: new Date(Date.now() - (env.dominoQueueTimeoutMinutes + 1) * 60_000) },
+      data: { createdAt: new Date(Date.now() - (env.queueTimeoutMinutes + 1) * 60_000) },
     });
     await cancelStaleQueues();
     await joinQueue(cancelled);

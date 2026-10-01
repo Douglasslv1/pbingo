@@ -23,7 +23,10 @@ export interface GameConfig {
   dominoEnabled: boolean;
   dominoFree: boolean;
   dominoTurnSeconds: number;
-  dominoQueueTimeoutMinutes: number;
+  queueTimeoutMinutes: number;
+  trucoEnabled: boolean;
+  trucoTurnSeconds: number;
+  stakes: number[];
 }
 
 export interface JoinRoundResult {

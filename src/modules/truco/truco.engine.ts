@@ -1,4 +1,5 @@
 import { randomInt } from 'crypto';
+import { GameRuleError } from '../tables/tables.types';
 import { RandomInt, shuffle } from '../domino/domino.engine';
 import {
   Card,
@@ -22,12 +23,7 @@ import {
 } from './truco.types';
 
 /** Regra violada por uma jogada (vira erro 4xx na API). */
-export class TrucoRuleError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'TrucoRuleError';
-  }
-}
+export class TrucoRuleError extends GameRuleError {}
 
 export function createDeck(): Card[] {
   return RANKS.flatMap((rank) => SUITS.map((suit) => `${rank}${suit}` as Card));

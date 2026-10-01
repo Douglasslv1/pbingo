@@ -8,9 +8,11 @@ import { requestLogger } from './middleware/requestLogger.middleware';
 import { adminStatsRouter } from './modules/admin/admin.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
+import { STAKES } from './modules/tables/tables.types';
 import { adminDominoRouter, dominoRouter } from './modules/domino/domino.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
+import { adminTrucoRouter, trucoRouter } from './modules/truco/truco.routes';
 import { walletRouter } from './modules/wallet/wallet.routes';
 import { adminWithdrawalsRouter, withdrawalsRouter } from './modules/withdrawals/withdrawals.routes';
 
@@ -75,7 +77,10 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
       dominoEnabled: env.dominoEnabled,
       dominoFree: env.dominoFree,
       dominoTurnSeconds: env.dominoTurnSeconds,
-      dominoQueueTimeoutMinutes: env.dominoQueueTimeoutMinutes,
+      trucoEnabled: env.trucoEnabled,
+      trucoTurnSeconds: env.trucoTurnSeconds,
+      queueTimeoutMinutes: env.queueTimeoutMinutes,
+      stakes: STAKES,
     });
   });
 
@@ -91,6 +96,8 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/admin/withdrawals', adminWithdrawalsRouter);
   app.use('/domino', dominoRouter);
   app.use('/admin/domino', adminDominoRouter);
+  app.use('/truco', trucoRouter);
+  app.use('/admin/truco', adminTrucoRouter);
   app.use('/admin/stats', adminStatsRouter);
 
   app.use(notFoundMiddleware);

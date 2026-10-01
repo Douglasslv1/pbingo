@@ -4,7 +4,7 @@ import { env } from './config/env';
 import { logger } from './lib/logger';
 import { purgeExpiredAccessLogs } from './modules/auth/accessLog.service';
 import { setUserRole } from './modules/auth/userRole.service';
-import { cancelStaleQueues, restoreTurnTimers } from './modules/domino/domino.service';
+import { cancelStaleQueues, restoreTurnTimers } from './modules/tables/tables.service';
 import { roundEngine } from './modules/rounds/round.engine';
 import { initSocket } from './websocket/socket';
 
@@ -49,14 +49,13 @@ function schedulePurgeOfAccessLogs(): void {
   setInterval(purge, DAY_MS).unref();
 }
 
-const DOMINO_QUEUE_SWEEP_MS = 30 * 1000;
+const QUEUE_SWEEP_MS = 30 * 1000;
 
-/** Cancela, a cada 30s, mesas de domino que nao completaram jogadores no prazo (tambem apos reinicio). */
-function scheduleDominoQueueSweep(): void {
-  const sweep = () =>
-    cancelStaleQueues().catch((err) => logger.error('Erro ao cancelar mesas de dominó paradas', { err }));
+/** Cancela, a cada 30s, mesas (domino e truco) que nao completaram jogadores no prazo (tambem apos reinicio). */
+function scheduleQueueSweep(): void {
+  const sweep = () => cancelStaleQueues().catch((err) => logger.error('Erro ao cancelar mesas paradas', { err }));
   sweep();
-  setInterval(sweep, DOMINO_QUEUE_SWEEP_MS).unref();
+  setInterval(sweep, QUEUE_SWEEP_MS).unref();
 }
 
 const app = createApp();
@@ -70,10 +69,10 @@ httpServer.listen(env.port, () => {
     logger.error('Erro ao iniciar o motor de rodadas', { err });
   });
   schedulePurgeOfAccessLogs();
-  scheduleDominoQueueSweep();
+  scheduleQueueSweep();
   restoreTurnTimers()
-    .then((count) => count > 0 && logger.info('Cronometros de dominó religados após o início', { tables: count }))
-    .catch((err) => logger.error('Erro ao religar cronometros do dominó', { err }));
+    .then((count) => count > 0 && logger.info('Cronometros das mesas religados após o início', { tables: count }))
+    .catch((err) => logger.error('Erro ao religar cronometros das mesas', { err }));
   promoteBootstrapAdmin().catch((err) => {
     logger.error('Erro ao promover BOOTSTRAP_ADMIN_EMAIL', { err });
   });

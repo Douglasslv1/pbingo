@@ -5,7 +5,7 @@ type TimeoutHandler = (tableId: string) => Promise<Date | null>;
 const timers = new Map<string, NodeJS.Timeout>();
 let handler: TimeoutHandler | null = null;
 
-/** O servico do domino registra aqui o que fazer quando o prazo de uma jogada vence. */
+/** O servico de mesas registra aqui o que fazer quando o prazo de uma jogada vence. */
 export function registerTurnTimeoutHandler(fn: TimeoutHandler): void {
   handler = fn;
 }
@@ -25,7 +25,7 @@ export function scheduleTurnTimeout(tableId: string, deadline: Date | null): voi
     handler(tableId)
       .then((next) => scheduleTurnTimeout(tableId, next))
       .catch((err) => {
-        logger.error('Erro ao jogar automaticamente no dominó', { tableId, err });
+        logger.error('Erro ao jogar automaticamente na mesa', { tableId, err });
         // Tenta de novo em instantes para a mesa nunca ficar travada
         scheduleTurnTimeout(tableId, new Date(Date.now() + 5000));
       });

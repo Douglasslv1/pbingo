@@ -1,4 +1,5 @@
 import { randomInt } from 'crypto';
+import { GameRuleError } from '../tables/tables.types';
 import {
   DominoAction,
   DominoMode,
@@ -13,12 +14,7 @@ import {
 } from './domino.types';
 
 /** Regra violada por uma jogada (vira erro 4xx na API). */
-export class DominoRuleError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'DominoRuleError';
-  }
-}
+export class DominoRuleError extends GameRuleError {}
 
 export type RandomInt = (maxExclusive: number) => number;
 
