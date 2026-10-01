@@ -101,6 +101,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
 
       <DominoBoard
         line={game.line}
+        anchorIndex={game.anchorIndex}
         targetSides={myTurn && selected ? selectedSides : []}
         onPlaySide={(side) => selected && playTile(selected, side)}
       />

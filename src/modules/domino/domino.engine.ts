@@ -211,6 +211,7 @@ export function applyAction(state: DominoState, seat: number, action: DominoActi
     ...state,
     hands,
     line: placeTile(state.line, normalized.tile, normalized.side),
+    firstTile: state.firstTile ?? (state.line.length === 0 ? normalized.tile : undefined),
     openingTile: null,
     currentSeat: nextSeat(state, seat),
     consecutivePasses: 0,
@@ -256,6 +257,10 @@ export function viewFor(state: DominoState, seat: number) {
     handSizes: state.hands.map((hand) => hand.length),
     boneyardSize: state.boneyard.length,
     line: state.line,
+    // Posicao da primeira pedra na fileira, para a mesa crescer a partir do centro
+    anchorIndex: state.firstTile
+      ? state.line.findIndex((placed) => sameTile(placed.tile, state.firstTile!))
+      : Math.floor(state.line.length / 2),
     ends: lineEnds(state),
     currentSeat: state.currentSeat,
     openingTile: state.openingTile,

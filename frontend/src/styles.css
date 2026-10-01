@@ -1401,8 +1401,8 @@ label.checkbox input {
   border-radius: 12px;
   padding: 12px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 12px;
   overflow: hidden;
 }
@@ -1413,14 +1413,10 @@ label.checkbox input {
   text-align: center;
 }
 
-.domino-row {
-  display: flex;
+.domino-grid {
+  display: grid;
   align-items: center;
-  gap: 6px;
-}
-
-.domino-row.reversed {
-  flex-direction: row-reverse;
+  justify-items: center;
 }
 
 .domino-turn {

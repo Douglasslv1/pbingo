@@ -143,6 +143,7 @@ export interface DominoGameView {
   handSizes: number[];
   boneyardSize: number;
   line: DominoPlacedTile[];
+  anchorIndex: number;
   ends: { left: number; right: number } | null;
   currentSeat: number;
   openingTile: DominoTile | null;

@@ -107,6 +107,7 @@ describe('Jogadas', () => {
     state = applyAction(state, 1, play([3, 6], 'LEFT'));
     state = applyAction(state, 2, play([1, 6], 'RIGHT'));
 
+    expect(viewFor(state, 0).anchorIndex).toBe(1);
     expect(state.line.map((placed) => [placed.left, placed.right])).toEqual([
       [3, 6],
       [6, 6],

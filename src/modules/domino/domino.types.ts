@@ -33,6 +33,8 @@ export interface DominoState {
   /** Monte de compra (burrinho) ou pedras que dormem (6 pecas). */
   boneyard: Tile[];
   line: PlacedTile[];
+  /** Primeira pedra jogada: fica fixa no centro da mesa (ausente em partidas antigas). */
+  firstTile?: Tile;
   currentSeat: number;
   /** A primeira jogada precisa ser esta pedra (a maior carroca distribuida). */
   openingTile: Tile | null;
