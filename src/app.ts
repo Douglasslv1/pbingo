@@ -7,6 +7,7 @@ import { createRateLimiter } from './middleware/rateLimit.middleware';
 import { requestLogger } from './middleware/requestLogger.middleware';
 import { adminStatsRouter } from './modules/admin/admin.routes';
 import { authRouter } from './modules/auth/auth.routes';
+import { damasRouters, xadrezRouters } from './modules/board/board.routes';
 import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
 import { STAKES } from './modules/tables/tables.types';
 import { adminDominoRouter, dominoRouter } from './modules/domino/domino.routes';
@@ -81,6 +82,10 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
       dominoTurnSeconds: env.dominoTurnSeconds,
       trucoEnabled: env.trucoEnabled,
       trucoTurnSeconds: env.trucoTurnSeconds,
+      damasEnabled: env.damasEnabled,
+      xadrezEnabled: env.xadrezEnabled,
+      boardGamesFree: env.boardGamesFree,
+      boardTurnSeconds: env.boardTurnSeconds,
       queueTimeoutMinutes: env.queueTimeoutMinutes,
       stakes: STAKES,
     });
@@ -102,6 +107,10 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/admin/domino', adminDominoRouter);
   app.use('/truco', trucoRouter);
   app.use('/admin/truco', adminTrucoRouter);
+  app.use('/damas', damasRouters.router);
+  app.use('/admin/damas', damasRouters.admin);
+  app.use('/xadrez', xadrezRouters.router);
+  app.use('/admin/xadrez', xadrezRouters.admin);
   app.use('/admin/stats', adminStatsRouter);
 
   app.use(notFoundMiddleware);

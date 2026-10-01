@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
 import { displayName } from '../profile/nickname';
 
-export type RankingGame = 'BINGO' | 'DOMINO' | 'TRUCO';
+export type RankingGame = 'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ';
 export type RankingPeriod = 'month' | 'all';
 
 /** Partidas minimas no periodo para entrar no ranking (evita 1 jogo e 100% de vitorias no topo). */
@@ -26,7 +26,7 @@ const sinceOf = (period: RankingPeriod) =>
     : Prisma.sql`'-infinity'::timestamptz`;
 
 /** Domino e truco: partidas encerradas e vitorias, com o limite diario contra o mesmo adversario. */
-function tableRows(game: 'DOMINO' | 'TRUCO', period: RankingPeriod) {
+function tableRows(game: Exclude<RankingGame, 'BINGO'>, period: RankingPeriod) {
   return prisma.$queryRaw<Row[]>`
     WITH seats AS (
       SELECT s.user_id, s.table_id, s.is_winner, t.finished_at
@@ -92,8 +92,8 @@ export async function getRanking(game: RankingGame, period: RankingPeriod, viewe
     period,
     minMatches: MIN_MATCHES,
     maxDailyWinsVsSame: game === 'BINGO' ? null : MAX_DAILY_WINS_VS_SAME,
-    // Domino gratuito: ranking de testes, que recomeca quando as mesas passarem a ser pagas
-    testSeason: game === 'DOMINO' && env.dominoFree,
+    // Jogo gratuito: ranking de testes, que recomeca quando as mesas passarem a ser pagas
+    testSeason: (game === 'DOMINO' && env.dominoFree) || (['DAMAS', 'XADREZ'].includes(game) && env.boardGamesFree),
     entries: entries.slice(0, TOP),
     me: entries.find((entry) => entry.isMe) ?? null,
   };

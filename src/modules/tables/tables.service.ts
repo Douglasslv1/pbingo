@@ -5,10 +5,12 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/errors';
 import { HistoryPage } from '../../utils/pagination';
 import { emitToUser } from '../../websocket/socket';
+import { damasAdapter } from '../damas/damas.adapter';
 import { dominoAdapter } from '../domino/domino.adapter';
 import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { trucoAdapter } from '../truco/truco.adapter';
+import { xadrezAdapter } from '../xadrez/xadrez.adapter';
 import { GameAdapter, GameName, GameRuleError, QueueChoice } from './tables.types';
 import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './turn.scheduler';
 
@@ -19,6 +21,8 @@ type TableWithSeats = GameTable & { seats: Array<GameSeat & { user: { nickname: 
 const ADAPTERS: Record<GameName, GameAdapter> = {
   DOMINO: dominoAdapter as GameAdapter,
   TRUCO: trucoAdapter as GameAdapter,
+  DAMAS: damasAdapter as GameAdapter,
+  XADREZ: xadrezAdapter as GameAdapter,
 };
 const adapterOf = (table: Pick<GameTable, 'game'>): GameAdapter => ADAPTERS[table.game as GameName];
 
@@ -68,12 +72,14 @@ async function payWinners(tx: Tx, table: GameTable, winnerSeats: number[], seats
   const winners = seats.filter((seat) => winnerSeats.includes(seat.seat)).sort((a, b) => a.seat - b.seat);
   await tx.gameSeat.updateMany({ where: { id: { in: winners.map((seat) => seat.id) } }, data: { isWinner: true } });
   if (table.prizePool.isZero()) return;
-  const shares = splitPrizeInCents(Math.round(Number(table.prizePool) * 100), winners.length);
+  // Empate (damas e xadrez): o pote e dividido entre todos da mesa
+  const paid = winners.length > 0 ? winners : [...seats].sort((a, b) => a.seat - b.seat);
+  const shares = splitPrizeInCents(Math.round(Number(table.prizePool) * 100), paid.length);
 
-  const userIds = [...new Set(winners.map((seat) => seat.userId))].sort();
+  const userIds = [...new Set(paid.map((seat) => seat.userId))].sort();
   await tx.$queryRaw`SELECT user_id FROM user_prizes WHERE user_id = ANY(${userIds}::uuid[]) ORDER BY user_id FOR UPDATE`;
 
-  for (const [index, seat] of winners.entries()) {
+  for (const [index, seat] of paid.entries()) {
     const prize = shares[index] / 100;
     await tx.gameSeat.update({ where: { id: seat.id }, data: { prizeAmount: prize } });
     await tx.userPrize.update({ where: { userId: seat.userId }, data: { balanceFiat: { increment: prize } } });

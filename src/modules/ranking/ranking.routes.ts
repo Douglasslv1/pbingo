@@ -2,10 +2,10 @@ import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { authenticateToken } from '../../lib/session';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { getRanking } from './ranking.service';
+import { getRanking, RankingGame } from './ranking.service';
 
 const querySchema = z.object({
-  game: z.enum(['bingo', 'domino', 'truco']).transform((game) => game.toUpperCase() as 'BINGO' | 'DOMINO' | 'TRUCO'),
+  game: z.enum(['bingo', 'domino', 'truco', 'damas', 'xadrez']).transform((game) => game.toUpperCase() as RankingGame),
   period: z.enum(['month', 'all']).default('month'),
 });
 

@@ -50,6 +50,13 @@ export const env = {
   // Enquanto false, so administradores jogam truco
   trucoEnabled: process.env.TRUCO_ENABLED === 'true',
   trucoTurnSeconds: optionalNumber('TRUCO_TURN_SECONDS', 30),
+  // Enquanto false, so administradores jogam damas / xadrez
+  damasEnabled: process.env.DAMAS_ENABLED === 'true',
+  xadrezEnabled: process.env.XADREZ_ENABLED === 'true',
+  // Damas e xadrez gratuitos (sem chave e sem premio) ate BOARD_GAMES_FREE=false
+  boardGamesFree: process.env.BOARD_GAMES_FREE !== 'false',
+  // Segundos por lance nas damas e no xadrez; tempo esgotado e derrota
+  boardTurnSeconds: optionalNumber('BOARD_TURN_SECONDS', 60),
   // Mesa (de qualquer jogo) que nao completa nesse prazo e cancelada, com as chaves devolvidas
   queueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),

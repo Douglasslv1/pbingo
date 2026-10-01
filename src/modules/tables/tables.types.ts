@@ -1,4 +1,4 @@
-export type GameName = 'DOMINO' | 'TRUCO';
+export type GameName = 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ';
 
 /** Valores de entrada das mesas, em chaves. */
 export const STAKES = [1, 2, 5] as const;
