@@ -50,7 +50,8 @@ export default function TrucoGame({ table, busy, error, onAction, onComeBack, on
   }
 
   // Mesa vazia: mostra a ultima rodada (desta mao ou da anterior) para ninguem perder a carta do adversario
-  const lastRound = game.rounds.at(-1) ?? game.lastHand?.rounds.at(-1) ?? null;
+  const previousRounds = game.rounds.length > 0 ? game.rounds : (game.lastHand?.rounds ?? []);
+  const lastRound = previousRounds[previousRounds.length - 1] ?? null;
   const shownPlays: TrucoPlay[] = game.table.length > 0 ? game.table : (lastRound?.plays ?? []);
   const showingPrevious = game.table.length === 0 && lastRound !== null;
   const newHand = game.rounds.length === 0 && game.table.length === 0;
