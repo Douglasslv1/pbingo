@@ -1,7 +1,8 @@
 import { formatBrl, formatCountdown } from '../../format';
 import { useCountdown } from '../../hooks/useCountdown';
+import { useGameConfig } from '../../hooks/useGameConfig';
 import type { DominoTableView } from '../../types';
-import { MODE_LABELS, TEAM_LABELS } from './dominoLabels';
+import { MODE_LABELS, seatsFor, TEAM_LABELS } from './dominoLabels';
 
 interface Props {
   table: DominoTableView;
@@ -11,7 +12,9 @@ interface Props {
 
 export default function DominoWaiting({ table, leaving, onLeave }: Props) {
   const countdown = useCountdown(table.queueExpiresAt);
-  const seats = [0, 1, 2, 3].map((seat) => table.players.find((player) => player.seat === seat) ?? null);
+  const free = useGameConfig()?.dominoFree ?? false;
+  const seatCount = seatsFor(table.teamMode);
+  const seats = Array.from({ length: seatCount }, (_, seat) => table.players.find((player) => player.seat === seat) ?? null);
 
   return (
     <div className="card">
@@ -30,15 +33,16 @@ export default function DominoWaiting({ table, leaving, onLeave }: Props) {
       </div>
 
       <div className="progress" aria-hidden="true">
-        <div className="progress-bar" style={{ width: `${(table.players.length / 4) * 100}%` }} />
+        <div className="progress-bar" style={{ width: `${(table.players.length / seatCount) * 100}%` }} />
       </div>
       <p className="hint intro-hint">
-        {table.players.length}/4 jogadores. A partida começa sozinha quando a mesa completar.
-        {countdown !== null && ` Se não completar em ${formatCountdown(countdown)}, a mesa é cancelada e sua chave volta.`}
+        {table.players.length}/{seatCount} jogadores. A partida começa sozinha quando a mesa completar.
+        {countdown !== null &&
+          ` Se não completar em ${formatCountdown(countdown)}, a mesa é cancelada${free ? '' : ' e sua chave volta'}.`}
       </p>
 
       <button type="button" className="link" onClick={onLeave} disabled={leaving}>
-        {leaving ? 'Saindo...' : 'Sair e recuperar a chave'}
+        {leaving ? 'Saindo...' : free ? 'Sair da mesa' : 'Sair e recuperar a chave'}
       </button>
     </div>
   );

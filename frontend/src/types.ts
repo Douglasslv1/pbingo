@@ -21,6 +21,7 @@ export interface GameConfig {
   houseFeePercent: number;
   termsVersion: string;
   dominoEnabled: boolean;
+  dominoFree: boolean;
   dominoTurnSeconds: number;
   dominoQueueTimeoutMinutes: number;
 }
@@ -120,7 +121,7 @@ export interface Page<T> {
 
 export type DominoTile = [number, number];
 export type DominoMode = 'SIX_TILES' | 'BURRINHO';
-export type DominoTeamMode = 'INDIVIDUAL' | 'PAIRS';
+export type DominoTeamMode = 'INDIVIDUAL' | 'PAIRS' | 'DUEL';
 export type DominoSide = 'LEFT' | 'RIGHT';
 
 export type DominoAction =

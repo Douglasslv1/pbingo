@@ -30,11 +30,13 @@ async function credits(userId: string) {
   return (await prisma.userCredit.findUnique({ where: { userId } }))?.balance;
 }
 
-/** Quatro jogadores com chaves numa mesa que ja comecou. */
+const DUEL = { mode: 'SIX_TILES', teamMode: 'DUEL' };
+
+/** Jogadores com chaves numa mesa que ja comecou (4, ou 2 no mano a mano). */
 async function fullTable(choice: Record<string, string> = SIX_INDIVIDUAL) {
   const players: Player[] = [];
   let tableId = '';
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < (choice.teamMode === 'DUEL' ? 2 : 4); i += 1) {
     const player = await fundedPlayer();
     const res = await joinQueue(player, choice);
     expect(res.status).toBe(201);
@@ -137,6 +139,35 @@ describe('Fila e mesas de domino', () => {
     expect(empty.status).toBe('CANCELLED');
   });
 
+  it('mano a mano comeca com 2 jogadores e so existe no 6 pecas', async () => {
+    const { tableId } = await fullTable(DUEL);
+    const state = await tableState(tableId);
+    expect(state.hands.map((hand) => hand.length)).toEqual([6, 6]);
+    expect(state.boneyard).toHaveLength(16);
+
+    const burrinho = await joinQueue(await fundedPlayer(), { mode: 'BURRINHO', teamMode: 'DUEL' });
+    expect(burrinho.status).toBe(422);
+  });
+
+  it('no modo gratuito entra sem gastar chave, sem extrato e sem premio', async () => {
+    const original = env.dominoFree;
+    env.dominoFree = true;
+    try {
+      const broke = await fundedPlayer(0);
+      expect((await joinQueue(broke, DUEL)).status).toBe(201);
+      const left = await request(app).post('/domino/queue/leave').set('Authorization', `Bearer ${broke.token}`);
+      expect(left.body.refundedCredits).toBe(0);
+      expect(await prisma.transaction.count({ where: { userId: broke.user.id } })).toBe(0);
+
+      const { tableId, players } = await fullTable(DUEL);
+      const table = await prisma.dominoTable.findUniqueOrThrow({ where: { id: tableId } });
+      expect(table.prizePool.toString()).toBe('0');
+      expect(await credits(players[0].user.id)).toBe(5);
+    } finally {
+      env.dominoFree = original;
+    }
+  });
+
   it('nao deixa sair depois que a partida comecou', async () => {
     const { players } = await fullTable();
     const res = await request(app).post('/domino/queue/leave').set('Authorization', `Bearer ${players[0].token}`);
@@ -201,7 +232,7 @@ describe('Jogadas na mesa', () => {
   });
 
   it('partida completa pela API: termina, paga os vencedores e registra todas as jogadas', async () => {
-    for (const choice of [SIX_INDIVIDUAL, { mode: 'BURRINHO', teamMode: 'PAIRS' }]) {
+    for (const choice of [SIX_INDIVIDUAL, { mode: 'BURRINHO', teamMode: 'PAIRS' }, DUEL]) {
       const { tableId, bySeat, players } = await fullTable(choice);
       let state = await tableState(tableId);
 
@@ -221,7 +252,7 @@ describe('Jogadas na mesa', () => {
       expect(await prisma.dominoMove.count({ where: { tableId } })).toBe(state.moveCount);
 
       const view = await request(app).get(`/domino/tables/${tableId}`).set('Authorization', `Bearer ${players[0].token}`);
-      expect(view.body.game.revealedHands).toHaveLength(4);
+      expect(view.body.game.revealedHands).toHaveLength(players.length);
       expect(view.body.status).toBe('FINISHED');
 
     }

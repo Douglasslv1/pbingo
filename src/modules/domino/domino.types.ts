@@ -4,8 +4,8 @@ export type Tile = readonly [number, number];
 /** SIX_TILES: as 4 pedras que sobram "dormem". BURRINHO: sobram 4 para compra. */
 export type DominoMode = 'SIX_TILES' | 'BURRINHO';
 
-/** PAIRS: parceiros sentados em frente (lugares 0 e 2 contra 1 e 3). */
-export type TeamMode = 'INDIVIDUAL' | 'PAIRS';
+/** PAIRS: parceiros sentados em frente (lugares 0 e 2 contra 1 e 3). DUEL: mano a mano, so no 6 pecas. */
+export type TeamMode = 'INDIVIDUAL' | 'PAIRS' | 'DUEL';
 
 export type Side = 'LEFT' | 'RIGHT';
 
@@ -42,5 +42,5 @@ export interface DominoState {
   result: DominoResult | null;
 }
 
-export const SEATS = 4;
+export const seatsFor = (teamMode: TeamMode): number => (teamMode === 'DUEL' ? 2 : 4);
 export const TILES_PER_HAND = 6;

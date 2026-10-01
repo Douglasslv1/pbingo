@@ -207,11 +207,17 @@ export default function LandingPage() {
               <DominoTile first={5} second={1} size={30} />
             </div>
             <h3>Dominó</h3>
-            <p>Mesas de 4 jogadores, com a sua estratégia decidindo cada jogada.</p>
+            <p>Mesas de 4 jogadores ou mano a mano, com a sua estratégia decidindo cada jogada.</p>
             <ul>
-              <li>6 peças ou Burrinho, individual ou em duplas</li>
+              <li>6 peças ou Burrinho, individual, em duplas ou mano a mano</li>
               <li>30 segundos por jogada - partidas rápidas</li>
-              <li>{dominoPrize ? `Prêmio de ${dominoPrize} por mesa` : 'Prêmio para quem bater'}</li>
+              <li>
+                {config?.dominoFree
+                  ? 'Grátis durante os testes'
+                  : dominoPrize
+                    ? `Prêmio de até ${dominoPrize} por mesa`
+                    : 'Prêmio para quem bater'}
+              </li>
             </ul>
             {dominoOpen ? (
               <Link to="/domino" className="cta-button">

@@ -5,11 +5,11 @@ import {
   DominoResult,
   DominoState,
   PlacedTile,
-  SEATS,
   Side,
   TeamMode,
   Tile,
   TILES_PER_HAND,
+  seatsFor,
 } from './domino.types';
 
 /** Regra violada por uma jogada (vira erro 4xx na API). */
@@ -47,22 +47,24 @@ export const pipsOf = (tile: Tile): number => tile[0] + tile[1];
 export const sameTile = (a: Tile, b: Tile): boolean => a[0] === b[0] && a[1] === b[1];
 const handPips = (hand: Tile[]): number => hand.reduce((sum, tile) => sum + pipsOf(tile), 0);
 
-/** Quem sai: o lugar com a maior carroca distribuida, jogando essa carroca. */
+/** Peso da pedra de saida: qualquer carroca vence pedra comum; depois mais pontos e a maior face. */
+const openingRank = (tile: Tile): number => (isDouble(tile) ? 1000 : 0) + pipsOf(tile) * 10 + tile[1];
+
+/**
+ * Quem sai: o lugar com a maior carroca distribuida, jogando essa carroca. No mano a mano pode
+ * nao haver carroca nas maos; ai sai a pedra de mais pontos.
+ */
 function findOpening(hands: Tile[][]): { seat: number; tile: Tile } {
-  for (let value = 6; value >= 0; value -= 1) {
-    const seat = hands.findIndex((hand) => hand.some((tile) => tile[0] === value && tile[1] === value));
-    if (seat >= 0) {
-      return { seat, tile: [value, value] };
-    }
-  }
-  // Impossivel: das 7 carrocas, no maximo 4 ficam fora das maos
-  throw new Error('Nenhuma carroça distribuida');
+  return hands
+    .flatMap((hand, seat) => hand.map((tile) => ({ seat, tile })))
+    .reduce((best, candidate) => (openingRank(candidate.tile) > openingRank(best.tile) ? candidate : best));
 }
 
-/** Embaralha e distribui 6 pedras para cada um dos 4 lugares. */
+/** Embaralha e distribui 6 pedras para cada lugar da mesa. */
 export function dealGame(mode: DominoMode, teamMode: TeamMode, random: RandomInt = randomInt): DominoState {
   const deck = shuffle(createDeck(), random);
-  const hands = Array.from({ length: SEATS }, (_, seat) =>
+  const seats = seatsFor(teamMode);
+  const hands = Array.from({ length: seats }, (_, seat) =>
     deck.slice(seat * TILES_PER_HAND, (seat + 1) * TILES_PER_HAND),
   );
   const opening = findOpening(hands);
@@ -71,7 +73,7 @@ export function dealGame(mode: DominoMode, teamMode: TeamMode, random: RandomInt
     mode,
     teamMode,
     hands,
-    boneyard: deck.slice(SEATS * TILES_PER_HAND),
+    boneyard: deck.slice(seats * TILES_PER_HAND),
     line: [],
     currentSeat: opening.seat,
     openingTile: opening.tile,
@@ -137,7 +139,7 @@ function placeTile(line: PlacedTile[], tile: Tile, side: Side): PlacedTile[] {
   return [...line, placed];
 }
 
-const nextSeat = (seat: number): number => (seat + 1) % SEATS;
+const nextSeat = (state: DominoState, seat: number): number => (seat + 1) % state.hands.length;
 
 /** Lugares vencedores: o proprio lugar, ou ele e o parceiro nas duplas. */
 function winnersFor(state: DominoState, seat: number): number[] {
@@ -194,12 +196,12 @@ export function applyAction(state: DominoState, seat: number, action: DominoActi
     const consecutivePasses = state.consecutivePasses + 1;
     const next: DominoState = {
       ...state,
-      currentSeat: nextSeat(seat),
+      currentSeat: nextSeat(state, seat),
       consecutivePasses,
       moveCount: state.moveCount + 1,
     };
     // Todos passaram em sequencia: ninguem mais consegue jogar
-    return consecutivePasses >= SEATS ? { ...next, status: 'FINISHED', result: blockedResult(next) } : next;
+    return consecutivePasses >= state.hands.length ? { ...next, status: 'FINISHED', result: blockedResult(next) } : next;
   }
 
   const hands = state.hands.map((hand, index) =>
@@ -210,7 +212,7 @@ export function applyAction(state: DominoState, seat: number, action: DominoActi
     hands,
     line: placeTile(state.line, normalized.tile, normalized.side),
     openingTile: null,
-    currentSeat: nextSeat(seat),
+    currentSeat: nextSeat(state, seat),
     consecutivePasses: 0,
     moveCount: state.moveCount + 1,
   };

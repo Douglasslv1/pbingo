@@ -8,7 +8,7 @@ import { emitToUser } from '../../websocket/socket';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { applyAction, autoAction, dealGame, DominoRuleError, hasOnlyForcedAction, viewFor } from './domino.engine';
 import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './domino.scheduler';
-import { DominoAction, DominoMode, DominoState, SEATS, TeamMode } from './domino.types';
+import { DominoAction, DominoMode, DominoState, seatsFor, TeamMode } from './domino.types';
 
 type Tx = Prisma.TransactionClient;
 type TableWithSeats = DominoTable & { seats: Array<DominoSeat & { user: { name: string } }> };
@@ -44,11 +44,12 @@ async function lockTable(tx: Tx, tableId: string): Promise<DominoTable | null> {
 
 /** Devolve as chaves das cadeiras e registra no extrato. */
 async function refundSeats(tx: Tx, seats: DominoSeat[]): Promise<void> {
-  const userIds = [...new Set(seats.map((seat) => seat.userId))].sort();
+  const paid = seats.filter((seat) => seat.creditsSpent > 0);
+  const userIds = [...new Set(paid.map((seat) => seat.userId))].sort();
   if (userIds.length === 0) return;
 
   await tx.$queryRaw`SELECT user_id FROM user_credits WHERE user_id = ANY(${userIds}::uuid[]) ORDER BY user_id FOR UPDATE`;
-  for (const seat of seats) {
+  for (const seat of paid) {
     await tx.userCredit.update({ where: { userId: seat.userId }, data: { balance: { increment: seat.creditsSpent } } });
     await tx.transaction.create({
       data: {
@@ -64,6 +65,7 @@ async function refundSeats(tx: Tx, seats: DominoSeat[]): Promise<void> {
 
 /** Divide o pote entre os lugares vencedores e credita o saldo de premios de cada um. */
 async function payWinners(tx: Tx, table: DominoTable, state: DominoState, seats: DominoSeat[]): Promise<void> {
+  if (table.prizePool.isZero()) return;
   const winnerSeats = state.result?.winnerSeats ?? [];
   const winners = seats.filter((seat) => winnerSeats.includes(seat.seat)).sort((a, b) => a.seat - b.seat);
   const shares = splitPrizeInCents(Math.round(Number(table.prizePool) * 100), winners.length);
@@ -132,7 +134,7 @@ async function publishTable(tableId: string, extraUserIds: string[] = []): Promi
   }
 }
 
-/** Entra na fila da modalidade escolhida, pagando 1 chave. Com 4 jogadores a partida comeca. */
+/** Entra na fila da modalidade escolhida, pagando 1 chave (nada no modo gratuito). Com a mesa cheia a partida comeca. */
 export async function joinQueue(userId: string, choice: QueueChoice) {
   if (!env.dominoEnabled) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
@@ -140,6 +142,9 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
       throw new AppError('O dominó ainda não está disponível', 403);
     }
   }
+
+  const price = env.dominoFree ? 0 : env.ticketPriceCredits;
+  const contribution = env.dominoFree ? 0 : env.prizeContributionPerTicket;
 
   const started = await prisma.$transaction(async (tx) => {
     // Travar a carteira primeiro serializa pedidos simultaneos do mesmo jogador
@@ -153,7 +158,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
     if (active) {
       throw new AppError('Você já está em uma mesa de dominó', 409);
     }
-    if ((credits[0]?.balance ?? 0) < env.ticketPriceCredits) {
+    if ((credits[0]?.balance ?? 0) < price) {
       throw new AppError('Saldo de chaves insuficiente para entrar na mesa', 400);
     }
 
@@ -170,31 +175,34 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
       }));
 
     const taken = new Set(table.seats.map((seat) => seat.seat));
-    const seat = [0, 1, 2, 3].find((candidate) => !taken.has(candidate));
+    const seatCount = seatsFor(choice.teamMode);
+    const seat = Array.from({ length: seatCount }, (_, index) => index).find((candidate) => !taken.has(candidate));
     if (seat === undefined) {
       throw new AppError('Mesa cheia, tente novamente', 409);
     }
 
-    await tx.userCredit.update({ where: { userId }, data: { balance: { decrement: env.ticketPriceCredits } } });
-    await tx.transaction.create({
-      data: { userId, type: 'SPEND_KEY', amountCredits: env.ticketPriceCredits, status: 'COMPLETED', game: 'DOMINO' },
-    });
+    if (price > 0) {
+      await tx.userCredit.update({ where: { userId }, data: { balance: { decrement: price } } });
+      await tx.transaction.create({
+        data: { userId, type: 'SPEND_KEY', amountCredits: price, status: 'COMPLETED', game: 'DOMINO' },
+      });
+    }
     await tx.dominoSeat.create({
       data: {
         tableId: table.id,
         userId,
         seat,
-        creditsSpent: env.ticketPriceCredits,
-        prizeContribution: env.prizeContributionPerTicket,
+        creditsSpent: price,
+        prizeContribution: contribution,
       },
     });
 
-    const isFull = table.seats.length + 1 === SEATS;
+    const isFull = table.seats.length + 1 === seatCount;
     const dealt = isFull ? dealGame(choice.mode, choice.teamMode) : null;
     const updated = await tx.dominoTable.update({
       where: { id: table.id },
       data: {
-        prizePool: { increment: env.prizeContributionPerTicket },
+        prizePool: { increment: contribution },
         ...(dealt
           ? {
               status: 'PLAYING',
@@ -218,7 +226,7 @@ export async function joinQueue(userId: string, choice: QueueChoice) {
 
 /** Sai da fila antes da partida comecar, recuperando a chave. */
 export async function leaveQueue(userId: string) {
-  const tableId = await prisma.$transaction(async (tx) => {
+  const left = await prisma.$transaction(async (tx) => {
     const seat = await tx.dominoSeat.findFirst({
       where: { userId, table: { status: 'WAITING' } },
       include: { table: true },
@@ -243,11 +251,11 @@ export async function leaveQueue(userId: string) {
         ...(remaining === 0 ? { status: 'CANCELLED', finishedAt: new Date() } : {}),
       },
     });
-    return table.id;
+    return { tableId: table.id, refundedCredits: seat.creditsSpent };
   });
 
-  await publishTable(tableId, [userId]);
-  return { tableId, refundedCredits: env.ticketPriceCredits };
+  await publishTable(left.tableId, [userId]);
+  return left;
 }
 
 interface Advance {

@@ -85,19 +85,20 @@ export default function TermsPage() {
       content: (
         <ul>
           <li>
-            As mesas são de 4 jogadores. Você entra com 1 chave e a partida começa assim que a mesa completar. Se ela não
+            As mesas são de 4 jogadores, ou de 2 no mano a mano. Você entra com 1 chave e a partida começa assim que a mesa completar. Se ela não
             completar em {config.dominoQueueTimeoutMinutes} minutos, é cancelada e todas as chaves são devolvidas. Antes do
             início, você pode sair e recuperar a sua chave.
           </li>
           <li>
             Modalidades: <strong>6 peças</strong> (cada jogador recebe 6 pedras e as 4 restantes ficam fora do jogo) e{' '}
             <strong>Burrinho</strong> (as 4 restantes formam o monte, e quem não tem pedra que encaixe compra até poder
-            jogar). Formatos: <strong>individual</strong> ou <strong>em duplas</strong>, com o parceiro sentado à sua
-            frente.
+            jogar). Formatos: <strong>individual</strong>, <strong>em duplas</strong> (com o parceiro sentado à sua
+            frente) ou <strong>mano a mano</strong> (só 2 jogadores, apenas no 6 peças, com 16 pedras fora do jogo).
           </li>
           <li>
             As 28 pedras são embaralhadas pelo servidor com gerador aleatório criptográfico. Começa quem tiver a maior
-            carroça distribuída, jogando essa carroça.
+            carroça distribuída, jogando essa carroça. No mano a mano, se nenhuma carroça for distribuída, começa quem
+            tiver a pedra de mais pontos, jogando essa pedra.
           </li>
           <li>
             Vence quem bater (jogar a última pedra da mão) - nas duplas, a dupla inteira vence. Se ninguém mais puder jogar

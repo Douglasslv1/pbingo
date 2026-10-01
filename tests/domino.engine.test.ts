@@ -74,6 +74,29 @@ describe('Pedras e distribuicao', () => {
       expect(legalActions(state, state.currentSeat)).toEqual([play([highest, highest])]);
     }
   });
+
+  it('mano a mano: 2 maos de 6, 16 dormem e, sem carroca nas maos, sai a pedra de mais pontos', () => {
+    for (let i = 0; i < 200; i += 1) {
+      const state = dealGame('SIX_TILES', 'DUEL');
+      expect(state.hands.map((hand) => hand.length)).toEqual([6, 6]);
+      expect(state.boneyard).toHaveLength(16);
+
+      const dealt = state.hands.flat();
+      const doubles = dealt.filter((tile) => tile[0] === tile[1]);
+      const pool = doubles.length > 0 ? doubles : dealt;
+      const best = Math.max(...pool.map((tile) => tile[0] + tile[1]));
+      expect(state.openingTile![0] + state.openingTile![1]).toBe(best);
+      expect(state.hands[state.currentSeat]).toContainEqual(state.openingTile);
+    }
+  });
+
+  it('mano a mano: a vez alterna entre os 2 e o jogo tranca quando os 2 passam', () => {
+    let state = makeState({ teamMode: 'DUEL', hands: [[[0, 1]], [[2, 3]]], line: [{ tile: [5, 5], left: 5, right: 5 }] });
+    state = applyAction(state, 0, { type: 'PASS' });
+    expect(state.currentSeat).toBe(1);
+    state = applyAction(state, 1, { type: 'PASS' });
+    expect(state.result).toEqual({ reason: 'BLOCKED', winnerSeats: [0], pips: [1, 5] });
+  });
 });
 
 describe('Jogadas', () => {

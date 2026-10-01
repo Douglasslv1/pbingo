@@ -62,7 +62,8 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
   }
 
   // Adversarios na ordem de jogo a partir de mim
-  const opponents = [1, 2, 3].map((offset) => (mySeat + offset) % 4);
+  const seatCount = game.handSizes.length;
+  const opponents = Array.from({ length: seatCount - 1 }, (_, index) => (mySeat + index + 1) % seatCount);
 
   return (
     <div className="card domino-game">

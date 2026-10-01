@@ -8,4 +8,7 @@ export const MODE_LABELS: Record<DominoMode, string> = {
 export const TEAM_LABELS: Record<DominoTeamMode, string> = {
   INDIVIDUAL: 'Individual',
   PAIRS: 'Duplas',
+  DUEL: 'Mano a mano',
 };
+
+export const seatsFor = (teamMode: DominoTeamMode): number => (teamMode === 'DUEL' ? 2 : 4);

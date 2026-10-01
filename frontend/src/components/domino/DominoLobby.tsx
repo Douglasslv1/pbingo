@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatBrl } from '../../format';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import type { DominoMode, DominoTeamMode } from '../../types';
+import { seatsFor } from './dominoLabels';
 
 interface Props {
   keysBalance: number | null;
@@ -26,6 +27,7 @@ const MODES: Array<{ value: DominoMode; title: string; description: string }> = 
 const TEAM_MODES: Array<{ value: DominoTeamMode; title: string; description: string }> = [
   { value: 'INDIVIDUAL', title: 'Individual', description: 'Cada um por si. Quem bater leva o prêmio.' },
   { value: 'PAIRS', title: 'Duplas', description: 'Parceiro sentado à sua frente. A dupla vencedora divide o prêmio.' },
+  { value: 'DUEL', title: 'Mano a mano', description: 'Só 2 jogadores, partida mais curta. Apenas no 6 peças.' },
 ];
 
 export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
@@ -33,18 +35,31 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
   const [mode, setMode] = useState<DominoMode>('SIX_TILES');
   const [teamMode, setTeamMode] = useState<DominoTeamMode>('INDIVIDUAL');
 
-  const pot = config ? config.prizeContributionPerTicket * 4 : null;
+  const free = config?.dominoFree ?? false;
+  const pot = config ? config.prizeContributionPerTicket * seatsFor(teamMode) : null;
   const prizeText =
-    pot === null ? '' : teamMode === 'PAIRS' ? `${formatBrl(pot / 2)} para cada vencedor da dupla` : `${formatBrl(pot)} para quem vencer`;
+    pot === null || free
+      ? ''
+      : teamMode === 'PAIRS'
+        ? `${formatBrl(pot / 2)} para cada vencedor da dupla`
+        : `${formatBrl(pot)} para quem vencer`;
   const ticketPrice = config ? formatBrl(config.creditPriceBrl * config.ticketPriceCredits) : null;
-  const hasKeys = keysBalance === null || keysBalance > 0;
+  const entry = free ? 'grátis' : `1 chave${ticketPrice ? ` = ${ticketPrice}` : ''}`;
+  const hasKeys = free || keysBalance === null || keysBalance > 0;
+
+  const pickMode = (value: DominoMode) => {
+    setMode(value);
+    if (value === 'BURRINHO' && teamMode === 'DUEL') setTeamMode('INDIVIDUAL');
+  };
 
   return (
     <div className="card">
       <h2>Dominó</h2>
       <p className="hint intro-hint">
-        Mesas de 4 jogadores. Você entra com 1 chave{ticketPrice ? ` (${ticketPrice})` : ''} e a partida começa assim que a mesa
-        completar. Se não completar em alguns minutos, sua chave volta.
+        Mesas de 4 jogadores (2 no mano a mano). A partida começa assim que a mesa completar.
+        {free
+          ? ' Durante os testes a entrada é grátis e não há prêmio.'
+          : ` Você entra com 1 chave${ticketPrice ? ` (${ticketPrice})` : ''}; se a mesa não completar em alguns minutos, ela volta.`}
       </p>
 
       <span className="label">Modalidade</span>
@@ -54,7 +69,7 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
             key={option.value}
             type="button"
             className={mode === option.value ? 'option-card active' : 'option-card'}
-            onClick={() => setMode(option.value)}
+            onClick={() => pickMode(option.value)}
             aria-pressed={mode === option.value}
           >
             <strong>{option.title}</strong>
@@ -72,6 +87,7 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
             className={teamMode === option.value ? 'option-card active' : 'option-card'}
             onClick={() => setTeamMode(option.value)}
             aria-pressed={teamMode === option.value}
+            disabled={option.value === 'DUEL' && mode === 'BURRINHO'}
           >
             <strong>{option.title}</strong>
             <span>{option.description}</span>
@@ -87,7 +103,7 @@ export default function DominoLobby({ keysBalance, joining, onJoin }: Props) {
 
       {hasKeys ? (
         <button type="button" onClick={() => onJoin(mode, teamMode)} disabled={joining}>
-          {joining ? 'Entrando...' : `Entrar na mesa (1 chave${ticketPrice ? ` = ${ticketPrice}` : ''})`}
+          {joining ? 'Entrando...' : `Entrar na mesa (${entry})`}
         </button>
       ) : (
         <p className="hint">
