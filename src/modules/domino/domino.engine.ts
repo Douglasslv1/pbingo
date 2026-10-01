@@ -20,7 +20,7 @@ export class DominoRuleError extends Error {
   }
 }
 
-type RandomInt = (maxExclusive: number) => number;
+export type RandomInt = (maxExclusive: number) => number;
 
 export function createDeck(): Tile[] {
   const deck: Tile[] = [];
@@ -32,9 +32,9 @@ export function createDeck(): Tile[] {
   return deck;
 }
 
-/** Fisher-Yates com gerador criptografico (o mesmo do sorteio do bingo). */
-export function shuffle(tiles: Tile[], random: RandomInt = randomInt): Tile[] {
-  const shuffled = [...tiles];
+/** Fisher-Yates com gerador criptografico (o mesmo do sorteio do bingo). Usado tambem no truco. */
+export function shuffle<T>(items: T[], random: RandomInt = randomInt): T[] {
+  const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i -= 1) {
     const j = random(i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
