@@ -3,7 +3,7 @@ import DominoLobby from '../components/domino/DominoLobby';
 import { MODE_LABELS, seatsFor, TEAM_LABELS } from '../components/domino/dominoLabels';
 import { withOptimisticPlay } from '../components/domino/optimisticPlay';
 import HistoryPanel from '../components/HistoryPanel';
-import TablePage from '../components/tables/TablePage';
+import GamePage from '../components/GamePage';
 import TableWaiting from '../components/tables/TableWaiting';
 import { useGameConfig } from '../hooks/useGameConfig';
 import { useTableRoom } from '../hooks/useTableRoom';
@@ -60,8 +60,8 @@ function DominoRoom() {
 
 export default function DominoPage() {
   return (
-    <TablePage>
+    <GamePage>
       <DominoRoom />
-    </TablePage>
+    </GamePage>
   );
 }

@@ -1,5 +1,5 @@
 import HistoryPanel from '../components/HistoryPanel';
-import TablePage from '../components/tables/TablePage';
+import GamePage from '../components/GamePage';
 import TableWaiting from '../components/tables/TableWaiting';
 import TrucoGame from '../components/truco/TrucoGame';
 import TrucoLobby from '../components/truco/TrucoLobby';
@@ -55,8 +55,8 @@ function TrucoRoom() {
 
 export default function TrucoPage() {
   return (
-    <TablePage>
+    <GamePage>
       <TrucoRoom />
-    </TablePage>
+    </GamePage>
   );
 }

@@ -5,6 +5,7 @@ import AppPage from './pages/AppPage';
 import DominoPage from './pages/DominoPage';
 import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
+import ProfilePage from './pages/ProfilePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SupportPage from './pages/SupportPage';
 import TermsPage from './pages/TermsPage';
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/domino" element={<DominoPage />} />
           <Route path="/truco" element={<TrucoPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />

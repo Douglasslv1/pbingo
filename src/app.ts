@@ -11,6 +11,7 @@ import { CURRENT_TERMS_VERSION } from './modules/auth/terms';
 import { STAKES } from './modules/tables/tables.types';
 import { adminDominoRouter, dominoRouter } from './modules/domino/domino.routes';
 import { paymentsRouter } from './modules/payments/payments.routes';
+import { profileRouter } from './modules/profile/profile.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
 import { adminTrucoRouter, trucoRouter } from './modules/truco/truco.routes';
 import { walletRouter } from './modules/wallet/wallet.routes';
@@ -90,6 +91,7 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
 
   app.use('/auth', authRouter);
   app.use('/wallet', walletRouter);
+  app.use('/profile', profileRouter);
   app.use('/payments', paymentsRouter);
   app.use('/rounds', roundsRouter);
   app.use('/withdrawals', withdrawalsRouter);

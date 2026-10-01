@@ -1967,3 +1967,13 @@ button.truco-call {
     --w: 56px;
   }
 }
+
+/* Perfil */
+
+.profile-header h1 {
+  margin: 0 0 4px;
+}
+
+.nickname-nudge {
+  margin-bottom: 12px;
+}

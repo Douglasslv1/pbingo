@@ -18,6 +18,10 @@ model User {
   termsAcceptedAt   DateTime? @map("terms_accepted_at") @db.Timestamptz
   termsVersion      String?   @map("terms_version") @db.VarChar(20)
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  /// Apelido publico; unico sem diferenciar maiusculas (indice em LOWER(nickname) na migracao)
+  nickname          String?   @db.VarChar(20)
+  nicknameChangedAt DateTime? @map("nickname_changed_at") @db.Timestamptz
+  playerNumber      Int       @unique(map: "unique_users_player_number") @default(autoincrement()) @map("player_number")
 
   credits             UserCredit?
   prizes              UserPrize?
@@ -243,6 +247,7 @@ model GameSeat {
   prizeAmount       Decimal? @map("prize_amount") @db.Decimal(10, 2)
   timeouts          Int      @default(0)
   isAway            Boolean  @default(false) @map("is_away")
+  isWinner          Boolean  @default(false) @map("is_winner")
   joinedAt          DateTime @default(now()) @map("joined_at") @db.Timestamptz
 
   table GameTable @relation(fields: [tableId], references: [id], onDelete: Cascade)

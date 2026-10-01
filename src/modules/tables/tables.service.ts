@@ -6,13 +6,15 @@ import { AppError } from '../../utils/errors';
 import { HistoryPage } from '../../utils/pagination';
 import { emitToUser } from '../../websocket/socket';
 import { dominoAdapter } from '../domino/domino.adapter';
+import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { trucoAdapter } from '../truco/truco.adapter';
 import { GameAdapter, GameName, GameRuleError, QueueChoice } from './tables.types';
 import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './turn.scheduler';
 
 type Tx = Prisma.TransactionClient;
-type TableWithSeats = GameTable & { seats: Array<GameSeat & { user: { name: string } }> };
+const PUBLIC_USER = { select: { nickname: true, playerNumber: true } } as const;
+type TableWithSeats = GameTable & { seats: Array<GameSeat & { user: { nickname: string | null; playerNumber: number } }> };
 
 const ADAPTERS: Record<GameName, GameAdapter> = {
   DOMINO: dominoAdapter as GameAdapter,
@@ -61,10 +63,11 @@ async function refundSeats(tx: Tx, table: GameTable, seats: GameSeat[]): Promise
   }
 }
 
-/** Divide o pote entre os lugares vencedores e credita o saldo de premios de cada um. */
+/** Marca os vencedores (mesmo sem premio), divide o pote entre eles e credita o saldo de premios de cada um. */
 async function payWinners(tx: Tx, table: GameTable, winnerSeats: number[], seats: GameSeat[]): Promise<void> {
-  if (table.prizePool.isZero()) return;
   const winners = seats.filter((seat) => winnerSeats.includes(seat.seat)).sort((a, b) => a.seat - b.seat);
+  await tx.gameSeat.updateMany({ where: { id: { in: winners.map((seat) => seat.id) } }, data: { isWinner: true } });
+  if (table.prizePool.isZero()) return;
   const shares = splitPrizeInCents(Math.round(Number(table.prizePool) * 100), winners.length);
 
   const userIds = [...new Set(winners.map((seat) => seat.userId))].sort();
@@ -78,10 +81,6 @@ async function payWinners(tx: Tx, table: GameTable, winnerSeats: number[], seats
       data: { userId: seat.userId, type: 'PRIZE_PAYOUT', amountFiat: prize, status: 'COMPLETED', game: table.game },
     });
   }
-}
-
-function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
 }
 
 /** Visao da mesa para um jogador: o motor do jogo decide o que ele pode ver. */
@@ -103,7 +102,7 @@ export function tableViewFor(table: TableWithSeats, userId: string) {
       .sort((a, b) => a.seat - b.seat)
       .map((seat) => ({
         seat: seat.seat,
-        name: firstName(seat.user.name),
+        name: displayName(seat.user),
         isMe: seat.userId === userId,
         away: seat.isAway,
         prizeAmount: seat.prizeAmount?.toString() ?? null,
@@ -116,7 +115,7 @@ export function tableViewFor(table: TableWithSeats, userId: string) {
 async function loadTable(tableId: string): Promise<TableWithSeats | null> {
   return prisma.gameTable.findUnique({
     where: { id: tableId },
-    include: { seats: { include: { user: { select: { name: true } } } } },
+    include: { seats: { include: { user: PUBLIC_USER } } },
   });
 }
 
@@ -543,7 +542,7 @@ export async function listTablesForAdmin(game: GameName, status?: GameTable['sta
     where: { game, ...(status ? { status } : {}) },
     orderBy: { createdAt: 'desc' },
     take: 100,
-    include: { seats: { include: { user: { select: { name: true, email: true } } } } },
+    include: { seats: { include: { user: { select: { name: true, email: true, nickname: true } } } } },
   });
 
   return tables.map((table) => ({
@@ -551,7 +550,7 @@ export async function listTablesForAdmin(game: GameName, status?: GameTable['sta
     moveCount: table.state ? adapter.moveCount(table.state) : 0,
     players: table.seats
       .sort((a, b) => a.seat - b.seat)
-      .map((seat) => ({ seat: seat.seat, name: seat.user.name, email: seat.user.email })),
+      .map((seat) => ({ seat: seat.seat, name: seat.user.name, email: seat.user.email, nickname: seat.user.nickname })),
   }));
 }
 
@@ -560,7 +559,7 @@ export async function getTableForAdmin(game: GameName, tableId: string) {
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
     include: {
-      seats: { include: { user: { select: { name: true, email: true } } } },
+      seats: { include: { user: { select: { name: true, email: true, nickname: true } } } },
       moves: { orderBy: { moveNumber: 'asc' } },
     },
   });
@@ -579,6 +578,7 @@ export async function getTableForAdmin(game: GameName, tableId: string) {
         seat: seat.seat,
         name: seat.user.name,
         email: seat.user.email,
+        nickname: seat.user.nickname,
         timeouts: seat.timeouts,
         away: seat.isAway,
         prizeAmount: seat.prizeAmount?.toString() ?? null,

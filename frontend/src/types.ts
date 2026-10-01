@@ -60,6 +60,25 @@ export interface AuthUser {
   // Ausentes em sessoes salvas antes da criacao desses campos (atualizados via /auth/me)
   role?: UserRole;
   termsAccepted?: boolean;
+  /** null: ainda nao escolheu (undefined em sessoes salvas antes do perfil). */
+  nickname?: string | null;
+}
+
+export interface GameStats {
+  matches: number;
+  wins: number;
+  prizes: string;
+}
+
+export interface Profile {
+  name: string;
+  email: string;
+  nickname: string | null;
+  displayName: string;
+  memberSince: string;
+  /** Quando o apelido pode ser trocado de novo (null: agora). */
+  nicknameChangeAt: string | null;
+  games: Record<'BINGO' | 'DOMINO' | 'TRUCO', GameStats>;
 }
 
 export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';

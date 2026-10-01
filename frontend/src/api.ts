@@ -6,6 +6,7 @@ import type {
   GameConfig,
   JoinRoundResult,
   Page,
+  Profile,
   RoundHistoryItem,
   RoundView,
   TableGame,
@@ -70,6 +71,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ token, password }),
     }),
+
+  getProfile: (token: string) => request<Profile>('/profile/me', {}, token),
+
+  setNickname: (token: string, nickname: string) =>
+    request<Profile>('/profile/me/nickname', { method: 'PUT', body: JSON.stringify({ nickname }) }, token),
 
   getWallet: (token: string) => request<Wallet>('/wallet/me', {}, token),
 

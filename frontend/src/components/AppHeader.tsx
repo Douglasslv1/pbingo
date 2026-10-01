@@ -35,6 +35,11 @@ export default function AppHeader() {
             Truco
           </NavLink>
         )}
+        {auth && (
+          <NavLink to="/perfil" className={navClass}>
+            Perfil
+          </NavLink>
+        )}
         {isAdmin && (
           <NavLink to="/admin" className={navClass}>
             Admin

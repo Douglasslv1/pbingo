@@ -51,8 +51,13 @@ describe('Mesas de truco', () => {
     expect(table.prizePool.toString()).toBe((2 * 2 * env.prizeContributionPerTicket).toFixed(1));
     expect(await credits(players[0].user.id)).toBe(8);
 
+    await prisma.user.update({ where: { id: players[1].user.id }, data: { nickname: 'Rei_do_Zap' } });
     const view = await request(app).get('/truco/tables/me').set(auth(players[0]));
     expect(view.body.kind).toBe('TRUCO');
+    // Na mesa aparece o apelido (ou "Jogador #0000"), nunca o nome real
+    const names = view.body.players.map((player: { name: string }) => player.name);
+    expect(names).toContain('Rei_do_Zap');
+    expect(names.find((name: string) => name !== 'Rei_do_Zap')).toMatch(/^Jogador #\d{4}$/);
     expect(view.body.game.hand).toHaveLength(3);
     expect(view.body.game.vira).toBeTruthy();
   });
@@ -135,6 +140,7 @@ describe('Mesas de truco', () => {
       expect(table.status).toBe('FINISHED');
       const winners = table.seats.filter((seat) => seat.seat % 2 === state.winner);
       expect(winners).toHaveLength(teamMode === 'PAIRS' ? 2 : 1);
+      expect(table.seats.filter((seat) => seat.isWinner).map((seat) => seat.seat)).toEqual(winners.map((seat) => seat.seat));
       const paidCents = winners.reduce((sum, seat) => sum + Math.round(Number(seat.prizeAmount) * 100), 0);
       expect(paidCents).toBe(Math.round(Number(table.prizePool) * 100));
       expect(await prisma.gameMove.count({ where: { tableId } })).toBe(state.moveCount);
