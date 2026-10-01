@@ -6,3 +6,6 @@ dist/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# Backups do banco (contem dados pessoais)
+backup-*.sql
