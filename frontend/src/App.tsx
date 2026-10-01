@@ -2,7 +2,9 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import AdminPage from './pages/AdminPage';
 import AppPage from './pages/AppPage';
+import DamasPage from './pages/DamasPage';
 import DominoPage from './pages/DominoPage';
+import GamesPage from './pages/GamesPage';
 import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ProfilePage from './pages/ProfilePage';
@@ -11,6 +13,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import SupportPage from './pages/SupportPage';
 import TermsPage from './pages/TermsPage';
 import TrucoPage from './pages/TrucoPage';
+import XadrezPage from './pages/XadrezPage';
 
 export default function App() {
   return (
@@ -22,6 +25,9 @@ export default function App() {
           <Route path="/app" element={<AppPage />} />
           <Route path="/domino" element={<DominoPage />} />
           <Route path="/truco" element={<TrucoPage />} />
+          <Route path="/damas" element={<DamasPage />} />
+          <Route path="/xadrez" element={<XadrezPage />} />
+          <Route path="/jogos" element={<GamesPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/ranking" element={<RankingPage />} />

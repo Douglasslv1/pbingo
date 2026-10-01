@@ -51,7 +51,13 @@ export default function AdminOverviewPanel() {
   if (error) return <p className="error">{error}</p>;
   if (!stats) return <p className="label">Carregando...</p>;
 
-  const { users, money, bingoRounds, dominoTables, trucoTables } = stats;
+  const { users, money, bingoRounds, tables } = stats;
+  const GAMES = [
+    ['DOMINO', 'dominó'],
+    ['TRUCO', 'truco'],
+    ['DAMAS', 'damas'],
+    ['XADREZ', 'xadrez'],
+  ] as const;
   const pending = money.withdrawals.PENDING;
 
   return (
@@ -61,8 +67,11 @@ export default function AdminOverviewPanel() {
         items={[
           ['Jogadores online', users.onlineUsers],
           ['Conexões abertas', users.onlineConnections, 'inclui visitantes'],
-          ['Mesas de dominó em jogo', dominoTables.PLAYING ?? 0, `${dominoTables.WAITING ?? 0} aguardando`],
-          ['Mesas de truco em jogo', trucoTables.PLAYING ?? 0, `${trucoTables.WAITING ?? 0} aguardando`],
+          ...GAMES.map(([game, label]): StatItem => [
+            `Mesas de ${label} em jogo`,
+            tables[game].PLAYING ?? 0,
+            `${tables[game].WAITING ?? 0} aguardando`,
+          ]),
         ]}
       />
       <StatGroup
@@ -86,8 +95,11 @@ export default function AdminOverviewPanel() {
         title="Jogos"
         items={[
           ['Rodadas encerradas', bingoRounds.FINISHED ?? 0, `${bingoRounds.CANCELLED ?? 0} canceladas`],
-          ['Partidas de dominó', dominoTables.FINISHED ?? 0, `${dominoTables.CANCELLED ?? 0} canceladas`],
-          ['Partidas de truco', trucoTables.FINISHED ?? 0, `${trucoTables.CANCELLED ?? 0} canceladas`],
+          ...GAMES.map(([game, label]): StatItem => [
+            `Partidas de ${label}`,
+            tables[game].FINISHED ?? 0,
+            `${tables[game].CANCELLED ?? 0} canceladas`,
+          ]),
         ]}
       />
 

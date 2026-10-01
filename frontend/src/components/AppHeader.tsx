@@ -1,6 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useGameConfig } from '../hooks/useGameConfig';
 import Logo from './Logo';
 
 function navClass({ isActive }: { isActive: boolean }): string {
@@ -10,11 +9,7 @@ function navClass({ isActive }: { isActive: boolean }): string {
 /** Cabecalho comum das paginas do app: marca a esquerda e menu a direita. */
 export default function AppHeader() {
   const { auth, logout } = useAuth();
-  const config = useGameConfig();
   const isAdmin = auth?.user.role === 'ADMIN';
-  // Liberacao gradual: enquanto desligados, so administradores veem o domino e o truco
-  const showDomino = config?.dominoEnabled || isAdmin;
-  const showTruco = config?.trucoEnabled || isAdmin;
 
   return (
     <header className="app-header">
@@ -22,19 +17,12 @@ export default function AppHeader() {
         <Logo size={30} />
       </Link>
       <nav className="app-nav" aria-label="Menu principal">
-        <NavLink to="/app" className={navClass}>
-          Números da sorte
+        <NavLink to="/jogos" className={navClass}>
+          Jogos
         </NavLink>
-        {showDomino && (
-          <NavLink to="/domino" className={navClass}>
-            Dominó
-          </NavLink>
-        )}
-        {showTruco && (
-          <NavLink to="/truco" className={navClass}>
-            Truco
-          </NavLink>
-        )}
+        <NavLink to="/app" className={navClass}>
+          Carteira
+        </NavLink>
         <NavLink to="/ranking" className={navClass}>
           Ranking
         </NavLink>

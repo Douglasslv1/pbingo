@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import DominoTile from '../components/domino/DominoTile';
-import PlayingCard from '../components/truco/PlayingCard';
 import FloatingBalls from '../components/FloatingBalls';
+import GameCards from '../components/GameCards';
 import LiveRoundTeaser from '../components/LiveRoundTeaser';
 import Logo from '../components/Logo';
 import { formatBrl } from '../format';
@@ -11,7 +11,7 @@ import { useGameConfig } from '../hooks/useGameConfig';
 const STEPS = [
   { title: 'Crie sua conta', text: 'Cadastro rápido com nome, e-mail e data de nascimento. Sua carteira já nasce pronta.' },
   { title: 'Compre chaves via Pix', text: 'Cada chave é uma entrada em uma rodada ou mesa. O Pix cai na hora.' },
-  { title: 'Escolha o jogo', text: 'Números da sorte para torcer, Dominó para mostrar estratégia.' },
+  { title: 'Escolha o jogo', text: 'Números da sorte para torcer; Dominó, Truco, Damas e Xadrez para mostrar estratégia.' },
   { title: 'Ganhe e saque', text: 'O prêmio vai para o seu saldo e você saca via Pix para a sua conta.' },
 ];
 
@@ -67,31 +67,10 @@ function HeroArt() {
   );
 }
 
-/** Mini cartela para ilustrar os Numeros da sorte. */
-function MiniCard() {
-  const numbers = [4, 19, 33, 48, 62, 11, 27, 0, 52, 70, 8, 22, 41, 57, 66];
-  const marked = new Set([4, 33, 0, 52, 22, 66]);
-  return (
-    <div className="mini-card" aria-hidden="true">
-      {numbers.map((n, i) => (
-        <span key={i} className={marked.has(n) ? 'marked' : undefined}>
-          {n === 0 ? '★' : n}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default function LandingPage() {
   const config = useGameConfig();
   const keyPrice = config ? formatBrl(config.creditPriceBrl * config.ticketPriceCredits) : 'R$ 3,50';
   const prizeShare = config ? 100 - config.houseFeePercent : 80;
-  const minPlayers = config?.minPlayersPerRound ?? 5;
-  const interval = config?.roundIntervalMinutes ?? 15;
-  const dominoOpen = config?.dominoEnabled ?? false;
-  const dominoPrize = config ? formatBrl(config.prizeContributionPerTicket * 4) : null;
-  const trucoOpen = config?.trucoEnabled ?? false;
-  const trucoPrize = config ? formatBrl(config.prizeContributionPerTicket * 2 * 5) : null;
 
   return (
     <div className="landing">
@@ -118,7 +97,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            Números da sorte · Dominó
+            Números da sorte · Dominó · Truco · Damas · Xadrez
           </motion.span>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             Jogue com sorte e estratégia. <span>Ganhe prêmios de verdade.</span>
@@ -128,7 +107,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Dois jogos, uma carteira só. Compre chaves via Pix, escolha como quer jogar e saque os seus prêmios direto na
+            Cinco jogos, uma carteira só. Compre chaves via Pix, escolha como quer jogar e saque os seus prêmios direto na
             sua conta.
           </motion.p>
           <motion.div
@@ -172,95 +151,7 @@ export default function LandingPage() {
 
       <section id="jogos" className="games-section">
         <h2>Escolha o seu jogo</h2>
-        <div className="game-cards">
-          <motion.article
-            className="game-card lucky"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeUp}
-          >
-            <div className="game-card-art">
-              <MiniCard />
-            </div>
-            <h3>Números da sorte</h3>
-            <p>Receba sua cartela, acompanhe o sorteio ao vivo e torça para completar primeiro.</p>
-            <ul>
-              <li>Rodadas a cada {interval} minutos</li>
-              <li>Começa com no mínimo {minPlayers} jogadores - senão, a chave volta</li>
-              <li>Prêmio acumulado cresce a cada jogador</li>
-            </ul>
-            <Link to="/app" className="cta-button">
-              Jogar Números da sorte
-            </Link>
-          </motion.article>
-
-          <motion.article
-            className="game-card domino"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeUp}
-            transition={{ delay: 0.1 }}
-          >
-            {!dominoOpen && <span className="soon-badge">Em breve</span>}
-            <div className="game-card-art tiles">
-              <DominoTile first={2} second={5} size={30} />
-              <DominoTile first={5} second={5} vertical size={30} />
-              <DominoTile first={5} second={1} size={30} />
-            </div>
-            <h3>Dominó</h3>
-            <p>Mesas de 4 jogadores ou mano a mano, com a sua estratégia decidindo cada jogada.</p>
-            <ul>
-              <li>6 peças ou Burrinho, individual, em duplas ou mano a mano</li>
-              <li>30 segundos por jogada - partidas rápidas</li>
-              <li>
-                {config?.dominoFree
-                  ? 'Grátis durante os testes'
-                  : dominoPrize
-                    ? `Prêmio de até ${dominoPrize} por mesa`
-                    : 'Prêmio para quem bater'}
-              </li>
-            </ul>
-            {dominoOpen ? (
-              <Link to="/domino" className="cta-button">
-                Jogar Dominó
-              </Link>
-            ) : (
-              <span className="cta-disabled">Disponível em breve</span>
-            )}
-          </motion.article>
-
-          <motion.article
-            className="game-card truco"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeUp}
-            transition={{ delay: 0.2 }}
-          >
-            {!trucoOpen && <span className="soon-badge">Em breve</span>}
-            <div className="game-card-art tiles">
-              <PlayingCard card="4P" />
-              <PlayingCard card="7C" />
-              <PlayingCard card="AE" />
-            </div>
-            <h3>Truco</h3>
-            <p>Truco Paulista com manilha pela vira: blefe, leitura do adversário e o famoso grito de truco.</p>
-            <ul>
-              <li>Mano a mano ou em duplas, até 12 pontos</li>
-              <li>Mesas de 1, 2 ou 5 chaves</li>
-              <li>{trucoPrize ? `Prêmio de até ${trucoPrize} por mesa` : 'Prêmio para quem vencer'}</li>
-            </ul>
-            {trucoOpen ? (
-              <Link to="/truco" className="cta-button">
-                Jogar Truco
-              </Link>
-            ) : (
-              <span className="cta-disabled">Disponível em breve</span>
-            )}
-          </motion.article>
-        </div>
+        <GameCards />
       </section>
 
       <section id="como-funciona" className="how-it-works">

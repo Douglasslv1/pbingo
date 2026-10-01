@@ -3,11 +3,11 @@ import { api, ApiError } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
-import type { DominoMatchItem, Page, RoundHistoryItem, TransactionItem, TrucoMatchItem } from '../types';
+import type { BoardMatchItem, DominoMatchItem, Page, RoundHistoryItem, TransactionItem, TrucoMatchItem } from '../types';
 import { formatDateTime } from '../withdrawalFormat';
 import { MODE_LABELS, TEAM_LABELS } from './domino/dominoLabels';
 
-export type Tab = 'transactions' | 'rounds' | 'domino' | 'truco';
+export type Tab = 'transactions' | 'rounds' | 'domino' | 'truco' | 'damas' | 'xadrez';
 
 interface TransactionView {
   title: string;
@@ -23,7 +23,7 @@ const WITHDRAWAL_STATUS_NOTES: Record<string, string> = {
 };
 
 /** Rotulo conforme o jogo; movimentacoes antigas sem jogo registrado recebem um rotulo neutro. */
-function byGame(transaction: TransactionItem, labels: Record<'BINGO' | 'DOMINO' | 'TRUCO', string>, unknown: string): string {
+function byGame(transaction: TransactionItem, labels: Partial<Record<string, string>>, unknown: string): string {
   return labels[transaction.game as keyof typeof labels] ?? unknown;
 }
 
@@ -126,7 +126,16 @@ const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'rounds', label: 'Números da sorte' },
   { value: 'domino', label: 'Dominó' },
   { value: 'truco', label: 'Truco' },
+  { value: 'damas', label: 'Damas' },
+  { value: 'xadrez', label: 'Xadrez' },
 ];
+
+const BOARD_REASONS: Record<string, string> = {
+  CHECKMATE: 'xeque-mate',
+  NO_MOVES: 'sem lances',
+  RESIGN: 'desistência',
+  TIMEOUT: 'tempo esgotado',
+};
 
 const MATCH_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
   WON: 'Venceu',
@@ -134,9 +143,17 @@ const MATCH_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
   CANCELLED: 'Cancelada - chave devolvida',
 };
 
-/** Titulo e detalhe de uma partida de domino ou truco no historico. */
-function describeMatch(match: DominoMatchItem | TrucoMatchItem): { title: string; note: string | null } {
+/** Titulo e detalhe de uma partida de domino, truco, damas ou xadrez no historico. */
+function describeMatch(match: DominoMatchItem | TrucoMatchItem | BoardMatchItem, tab: Tab): { title: string; note: string | null } {
   const stake = match.stake > 1 ? ` · mesa de ${match.stake} chaves` : '';
+  if (tab === 'damas' || tab === 'xadrez') {
+    const result = (match as BoardMatchItem).result;
+    const color = (match as BoardMatchItem).whiteSeat === match.mySeat ? 'brancas' : 'pretas';
+    return {
+      title: `${tab === 'damas' ? 'Damas' : 'Xadrez'} · de ${color}${stake}`,
+      note: result ? (result.winner === null ? 'empate' : (BOARD_REASONS[result.reason] ?? null)) : null,
+    };
+  }
   if ('reason' in match) {
     return {
       title: `${MODE_LABELS[match.mode]} · ${TEAM_LABELS[match.teamMode]}${stake}`,
@@ -144,9 +161,10 @@ function describeMatch(match: DominoMatchItem | TrucoMatchItem): { title: string
     };
   }
   const mine = match.mySeat % 2;
+  const score = (match as TrucoMatchItem).score;
   return {
     title: `Truco · ${TEAM_LABELS[match.teamMode]}${stake}`,
-    note: match.score ? `placar ${match.score[mine]} × ${match.score[1 - mine]}` : null,
+    note: score ? `placar ${score[mine]} × ${score[1 - mine]}` : null,
   };
 }
 
@@ -158,7 +176,13 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
   const { auth } = useAuth();
   const config = useGameConfig();
   const [tab, setTab] = useState<Tab>(initialTab);
-  const showTruco = config?.trucoEnabled || auth?.user.role === 'ADMIN';
+  const isAdmin = auth?.user.role === 'ADMIN';
+  const visible: Partial<Record<Tab, boolean>> = {
+    domino: config?.dominoEnabled || isAdmin,
+    truco: config?.trucoEnabled || isAdmin,
+    damas: config?.damasEnabled || isAdmin,
+    xadrez: config?.xadrezEnabled || isAdmin,
+  };
   const token = auth?.token ?? '';
 
   const fetchTransactions = useCallback((cursor?: string) => api.getMyTransactions(token, cursor), [token]);
@@ -168,15 +192,20 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
     [token],
   );
   const fetchTruco = useCallback((cursor?: string) => api.getMyMatches<TrucoMatchItem>('truco', token, cursor), [token]);
+  const fetchDamas = useCallback((cursor?: string) => api.getMyMatches<BoardMatchItem>('damas', token, cursor), [token]);
+  const fetchXadrez = useCallback((cursor?: string) => api.getMyMatches<BoardMatchItem>('xadrez', token, cursor), [token]);
   const lists = {
     transactions: usePagedList(fetchTransactions),
     rounds: usePagedList(fetchRounds),
     domino: usePagedList(fetchDomino),
     truco: usePagedList(fetchTruco),
+    damas: usePagedList(fetchDamas),
+    xadrez: usePagedList(fetchXadrez),
   };
   const { transactions, rounds } = lists;
   const active = lists[tab];
-  const matches = tab === 'domino' ? lists.domino.items : tab === 'truco' ? lists.truco.items : [];
+  const matches: Array<DominoMatchItem | TrucoMatchItem | BoardMatchItem> =
+    tab === 'transactions' || tab === 'rounds' ? [] : lists[tab].items;
   const { reload } = active;
 
   // Recarrega ao trocar de aba para mostrar movimentacoes recentes
@@ -188,7 +217,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
     <div className="card">
       <h2>Histórico</h2>
       <div className="tabs">
-        {TABS.filter((option) => option.value !== 'truco' || showTruco).map((option) => (
+        {TABS.filter((option) => visible[option.value] !== false).map((option) => (
           <button
             key={option.value}
             type="button"
@@ -241,7 +270,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
           ))}
 
         {matches.map((match) => {
-          const { title, note } = describeMatch(match);
+          const { title, note } = describeMatch(match, tab);
           return (
             <li key={match.tableId}>
               <div className="withdrawal-row">

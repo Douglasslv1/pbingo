@@ -9,6 +9,8 @@ import type { Profile } from '../types';
 const GAMES = [
   { key: 'TRUCO', label: 'Truco', unit: 'partidas' },
   { key: 'DOMINO', label: 'Dominó', unit: 'partidas' },
+  { key: 'DAMAS', label: 'Damas', unit: 'partidas' },
+  { key: 'XADREZ', label: 'Xadrez', unit: 'partidas' },
   { key: 'BINGO', label: 'Números da sorte', unit: 'rodadas' },
 ] as const;
 

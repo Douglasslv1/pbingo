@@ -2036,3 +2036,146 @@ button.truco-call {
   font-size: 0.9rem;
   color: var(--muted);
 }
+
+/* Tabuleiro (damas e xadrez) */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 1;
+  margin: 10px auto;
+  border: 2px solid #3f2d1d;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.board-square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  aspect-ratio: 1;
+  min-width: 0;
+}
+
+.board-square:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.board-square.light {
+  background: #ead9b8;
+}
+
+.board-square.dark {
+  background: #a87c55;
+}
+
+.board-square.last {
+  box-shadow: inset 0 0 0 100px rgba(250, 204, 21, 0.35);
+}
+
+.board-square.selected {
+  box-shadow: inset 0 0 0 3px #22c55e;
+}
+
+.board-square.danger {
+  box-shadow: inset 0 0 0 100px rgba(239, 68, 68, 0.55);
+}
+
+/* Destino possivel: um ponto no centro da casa */
+.board-square.target::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.7);
+}
+
+.board-rank,
+.board-file {
+  position: absolute;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(63, 45, 29, 0.75);
+  pointer-events: none;
+}
+
+.board-rank {
+  top: 2px;
+  left: 3px;
+}
+
+.board-file {
+  bottom: 1px;
+  right: 3px;
+}
+
+.checker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  font-size: clamp(0.8rem, 3.5vw, 1.4rem);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3), 0 2px 3px rgba(0, 0, 0, 0.4);
+}
+
+.checker.w {
+  background: #f8fafc;
+  color: #b45309;
+  border: 2px solid #cbd5e1;
+}
+
+.checker.b {
+  background: #1e1b18;
+  color: #facc15;
+  border: 2px solid #44403c;
+}
+
+.chess-piece {
+  font-size: clamp(1.4rem, 7.5vw, 2.8rem);
+  line-height: 1;
+}
+
+.chess-piece.w {
+  color: #fff;
+  text-shadow: 0 0 1px #000, 0 0 1px #000, 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.chess-piece.b {
+  color: #111;
+  text-shadow: 0 0 1px #fff, 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.promotion-choice {
+  justify-content: center;
+}
+
+.board-game .domino-opponent {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Cards de damas e xadrez na lista de jogos */
+.game-card-art .checker {
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+}
+
+.game-card-art .chess-piece {
+  font-size: 2.2rem;
+}
+
+.games-page h1 {
+  margin-top: 0;
+}

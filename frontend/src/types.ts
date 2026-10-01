@@ -26,6 +26,10 @@ export interface GameConfig {
   queueTimeoutMinutes: number;
   trucoEnabled: boolean;
   trucoTurnSeconds: number;
+  damasEnabled: boolean;
+  xadrezEnabled: boolean;
+  boardGamesFree: boolean;
+  boardTurnSeconds: number;
   stakes: number[];
 }
 
@@ -70,7 +74,7 @@ export interface GameStats {
   prizes: string;
 }
 
-export type RankingGame = 'truco' | 'domino' | 'bingo';
+export type RankingGame = 'truco' | 'domino' | 'damas' | 'xadrez' | 'bingo';
 
 export interface RankingEntry {
   position: number;
@@ -98,7 +102,7 @@ export interface Profile {
   memberSince: string;
   /** Quando o apelido pode ser trocado de novo (null: agora). */
   nicknameChangeAt: string | null;
-  games: Record<'BINGO' | 'DOMINO' | 'TRUCO', GameStats>;
+  games: Record<'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ', GameStats>;
 }
 
 export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';
@@ -196,12 +200,12 @@ export interface DominoGameView {
 }
 
 /** Jogos de mesa: o nome tambem e o caminho na API (/domino, /truco). */
-export type TableGame = 'domino' | 'truco';
+export type TableGame = 'domino' | 'truco' | 'damas' | 'xadrez';
 
 /** Mesa de qualquer jogo; `game` e a visao do motor do jogo para este jogador. */
 export interface GameTableView<G, M extends string = string, T extends string = string> {
   id: string;
-  kind: 'DOMINO' | 'TRUCO';
+  kind: 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ';
   mode: M;
   teamMode: T;
   stake: number;
@@ -296,6 +300,57 @@ export interface TrucoGameView {
 
 export type TrucoTableView = GameTableView<TrucoGameView, 'PAULISTA', TrucoTeamMode>;
 
+/** Damas e xadrez: brancas ('w') e pretas ('b'); casa 0 = a8, 63 = h1. */
+export type BoardColor = 'w' | 'b';
+
+export interface BoardResult {
+  winner: BoardColor | null;
+  reason: string;
+}
+
+interface BoardViewBase {
+  myColor: BoardColor;
+  turn: BoardColor;
+  moveCount: number;
+  status: 'PLAYING' | 'FINISHED';
+  result: BoardResult | null;
+}
+
+export type DamasPiece = 'w' | 'W' | 'b' | 'B';
+export type DamasAction = { type: 'MOVE'; path: number[] } | { type: 'RESIGN' };
+
+export interface DamasView extends BoardViewBase {
+  board: Array<DamasPiece | null>;
+  quietKingPlies: number;
+  /** Lances permitidos (caminho de casas), so na vez de quem ve. */
+  legalPaths: number[][];
+  lastMove: number[] | null;
+}
+
+export interface XadrezMove {
+  from: number;
+  to: number;
+  promotion?: 'Q' | 'R' | 'B' | 'N';
+}
+export type XadrezAction = ({ type: 'MOVE' } & XadrezMove) | { type: 'RESIGN' };
+
+export interface XadrezView extends BoardViewBase {
+  /** Pecas como na notacao FEN: maiusculas brancas, minusculas pretas. */
+  board: Array<string | null>;
+  inCheck: boolean;
+  halfmove: number;
+  legalMoves: XadrezMove[];
+  lastMove: XadrezMove | null;
+}
+
+export type DamasTableView = GameTableView<DamasView, 'BRASILEIRA', 'DUEL'>;
+export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
+
+export interface BoardMatchItem extends MatchItem<string, 'DUEL'> {
+  result?: BoardResult;
+  whiteSeat?: number;
+}
+
 export interface AdminTableSummary {
   id: string;
   mode: string;
@@ -356,7 +411,6 @@ export interface AdminStats {
     withdrawals: Partial<Record<WithdrawalStatus, { count: number; amount: string }>>;
   };
   bingoRounds: Partial<Record<RoundStatus, number>>;
-  dominoTables: Partial<Record<DominoTableView['status'], number>>;
-  trucoTables: Partial<Record<DominoTableView['status'], number>>;
+  tables: Record<'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ', Partial<Record<DominoTableView['status'], number>>>;
   recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }>;
 }

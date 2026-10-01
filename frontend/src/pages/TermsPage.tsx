@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import LegalDocument, { CONTACT_EMAIL, LegalSection } from '../components/LegalDocument';
+import { DamasRules, XadrezRules } from '../components/board/BoardRules';
 import TrucoRules from '../components/truco/TrucoRules';
 import { formatBrl } from '../format';
 import { useGameConfig } from '../hooks/useGameConfig';
@@ -14,6 +15,9 @@ const FALLBACK = {
   dominoTurnSeconds: 30,
   queueTimeoutMinutes: 10,
   trucoEnabled: false,
+  damasEnabled: false,
+  xadrezEnabled: false,
+  boardTurnSeconds: 60,
 };
 
 export default function TermsPage() {
@@ -144,6 +148,26 @@ export default function TermsPage() {
           },
         ]
       : []),
+    ...(
+      [
+        ['Damas', config.damasEnabled, DamasRules],
+        ['Xadrez', config.xadrezEnabled, XadrezRules],
+      ] as const
+    )
+      .filter(([, enabled]) => enabled)
+      .map(([name, , Rules]) => ({
+        title: `Como funcionam as ${name === 'Damas' ? 'Damas' : 'partidas de Xadrez'}`,
+        content: (
+          <>
+            <Rules />
+            <p>
+              Partidas mano a mano, com {config.boardTurnSeconds} segundos por lance: deixar o tempo acabar é derrota.
+              Enquanto a partida for gratuita, não há entrada nem prêmio; quando houver, {prizeShare}% de cada entrada vai
+              para o prêmio e o empate divide o prêmio entre os dois. Todos os lances ficam registrados.
+            </p>
+          </>
+        ),
+      })),
     {
       title: 'Prêmios e saques',
       content: (
@@ -241,7 +265,7 @@ export default function TermsPage() {
       version={config.termsVersion}
       intro={
         <p>
-          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte, Dominó e Truco) com
+          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte, Dominó, Truco, Damas e Xadrez) com
           prêmios em dinheiro. Ao criar sua conta, você concorda com eles.
         </p>
       }

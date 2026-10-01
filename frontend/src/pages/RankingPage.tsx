@@ -9,6 +9,8 @@ import type { Ranking, RankingEntry, RankingGame } from '../types';
 const GAMES: Array<{ value: RankingGame; label: string; unit: string }> = [
   { value: 'truco', label: 'Truco', unit: 'partidas' },
   { value: 'domino', label: 'Dominó', unit: 'partidas' },
+  { value: 'damas', label: 'Damas', unit: 'partidas' },
+  { value: 'xadrez', label: 'Xadrez', unit: 'partidas' },
   { value: 'bingo', label: 'Números da sorte', unit: 'rodadas' },
 ];
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -38,9 +40,13 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState<Ranking | null>(null);
   const [error, setError] = useState<string | null>(null);
   const token = auth?.token;
-  const games = GAMES.filter(
-    (option) => (option.value !== 'truco' || config?.trucoEnabled) && (option.value !== 'domino' || config?.dominoEnabled),
-  );
+  const enabled: Partial<Record<RankingGame, boolean | undefined>> = {
+    truco: config?.trucoEnabled,
+    domino: config?.dominoEnabled,
+    damas: config?.damasEnabled,
+    xadrez: config?.xadrezEnabled,
+  };
+  const games = GAMES.filter((option) => enabled[option.value] !== false);
   const unit = GAMES.find((option) => option.value === game)!.unit;
 
   useEffect(() => {
@@ -82,7 +88,7 @@ export default function RankingPage() {
 
           {ranking?.testSeason && (
             <p className="banner">
-              Temporada de testes: o dominó está gratuito. Este ranking recomeça quando as mesas passarem a ser pagas.
+              Temporada de testes: este jogo está gratuito. O ranking recomeça quando as mesas passarem a ser pagas.
             </p>
           )}
           {error && <p className="error">{error}</p>}

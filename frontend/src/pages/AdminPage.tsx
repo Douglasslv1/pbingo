@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
+import AdminBoardPanel from '../components/admin/AdminBoardPanel';
 import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
 import AdminTrucoPanel from '../components/admin/AdminTrucoPanel';
 import AdminWithdrawalsPanel from '../components/admin/AdminWithdrawalsPanel';
@@ -12,6 +13,8 @@ const SECTIONS = [
   { label: 'Saques', title: 'Saques', Panel: AdminWithdrawalsPanel },
   { label: 'Dominó', title: 'Mesas de dominó', Panel: AdminDominoPanel },
   { label: 'Truco', title: 'Mesas de truco', Panel: AdminTrucoPanel },
+  { label: 'Damas', title: 'Mesas de damas', Panel: () => <AdminBoardPanel game="damas" title="Damas" /> },
+  { label: 'Xadrez', title: 'Mesas de xadrez', Panel: () => <AdminBoardPanel game="xadrez" title="Xadrez" /> },
 ];
 
 export default function AdminPage() {
