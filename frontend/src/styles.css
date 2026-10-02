@@ -2548,6 +2548,51 @@ button.truco-call {
   height: 48px;
 }
 
+.ludo-cell.energy {
+  fill: #fef9c3;
+}
+
+.ludo-bolt {
+  font-size: 0.7px;
+}
+
+.ludo-energy-gain {
+  font-size: 0.75px;
+  font-weight: 800;
+  fill: #ca8a04;
+  stroke: #fff;
+  stroke-width: 0.04;
+  paint-order: stroke;
+}
+
+.ludo-energy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.ludo-energy-bar {
+  display: flex;
+  gap: 3px;
+}
+
+.ludo-energy-bar span {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+}
+
+.ludo-energy-bar span.on {
+  background: #facc15;
+  border-color: #ca8a04;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+}
+
 .ludo-fairness {
   text-align: center;
   overflow-wrap: anywhere;

@@ -1,5 +1,6 @@
 import { env } from '../../config/env';
 import { GameAdapter } from '../tables/tables.types';
+import { LudoMode } from './ludo.config';
 import { applyAction, autoAction, dealGame, dieAt, hasSingleChoice, LudoAction, LudoState, viewFor } from './ludo.engine';
 
 export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
@@ -9,7 +10,7 @@ export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
   free: () => env.ludoFree,
   turnSeconds: () => env.ludoTurnSeconds,
   seatsFor: (teamMode) => (teamMode === 'DUEL' ? 2 : 4),
-  deal: (_mode, teamMode) => dealGame(teamMode === 'DUEL' ? 2 : 4),
+  deal: (mode, teamMode) => dealGame(teamMode === 'DUEL' ? 2 : 4, mode as LudoMode),
   apply: applyAction,
   autoAction,
   actingSeat: (state) => state.turn,

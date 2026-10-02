@@ -355,17 +355,31 @@ export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
 /** Ludo: progresso das pecas -1 = base, 0..50 = volta, 51..55 = reta final, 56 = centro. */
 export type LudoAction = { type: 'ROLL' } | { type: 'MOVE'; piece: number };
 export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
+/** Classico: Ludo tradicional. Arena: com energia (e, nas proximas fases, habilidades). */
+export type LudoMode = 'CLASSICO' | 'ARENA';
 
 export interface LudoGameView {
-  mode: 'CLASSICO';
+  mode: LudoMode;
   colors: number[];
   pieces: number[][];
+  /** Energia de cada lugar; null nas modalidades sem energia. */
+  energy: number[] | null;
+  maxEnergy: number;
+  /** Casas de energia (0..51 na volta do tabuleiro). */
+  energyTiles: number[];
   turn: number;
   phase: 'ROLL' | 'MOVE';
   dice: number | null;
   rolls: number;
   lastRoll: { seat: number; value: number } | null;
-  lastMove: { seat: number; piece: number; from: number; to: number; captured: Array<{ seat: number; piece: number; from: number }> } | null;
+  lastMove: {
+    seat: number;
+    piece: number;
+    from: number;
+    to: number;
+    captured: Array<{ seat: number; piece: number; from: number }>;
+    energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'TILE' }>;
+  } | null;
   moveCount: number;
   legalPieces: number[];
   /** Hash da semente dos dados, publico desde o inicio; a semente e revelada no fim. */
@@ -375,9 +389,9 @@ export interface LudoGameView {
   result: { winner: number } | null;
 }
 
-export type LudoTableView = GameTableView<LudoGameView, 'CLASSICO', LudoTeamMode>;
+export type LudoTableView = GameTableView<LudoGameView, LudoMode, LudoTeamMode>;
 
-export interface LudoMatchItem extends MatchItem<'CLASSICO', LudoTeamMode> {
+export interface LudoMatchItem extends MatchItem<LudoMode, LudoTeamMode> {
   result?: { winner: number } | null;
   pieces?: number[][];
 }

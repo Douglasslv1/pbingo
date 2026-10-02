@@ -29,6 +29,14 @@ export default function LudoRules() {
           da mesma cor na mesma casa também se protegem.
         </li>
       </ul>
+      <h3>Arena: energia</h3>
+      <ul>
+        <li>
+          Na modalidade <strong>Arena</strong>, cada jogador junta <strong>energia</strong> ⚡, de 0 a 10.
+        </li>
+        <li>Ganha 1 de energia por peça adversária capturada e 1 ao parar numa casa ⚡ (só passar por ela não conta).</li>
+        <li>A energia vai liberar as habilidades, que chegam nas próximas versões.</li>
+      </ul>
       <h3>Tempo e dados verificáveis</h3>
       <ul>
         <li>Cada ação (jogar o dado ou mover) tem 30 segundos. Se o tempo acabar, o sistema joga por você.</li>

@@ -54,6 +54,9 @@ function rawPoint(color: number, progress: number, piece: number): Point {
 /** Quantas voltas girar para a cor de quem olha ficar embaixo, a direita (posicao da cor 3). */
 export const viewTurns = (myColor: number) => (3 - myColor + 4) % 4;
 
+/** Ponto de uma casa da volta (0..51), ja girado. */
+export const squarePoint = (square: number, turns: number): Point => turnLeftTimes(TRACK[square], turns);
+
 export function pointOf(color: number, progress: number, piece: number, turns: number): Point {
   return turnLeftTimes(rawPoint(color, progress, piece), turns);
 }

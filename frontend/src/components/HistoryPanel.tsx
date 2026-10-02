@@ -161,7 +161,7 @@ function describeMatch(
   if (tab === 'ludo') {
     const home = (match as LudoMatchItem).pieces?.[match.mySeat].filter((progress) => progress === 56).length;
     return {
-      title: `Ludo · ${match.teamMode === 'DUEL' ? 'mano a mano' : '4 jogadores'}`,
+      title: `Ludo ${match.mode === 'ARENA' ? 'Arena' : 'Clássico'} · ${match.teamMode === 'DUEL' ? 'mano a mano' : '4 jogadores'}`,
       note: home === undefined ? null : `${home} de 4 peças no centro`,
     };
   }

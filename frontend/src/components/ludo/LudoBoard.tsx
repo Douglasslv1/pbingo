@@ -22,6 +22,7 @@ export default function LudoBoard({ game, mySeat, playable, onPiece }: Props) {
   const cells = boardCells(turns);
   const last = game.lastMove;
   const moverDuration = last ? (last.from === -1 ? 1 : last.to - last.from) * STEP : 0;
+  const landing = last ? pointOf(game.colors[last.seat], last.to, last.piece, turns) : [0, 0];
 
   // Varias pecas na mesma casa ficam levemente deslocadas para todas aparecerem
   const stacks = new Map<string, number>();
@@ -54,16 +55,25 @@ export default function LudoBoard({ game, mySeat, playable, onPiece }: Props) {
       {cells.bases.flatMap(({ color, slots }) =>
         slots.map(([y, x], index) => <circle key={`${color}-${index}`} cx={x} cy={y} r={0.55} className={`ludo-slot ludo-color-${color}`} />),
       )}
-      {cells.track.map(({ point: [y, x], color, safe }, index) => (
-        <g key={index}>
-          <rect x={x - 0.5} y={y - 0.5} width={1} height={1} className={color === null ? 'ludo-cell' : `ludo-cell ludo-color-${color} filled`} />
-          {safe && color === null && (
-            <text x={x} y={y + 0.32} textAnchor="middle" className="ludo-star">
-              ★
-            </text>
-          )}
-        </g>
-      ))}
+      {cells.track.map(({ point: [y, x], color, safe }, index) => {
+        const energy = game.energyTiles.includes(index);
+        return (
+          <g key={index}>
+            <rect
+              x={x - 0.5}
+              y={y - 0.5}
+              width={1}
+              height={1}
+              className={color === null ? `ludo-cell${energy ? ' energy' : ''}` : `ludo-cell ludo-color-${color} filled`}
+            />
+            {((safe && color === null) || energy) && (
+              <text x={x} y={y + 0.32} textAnchor="middle" className={energy ? 'ludo-bolt' : 'ludo-star'}>
+                {energy ? '⚡' : '★'}
+              </text>
+            )}
+          </g>
+        );
+      })}
       {cells.homes.map(({ point: [y, x], color }, index) => (
         <rect key={index} x={x - 0.5} y={y - 0.5} width={1} height={1} className={`ludo-cell ludo-color-${color} filled`} />
       ))}
@@ -99,6 +109,22 @@ export default function LudoBoard({ game, mySeat, playable, onPiece }: Props) {
           </motion.g>
         );
       })}
+
+      {/* Energia ganha no ultimo movimento sobe da casa onde a peca parou */}
+      {last?.energy && last.energy.length > 0 && (
+        <g transform={`translate(${landing[1]} ${landing[0] - 0.6})`}>
+          <motion.text
+            key={game.moveCount}
+            textAnchor="middle"
+            className="ludo-energy-gain"
+            initial={{ opacity: 0, y: 0 }}
+            animate={{ opacity: [0, 1, 1, 0], y: -1.4 }}
+            transition={{ duration: 1.6, delay: moverDuration }}
+          >
+            +{last.energy.reduce((sum, gain) => sum + gain.amount, 0)} ⚡
+          </motion.text>
+        </g>
+      )}
     </svg>
   );
 }

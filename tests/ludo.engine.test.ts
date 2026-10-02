@@ -6,6 +6,7 @@ import {
   commitmentOf,
   dealGame,
   dieAt,
+  energySquares,
   FINISH,
   hasSingleChoice,
   isSafeSquare,
@@ -20,7 +21,12 @@ const SEED = 'semente-de-teste';
 
 /** Partida no ponto de mover, com o dado e as pecas escolhidos a mao. */
 function position(pieces: number[][], dice: number, turn = 0): LudoState {
-  return { ...dealGame(pieces.length, SEED), pieces, turn, phase: 'MOVE', dice };
+  return { ...dealGame(pieces.length, 'CLASSICO', SEED), pieces, turn, phase: 'MOVE', dice };
+}
+
+/** Mesma coisa na Arena, com a energia de cada lugar. */
+function arena(pieces: number[][], dice: number, energy = [0, 0]): LudoState {
+  return { ...position(pieces, dice), mode: 'ARENA', energy };
 }
 
 const move = (state: LudoState, piece: number) => applyAction(state, state.turn, { type: 'MOVE', piece });
@@ -52,7 +58,7 @@ describe('Ludo', () => {
   });
 
   it('a semente fica secreta ate o fim; o hash dela e publico desde o inicio', () => {
-    const state = dealGame(2, SEED);
+    const state = dealGame(2, 'CLASSICO', SEED);
     const view = viewFor(state, 0);
     expect(view.seed).toBeNull();
     expect(view.commitment).toBe(commitmentOf(SEED));
@@ -67,13 +73,13 @@ describe('Ludo', () => {
   });
 
   it('dado sem nenhuma jogada possivel passa a vez sozinho', () => {
-    const state = { ...dealGame(2, seedRolling(3)) };
+    const state = { ...dealGame(2, 'CLASSICO', seedRolling(3)) };
     const after = applyAction(state, 0, { type: 'ROLL' });
     expect(after).toMatchObject({ turn: 1, phase: 'ROLL', lastRoll: { seat: 0, value: 3 }, rolls: 1, moveCount: 1 });
   });
 
   it('com jogada possivel, o dado espera a escolha da peca', () => {
-    const state = { ...dealGame(2, seedRolling(4)), pieces: [[10, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]] };
+    const state = { ...dealGame(2, 'CLASSICO', seedRolling(4)), pieces: [[10, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]] };
     const after = applyAction(state, 0, { type: 'ROLL' });
     expect(after).toMatchObject({ turn: 0, phase: 'MOVE', dice: 4 });
     expect(legalPieces(after)).toEqual([0]);
@@ -89,7 +95,7 @@ describe('Ludo', () => {
   });
 
   it('tres 6 seguidos perdem a vez', () => {
-    const state = { ...dealGame(2, seedRolling(6)), pieces: [[10, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], sixes: 2 };
+    const state = { ...dealGame(2, 'CLASSICO', seedRolling(6)), pieces: [[10, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], sixes: 2 };
     expect(applyAction(state, 0, { type: 'ROLL' })).toMatchObject({ turn: 1, phase: 'ROLL', sixes: 0 });
   });
 
@@ -114,7 +120,7 @@ describe('Ludo', () => {
     expect(squareOf(0, 10)).toBe(squareOf(2, 36));
     const after = move(state, 0);
     expect(after.pieces[1][0]).toBe(BASE);
-    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }] });
+    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], energy: [] });
     expect(after).toMatchObject({ turn: 0, phase: 'ROLL' });
   });
 
@@ -141,7 +147,7 @@ describe('Ludo', () => {
   });
 
   it('recusa acao fora da vez ou fora da fase', () => {
-    const state = dealGame(2, SEED);
+    const state = dealGame(2, 'CLASSICO', SEED);
     expect(() => applyAction(state, 1, { type: 'ROLL' })).toThrow('Não é a sua vez');
     expect(() => applyAction(state, 0, { type: 'MOVE', piece: 0 })).toThrow('Jogue o dado primeiro');
     const moving = position([[10, 20, BASE, BASE], [BASE, BASE, BASE, BASE]], 2);
@@ -154,8 +160,50 @@ describe('Ludo', () => {
     expect(hasSingleChoice(position([[BASE, 10, BASE, BASE], [BASE, BASE, BASE, BASE]], 6))).toBe(false);
   });
 
+  describe('energia (Arena)', () => {
+    it('o Classico nao tem energia nem casas de energia', () => {
+      const state = dealGame(2, 'CLASSICO', SEED);
+      expect(energySquares('CLASSICO')).toEqual([]);
+      expect(viewFor(state, 0)).toMatchObject({ energy: null, energyTiles: [] });
+      const after = move(position([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], 3), 0);
+      expect(after.lastMove?.energy).toEqual([]);
+    });
+
+    it('a Arena comeca com 0/10 e mostra as 8 casas de energia, fora das casas seguras', () => {
+      const view = viewFor(dealGame(4, 'ARENA', SEED), 0);
+      expect(view).toMatchObject({ energy: [0, 0, 0, 0], maxEnergy: 10 });
+      expect(view.energyTiles).toHaveLength(8);
+      expect(view.energyTiles.some(isSafeSquare)).toBe(false);
+    });
+
+    it('parar numa casa de energia da +1', () => {
+      const after = move(arena([[1, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], 3), 0);
+      expect(energySquares('ARENA')).toContain(squareOf(0, 4));
+      expect(after.energy).toEqual([1, 0]);
+      expect(after.lastMove?.energy).toEqual([{ seat: 0, amount: 1, reason: 'TILE' }]);
+      // So passar pela casa nao conta
+      expect(move(arena([[1, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], 5), 0).energy).toEqual([0, 0]);
+    });
+
+    it('capturar da +1 para quem captura; quem perde a peca nao ganha', () => {
+      const after = move(arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], 3), 0);
+      expect(after.energy).toEqual([1, 0]);
+      expect(after.lastMove?.energy).toEqual([{ seat: 0, amount: 1, reason: 'CAPTURE' }]);
+    });
+
+    it('captura numa casa de energia soma as duas', () => {
+      // Casa 11 e de energia; a cor 2 esta nela com progresso 11 - 26 + 52 = 37
+      const after = move(arena([[8, BASE, BASE, BASE], [37, BASE, BASE, BASE]], 3), 0);
+      expect(after.energy).toEqual([2, 0]);
+    });
+
+    it('a energia nunca passa do maximo', () => {
+      expect(move(arena([[8, BASE, BASE, BASE], [37, BASE, BASE, BASE]], 3, [9, 4]), 0).energy).toEqual([10, 4]);
+    });
+  });
+
   it('jogada automatica: rola o dado ou move a peca mais adiantada', () => {
-    expect(autoAction(dealGame(2, SEED))).toEqual({ type: 'ROLL' });
+    expect(autoAction(dealGame(2, 'CLASSICO', SEED))).toEqual({ type: 'ROLL' });
     expect(autoAction(position([[10, 30, BASE, BASE], [BASE, BASE, BASE, BASE]], 2))).toEqual({ type: 'MOVE', piece: 1 });
   });
 });

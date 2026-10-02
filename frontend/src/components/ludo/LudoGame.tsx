@@ -39,7 +39,11 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
     name: nameOf(seat),
     tag: COLOR_NAMES[game.colors[seat]],
     away: player(seat)?.away,
-    hand: <span className="label">{home(seat)}/4 no centro</span>,
+    hand: (
+      <span className="label">
+        {home(seat)}/4 no centro{game.energy && ` · ⚡ ${game.energy[seat]}`}
+      </span>
+    ),
     className: `ludo-seat ludo-color-${game.colors[seat]}`,
   }));
 
@@ -56,7 +60,7 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
     <div className="card domino-game ludo-game">
       <div className="domino-header">
         <span className="label">
-          Ludo · {game.pieces.length === 2 ? 'mano a mano' : '4 jogadores'} ·{' '}
+          Ludo {game.mode === 'ARENA' ? 'Arena' : 'Clássico'} · {game.pieces.length === 2 ? 'mano a mano' : '4 jogadores'} ·{' '}
           {Number(table.prizePool) === 0 ? 'partida gratuita' : `prêmio ${formatBrl(table.prizePool)}`}
         </span>
         <button type="button" className="link" onClick={toggleSound} aria-pressed={soundOn}>
@@ -120,6 +124,19 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
               {roll && <p className="label">Último dado: {nameOf(roll.seat)} tirou {roll.value}.</p>}
             </div>
           </div>
+          {game.energy && (
+            <div className="ludo-energy">
+              <span>⚡ Energia</span>
+              <div className="ludo-energy-bar" aria-hidden="true">
+                {Array.from({ length: game.maxEnergy }, (_, i) => (
+                  <span key={i} className={i < game.energy![mySeat] ? 'on' : undefined} />
+                ))}
+              </div>
+              <strong>
+                {game.energy[mySeat]}/{game.maxEnergy}
+              </strong>
+            </div>
+          )}
           {error && <p className="error">{error}</p>}
           <p className="label ludo-fairness" title={game.commitment}>
             Dados verificáveis · código {game.commitment.slice(0, 12)}

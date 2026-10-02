@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { GameRuleError } from '../tables/tables.types';
+import { LUDO_CONFIG, LUDO_MODES, LudoMode } from './ludo.config';
 
 /**
  * Ludo: cada jogador tem 4 pecas que saem da base com um 6, dao a volta no tabuleiro (52 casas)
@@ -30,14 +31,18 @@ export interface LudoMove {
   to: number;
   /** Pecas adversarias mandadas de volta a base. */
   captured: Array<{ seat: number; piece: number; from: number }>;
+  /** Energia ganha com o movimento (Arena). */
+  energy: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'TILE' }>;
 }
 
 export interface LudoState {
-  mode: 'CLASSICO';
+  mode: LudoMode;
   /** Cor de cada lugar da mesa. */
   colors: LudoColor[];
   /** Progresso das 4 pecas de cada lugar. */
   pieces: number[][];
+  /** Energia de cada lugar (so conta nas modalidades com energia). */
+  energy: number[];
   turn: number;
   phase: 'ROLL' | 'MOVE';
   /** Dado a ser usado no movimento (fase MOVE). */
@@ -68,6 +73,14 @@ export function squareOf(color: LudoColor, progress: number): number | null {
 /** Casas seguras: a saida de cada cor e a estrela 8 casas depois dela. */
 export const isSafeSquare = (square: number) => SAFE_OFFSETS.includes(square % COLOR_OFFSET);
 
+/** Casas de energia do tabuleiro (0..51), nas modalidades com energia. */
+export const energySquares = (mode: LudoMode) =>
+  LUDO_MODES[mode].energyEnabled
+    ? Array.from({ length: TRACK_LENGTH / COLOR_OFFSET }).flatMap((_, quarter) =>
+        LUDO_CONFIG.energyTileOffsets.map((offset) => quarter * COLOR_OFFSET + offset),
+      )
+    : [];
+
 export const commitmentOf = (seed: string) => createHash('sha256').update(seed).digest('hex');
 
 /**
@@ -83,12 +96,13 @@ export function dieAt(seed: string, index: number): number {
   }
 }
 
-export function dealGame(seats: number, seed = randomBytes(32).toString('hex')): LudoState {
+export function dealGame(seats: number, mode: LudoMode = 'CLASSICO', seed = randomBytes(32).toString('hex')): LudoState {
   if (seats !== 2 && seats !== 4) throw new LudoRuleError('O Ludo é jogado por 2 ou 4 jogadores');
   return {
-    mode: 'CLASSICO',
+    mode,
     colors: seats === 2 ? [0, 2] : [0, 1, 2, 3],
     pieces: Array.from({ length: seats }, () => Array(PIECES).fill(BASE)),
+    energy: Array(seats).fill(0),
     turn: 0,
     phase: 'ROLL',
     dice: null,
@@ -151,6 +165,17 @@ function roll(state: LudoState, seat: number): LudoState {
   return rolled;
 }
 
+/** Energia ganha ao parar numa casa: por captura e por casa de energia (so nas modalidades com energia). */
+function energyGains(state: LudoState, seat: number, square: number | null, captures: number): LudoMove['energy'] {
+  if (!LUDO_MODES[state.mode].energyEnabled) return [];
+  const gains: LudoMove['energy'] = [];
+  if (captures > 0) gains.push({ seat, amount: captures * LUDO_CONFIG.captureEnergy, reason: 'CAPTURE' });
+  if (square !== null && energySquares(state.mode).includes(square)) {
+    gains.push({ seat, amount: LUDO_CONFIG.energyTileEnergy, reason: 'TILE' });
+  }
+  return gains;
+}
+
 function move(state: LudoState, seat: number, piece: number): LudoState {
   if (state.phase !== 'MOVE') throw new LudoRuleError('Jogue o dado primeiro');
   if (!legalPieces(state).includes(piece)) throw new LudoRuleError('Esta peça não pode andar com este dado');
@@ -163,7 +188,13 @@ function move(state: LudoState, seat: number, piece: number): LudoState {
   pieces[seat][piece] = to;
   captured.forEach((capture) => (pieces[capture.seat][capture.piece] = BASE));
 
-  const moved: LudoState = { ...state, pieces, lastMove: { seat, piece, from, to, captured } };
+  const gains = energyGains(state, seat, square, captured.length);
+  const energy = gains.reduce(
+    (total, gain) => total.map((value, i) => (i === gain.seat ? Math.min(value + gain.amount, LUDO_CONFIG.maxEnergy) : value)),
+    state.energy,
+  );
+
+  const moved: LudoState = { ...state, pieces, energy, lastMove: { seat, piece, from, to, captured, energy: gains } };
   if (pieces[seat].every((progress) => progress === FINISH)) {
     return { ...moved, status: 'FINISHED', result: { winner: seat }, phase: 'ROLL', dice: null };
   }
@@ -195,6 +226,9 @@ export function viewFor(state: LudoState, seat: number) {
     mode: state.mode,
     colors: state.colors,
     pieces: state.pieces,
+    energy: LUDO_MODES[state.mode].energyEnabled ? state.energy : null,
+    maxEnergy: LUDO_CONFIG.maxEnergy,
+    energyTiles: energySquares(state.mode),
     turn: state.turn,
     phase: state.phase,
     dice: state.dice,

@@ -102,6 +102,17 @@ describe('Ludo nas mesas', () => {
     expect((await state()).rolls).toBe(1);
   });
 
+  it('Arena: a modalidade vem da fila e a energia comeca zerada para todos', async () => {
+    const players = [await registerTestUser(), await registerTestUser()];
+    for (const player of players) {
+      expect((await request(app).post('/ludo/queue').set(auth(player)).send({ mode: 'ARENA', teamMode: 'DUEL' })).status).toBe(201);
+    }
+    const view = (await request(app).get('/ludo/tables/me').set(auth(players[0]))).body;
+    expect(view.mode).toBe('ARENA');
+    expect(view.game).toMatchObject({ mode: 'ARENA', energy: [0, 0], maxEnergy: 10 });
+    expect(view.game.energyTiles).toHaveLength(8);
+  });
+
   it('o ranking do Ludo vale para as partidas gratuitas', async () => {
     const res = await request(app).get('/ranking/ludo');
     expect(res.status).toBe(200);
