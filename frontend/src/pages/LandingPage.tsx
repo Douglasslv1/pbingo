@@ -11,7 +11,7 @@ const STEPS = [
     title: 'Crie sua conta',
     text: 'Cadastro rápido com nome, e-mail e data de nascimento. Depois escolha o apelido que os outros jogadores vão ver.',
   },
-  { title: 'Escolha o jogo', text: 'Dominó, truco, damas ou xadrez: mano a mano, em duplas ou com quatro na mesa.' },
+  { title: 'Escolha o jogo', text: 'Dominó, truco, damas, xadrez ou ludo: mano a mano, em duplas ou com quatro na mesa.' },
   {
     title: 'Jogue em tempo real',
     text: 'A mesa completa e a partida começa sozinha. Cada um tem seu tempo por jogada, sem ninguém travar o jogo.',
@@ -75,7 +75,9 @@ function HeroArt() {
 
 export default function LandingPage() {
   const config = useGameConfig();
-  const freeGames = [config?.dominoFree && 'dominó', config?.boardGamesFree && 'damas e xadrez'].filter(Boolean).join(', ');
+  const freeGames = [config?.dominoFree && 'dominó', config?.boardGamesFree && 'damas e xadrez', config?.ludoFree && 'ludo']
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <div className="landing">
@@ -102,7 +104,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            Dominó · Truco · Damas · Xadrez
+            Dominó · Truco · Damas · Xadrez · Ludo
           </motion.span>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             Os jogos de mesa de sempre, <span>agora online.</span>
@@ -112,8 +114,8 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Sente à mesa com gente de todo o Brasil para uma partida de dominó, um truco em dupla ou um mano a mano de
-            damas e xadrez. Pelo celular ou computador, sem instalar nada.
+            Sente à mesa com gente de todo o Brasil para uma partida de dominó, um truco em dupla, um ludo com os amigos
+            ou um mano a mano de damas e xadrez. Pelo celular ou computador, sem instalar nada.
           </motion.p>
           <motion.div
             className="hero-actions"
@@ -136,8 +138,8 @@ export default function LandingPage() {
 
       <section className="stats-strip" aria-label="Resumo">
         <div>
-          <strong>4 jogos</strong>
-          <span>dominó, truco, damas e xadrez</span>
+          <strong>5 jogos</strong>
+          <span>dominó, truco, damas, xadrez e ludo</span>
         </div>
         {freeGames && (
           <div>

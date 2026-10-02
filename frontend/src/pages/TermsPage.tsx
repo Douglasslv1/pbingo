@@ -283,7 +283,7 @@ export default function TermsPage() {
       version={config.termsVersion}
       intro={
         <p>
-          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte, Dominó, Truco, Damas e Xadrez) com
+          Estes termos explicam as regras para usar o Pbingu, plataforma de jogos online (Números da sorte, Dominó, Truco, Damas, Xadrez e Ludo) com
           prêmios em dinheiro. Ao criar sua conta, você concorda com eles.
         </p>
       }
