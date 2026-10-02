@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
 import AdminBoardPanel from '../components/admin/AdminBoardPanel';
 import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
@@ -26,6 +27,9 @@ export default function AdminPage() {
     setCurrent(section);
     setVisited((previous) => new Set(previous).add(section));
   };
+
+  // A area e so do admin (o servidor ja recusa os dados): os demais nem veem o menu das secoes
+  if (auth && auth.user.role !== 'ADMIN') return <Navigate to="/jogos" replace />;
 
   return (
     <div className="app-shell">
