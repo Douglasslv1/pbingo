@@ -114,7 +114,8 @@ export default function DominoTile({
 export function DominoTileBack({ size = 14 }: { size?: number }) {
   return (
     <span className="domino-tile">
-      <svg viewBox="0 0 100 200" width={size} height={size * 2} aria-hidden="true">
+      {/* Sem proporcao fixa: nas laterais da mesa o CSS deita a pedra */}
+      <svg viewBox="0 0 100 200" width={size} height={size * 2} preserveAspectRatio="none" aria-hidden="true">
         <rect x={3} y={3} width={94} height={194} rx={14} className="domino-back" />
       </svg>
     </span>

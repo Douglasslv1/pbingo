@@ -2121,9 +2121,9 @@ button.truco-call {
 .game-table {
   display: grid;
   grid-template:
-    '. top .' auto
+    'top top top' auto
     'left center right' 1fr
-    '. bottom .' auto / auto minmax(0, 1fr) auto;
+    'bottom bottom bottom' auto / auto minmax(0, 1fr) auto;
   gap: 10px;
   padding: 12px;
   margin-bottom: 12px;
@@ -2165,30 +2165,29 @@ button.truco-call {
   min-width: 0;
 }
 
+/* O nome quebra dentro da placa em vez de vazar (apelidos tem ate 20 caracteres sem espaco) */
 .seat-plate strong {
   font-size: 0.85rem;
+  line-height: 1.2;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
+/* As placas acompanham a mesa: em cima e embaixo na largura toda, nas laterais na altura toda */
 .seat-plate.top {
   grid-area: top;
-  justify-self: center;
 }
 
 .seat-plate.bottom {
   grid-area: bottom;
-  justify-self: center;
 }
 
 .seat-plate.left,
 .seat-plate.right {
   flex-direction: column;
-  align-self: center;
-  width: 92px;
-  text-align: center;
+  flex-wrap: nowrap;
+  width: 96px;
 }
 
 .seat-plate.left {
@@ -2235,6 +2234,19 @@ button.truco-call {
   justify-content: center;
 }
 
+/* Pedras das laterais deitadas, em coluna, viradas para o centro da mesa */
+.seat-plate.left .domino-backs,
+.seat-plate.right .domino-backs {
+  flex-direction: column;
+  align-items: center;
+}
+
+.seat-plate.left .domino-backs svg,
+.seat-plate.right .domino-backs svg {
+  width: 28px;
+  height: 14px;
+}
+
 /* Cartas das laterais em leque vertical, para nao alargar a placa */
 .seat-plate.left .truco-backs,
 .seat-plate.right .truco-backs {
@@ -2264,7 +2276,8 @@ button.truco-call {
 
   .seat-plate.left,
   .seat-plate.right {
-    width: 50px;
+    width: 60px;
+    padding: 6px 3px;
   }
 
   /* Nas laterais a cor da borda ja diz o lado */
@@ -2281,6 +2294,17 @@ button.truco-call {
 
   .seat-plate strong {
     font-size: 0.75rem;
+  }
+
+  .seat-plate.left strong,
+  .seat-plate.right strong {
+    font-size: 0.68rem;
+  }
+
+  .seat-plate.left .domino-backs svg,
+  .seat-plate.right .domino-backs svg {
+    width: 24px;
+    height: 12px;
   }
 
   .seat-plate.left .playing-card,
