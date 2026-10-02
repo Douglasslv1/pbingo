@@ -11,6 +11,7 @@ const GAMES = [
   { key: 'DOMINO', label: 'Dominó', unit: 'partidas' },
   { key: 'DAMAS', label: 'Damas', unit: 'partidas' },
   { key: 'XADREZ', label: 'Xadrez', unit: 'partidas' },
+  { key: 'LUDO', label: 'Ludo', unit: 'partidas' },
   { key: 'BINGO', label: 'Números da sorte', unit: 'rodadas' },
 ] as const;
 

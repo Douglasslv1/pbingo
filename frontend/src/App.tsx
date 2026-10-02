@@ -14,6 +14,7 @@ import SupportPage from './pages/SupportPage';
 import TermsPage from './pages/TermsPage';
 import TrucoPage from './pages/TrucoPage';
 import XadrezPage from './pages/XadrezPage';
+import LudoPage from './pages/LudoPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/truco" element={<TrucoPage />} />
           <Route path="/damas" element={<DamasPage />} />
           <Route path="/xadrez" element={<XadrezPage />} />
+          <Route path="/ludo" element={<LudoPage />} />
           <Route path="/jogos" element={<GamesPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/perfil" element={<ProfilePage />} />

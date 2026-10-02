@@ -2378,3 +2378,199 @@ button.truco-call {
 .victory-overlay.draw h2 {
   color: #7dd3fc;
 }
+
+/* Ludo */
+
+.ludo-color-0 {
+  --ludo: #ef4444;
+}
+
+.ludo-color-1 {
+  --ludo: #22c55e;
+}
+
+.ludo-color-2 {
+  --ludo: #facc15;
+}
+
+.ludo-color-3 {
+  --ludo: #3b82f6;
+}
+
+/* Placa do jogador com a cor das suas pecas */
+.seat-plate.ludo-seat {
+  border-color: var(--ludo);
+}
+
+.seat-plate.ludo-seat .seat-tag {
+  background: var(--ludo);
+  color: #0f172a;
+}
+
+.ludo-board {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+}
+
+.ludo-surface {
+  fill: #f8fafc;
+}
+
+.ludo-base {
+  fill: var(--ludo);
+}
+
+.ludo-base-inner {
+  fill: #fff;
+}
+
+.ludo-slot {
+  fill: none;
+  stroke: var(--ludo);
+  stroke-width: 0.08;
+}
+
+.ludo-cell {
+  fill: #fff;
+  stroke: #cbd5e1;
+  stroke-width: 0.04;
+}
+
+.ludo-cell.filled,
+.ludo-finish {
+  fill: var(--ludo);
+}
+
+.ludo-finish {
+  stroke: #fff;
+  stroke-width: 0.05;
+}
+
+.ludo-star {
+  font-size: 0.8px;
+  fill: #94a3b8;
+}
+
+.ludo-piece-body {
+  fill: var(--ludo);
+  stroke: #0f172a;
+  stroke-width: 0.08;
+}
+
+.ludo-piece-top {
+  fill: rgba(255, 255, 255, 0.55);
+}
+
+.ludo-piece.playable {
+  cursor: pointer;
+}
+
+/* Peca que pode andar: anel pulsando em volta */
+.ludo-piece-ring {
+  fill: rgba(255, 255, 255, 0.35);
+  stroke: #0f172a;
+  stroke-width: 0.1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ludo-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes ludo-pulse {
+  50% {
+    transform: scale(1.25);
+    opacity: 0.5;
+  }
+}
+
+.ludo-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 4px 0 8px;
+}
+
+.ludo-controls .domino-turn {
+  margin: 0 0 4px;
+  text-align: left;
+}
+
+.ludo-dice {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.ludo-dice-face {
+  fill: #fff;
+  stroke: var(--ludo, #cbd5e1);
+  stroke-width: 6;
+}
+
+.ludo-dice-pip {
+  fill: #0f172a;
+}
+
+.ludo-dice-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  animation: ludo-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes ludo-glow {
+  50% {
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.7);
+  }
+}
+
+.ludo-token {
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ludo);
+  border: 3px solid #0f172a;
+  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.35);
+}
+
+.game-card-art .ludo-dice {
+  width: 48px;
+  height: 48px;
+}
+
+.ludo-fairness {
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Ludo a 4 no celular: as placas vao para os cantos, ao lado da base de cada cor, e o tabuleiro usa a largura toda */
+@media (max-width: 560px) {
+  .game-table.seats-4:has(.ludo-board) {
+    grid-template:
+      'top right' auto
+      'center center' auto
+      'left bottom' auto / 1fr 1fr;
+  }
+
+  .game-table.seats-4:has(.ludo-board) .seat-plate.left,
+  .game-table.seats-4:has(.ludo-board) .seat-plate.right {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 4px 6px;
+  }
+
+  .game-table.seats-4:has(.ludo-board) .seat-plate .seat-tag {
+    display: inline;
+  }
+}

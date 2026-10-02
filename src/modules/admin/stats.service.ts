@@ -56,7 +56,7 @@ export async function getPlatformStats(now = new Date()) {
     },
     bingoRounds: byStatus(rounds),
     tables: Object.fromEntries(
-      ['DOMINO', 'TRUCO', 'DAMAS', 'XADREZ'].map((game) => [game, byStatus(tables.filter((row) => row.game === game))]),
+      ['DOMINO', 'TRUCO', 'DAMAS', 'XADREZ', 'LUDO'].map((game) => [game, byStatus(tables.filter((row) => row.game === game))]),
     ),
     recentUsers: recentUsers.map((user) => ({ ...user, createdAt: user.createdAt.toISOString() })),
   };

@@ -7,6 +7,8 @@ export interface TableSeat {
   away?: boolean;
   /** Pedras ou cartas viradas do jogador. */
   hand?: ReactNode;
+  /** Classe extra da placa (ex.: a cor das pecas do jogador no Ludo). */
+  className?: string;
 }
 
 interface Props {
@@ -37,10 +39,10 @@ export default function GameTable({ seats, mySeat, turnSeat, countdown, pairs = 
     <div className={`game-table seats-${count}`}>
       {POSITIONS[count].map((position, index) => {
         const seat = (mySeat + index) % count;
-        const { name, tag, away, hand } = seats[seat];
+        const { name, tag, away, hand, className } = seats[seat];
         const mine = seat % 2 === mySeat % 2;
         const turn = turnSeat === seat;
-        const classes = ['seat-plate', position, sides && (mine ? 'mine' : 'theirs'), turn && 'turn'];
+        const classes = ['seat-plate', position, sides && (mine ? 'mine' : 'theirs'), turn && 'turn', className];
         const label = pairs ? (seat === mySeat ? 'sua dupla' : mine ? 'parceiro' : 'adversário') : tag;
 
         return (

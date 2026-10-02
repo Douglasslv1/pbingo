@@ -11,6 +11,7 @@ const GAMES: Array<{ value: RankingGame; label: string; unit: string }> = [
   { value: 'domino', label: 'Dominó', unit: 'partidas' },
   { value: 'damas', label: 'Damas', unit: 'partidas' },
   { value: 'xadrez', label: 'Xadrez', unit: 'partidas' },
+  { value: 'ludo', label: 'Ludo', unit: 'partidas' },
   { value: 'bingo', label: 'Números da sorte', unit: 'rodadas' },
 ];
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -45,6 +46,7 @@ export default function RankingPage() {
     domino: config?.dominoEnabled,
     damas: config?.damasEnabled,
     xadrez: config?.xadrezEnabled,
+    ludo: config?.ludoEnabled,
   };
   const games = GAMES.filter((option) => enabled[option.value] !== false);
   const unit = GAMES.find((option) => option.value === game)!.unit;

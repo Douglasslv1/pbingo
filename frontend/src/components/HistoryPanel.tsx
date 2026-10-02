@@ -3,11 +3,19 @@ import { api, ApiError } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
-import type { BoardMatchItem, DominoMatchItem, Page, RoundHistoryItem, TransactionItem, TrucoMatchItem } from '../types';
+import type {
+  BoardMatchItem,
+  DominoMatchItem,
+  LudoMatchItem,
+  Page,
+  RoundHistoryItem,
+  TransactionItem,
+  TrucoMatchItem,
+} from '../types';
 import { formatDateTime } from '../withdrawalFormat';
 import { MODE_LABELS, TEAM_LABELS } from './domino/dominoLabels';
 
-export type Tab = 'transactions' | 'rounds' | 'domino' | 'truco' | 'damas' | 'xadrez';
+export type Tab = 'transactions' | 'rounds' | 'domino' | 'truco' | 'damas' | 'xadrez' | 'ludo';
 
 interface TransactionView {
   title: string;
@@ -128,6 +136,7 @@ const TABS: Array<{ value: Tab; label: string }> = [
   { value: 'truco', label: 'Truco' },
   { value: 'damas', label: 'Damas' },
   { value: 'xadrez', label: 'Xadrez' },
+  { value: 'ludo', label: 'Ludo' },
 ];
 
 const BOARD_REASONS: Record<string, string> = {
@@ -144,8 +153,18 @@ const MATCH_OUTCOME: Record<DominoMatchItem['outcome'], string> = {
 };
 
 /** Titulo e detalhe de uma partida de domino, truco, damas ou xadrez no historico. */
-function describeMatch(match: DominoMatchItem | TrucoMatchItem | BoardMatchItem, tab: Tab): { title: string; note: string | null } {
+function describeMatch(
+  match: DominoMatchItem | TrucoMatchItem | BoardMatchItem | LudoMatchItem,
+  tab: Tab,
+): { title: string; note: string | null } {
   const stake = match.stake > 1 ? ` · mesa de ${match.stake} chaves` : '';
+  if (tab === 'ludo') {
+    const home = (match as LudoMatchItem).pieces?.[match.mySeat].filter((progress) => progress === 56).length;
+    return {
+      title: `Ludo · ${match.teamMode === 'DUEL' ? 'mano a mano' : '4 jogadores'}`,
+      note: home === undefined ? null : `${home} de 4 peças no centro`,
+    };
+  }
   if (tab === 'damas' || tab === 'xadrez') {
     const result = (match as BoardMatchItem).result;
     const color = (match as BoardMatchItem).whiteSeat === match.mySeat ? 'brancas' : 'pretas';
@@ -182,6 +201,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
     truco: config?.trucoEnabled || isAdmin,
     damas: config?.damasEnabled || isAdmin,
     xadrez: config?.xadrezEnabled || isAdmin,
+    ludo: config?.ludoEnabled || isAdmin,
   };
   const token = auth?.token ?? '';
 
@@ -194,6 +214,7 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
   const fetchTruco = useCallback((cursor?: string) => api.getMyMatches<TrucoMatchItem>('truco', token, cursor), [token]);
   const fetchDamas = useCallback((cursor?: string) => api.getMyMatches<BoardMatchItem>('damas', token, cursor), [token]);
   const fetchXadrez = useCallback((cursor?: string) => api.getMyMatches<BoardMatchItem>('xadrez', token, cursor), [token]);
+  const fetchLudo = useCallback((cursor?: string) => api.getMyMatches<LudoMatchItem>('ludo', token, cursor), [token]);
   const lists = {
     transactions: usePagedList(fetchTransactions),
     rounds: usePagedList(fetchRounds),
@@ -201,10 +222,11 @@ export default function HistoryPanel({ initialTab = 'transactions' }: Props) {
     truco: usePagedList(fetchTruco),
     damas: usePagedList(fetchDamas),
     xadrez: usePagedList(fetchXadrez),
+    ludo: usePagedList(fetchLudo),
   };
   const { transactions, rounds } = lists;
   const active = lists[tab];
-  const matches: Array<DominoMatchItem | TrucoMatchItem | BoardMatchItem> =
+  const matches: Array<DominoMatchItem | TrucoMatchItem | BoardMatchItem | LudoMatchItem> =
     tab === 'transactions' || tab === 'rounds' ? [] : lists[tab].items;
   const { reload } = active;
 

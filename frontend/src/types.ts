@@ -30,6 +30,9 @@ export interface GameConfig {
   xadrezEnabled: boolean;
   boardGamesFree: boolean;
   boardTurnSeconds: number;
+  ludoEnabled: boolean;
+  ludoFree: boolean;
+  ludoTurnSeconds: number;
   stakes: number[];
 }
 
@@ -76,7 +79,7 @@ export interface GameStats {
   prizes: string;
 }
 
-export type RankingGame = 'truco' | 'domino' | 'damas' | 'xadrez' | 'bingo';
+export type RankingGame = 'truco' | 'domino' | 'damas' | 'xadrez' | 'ludo' | 'bingo';
 
 export interface RankingEntry {
   position: number;
@@ -105,7 +108,7 @@ export interface Profile {
   memberSince: string;
   /** Quando o apelido pode ser trocado de novo (null: agora). */
   nicknameChangeAt: string | null;
-  games: Record<'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ', GameStats>;
+  games: Record<'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO', GameStats>;
 }
 
 export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';
@@ -203,12 +206,12 @@ export interface DominoGameView {
 }
 
 /** Jogos de mesa: o nome tambem e o caminho na API (/domino, /truco). */
-export type TableGame = 'domino' | 'truco' | 'damas' | 'xadrez';
+export type TableGame = 'domino' | 'truco' | 'damas' | 'xadrez' | 'ludo';
 
 /** Mesa de qualquer jogo; `game` e a visao do motor do jogo para este jogador. */
 export interface GameTableView<G, M extends string = string, T extends string = string> {
   id: string;
-  kind: 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ';
+  kind: 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO';
   mode: M;
   teamMode: T;
   stake: number;
@@ -349,6 +352,36 @@ export interface XadrezView extends BoardViewBase {
 export type DamasTableView = GameTableView<DamasView, 'BRASILEIRA', 'DUEL'>;
 export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
 
+/** Ludo: progresso das pecas -1 = base, 0..50 = volta, 51..55 = reta final, 56 = centro. */
+export type LudoAction = { type: 'ROLL' } | { type: 'MOVE'; piece: number };
+export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
+
+export interface LudoGameView {
+  mode: 'CLASSICO';
+  colors: number[];
+  pieces: number[][];
+  turn: number;
+  phase: 'ROLL' | 'MOVE';
+  dice: number | null;
+  rolls: number;
+  lastRoll: { seat: number; value: number } | null;
+  lastMove: { seat: number; piece: number; from: number; to: number; captured: Array<{ seat: number; piece: number; from: number }> } | null;
+  moveCount: number;
+  legalPieces: number[];
+  /** Hash da semente dos dados, publico desde o inicio; a semente e revelada no fim. */
+  commitment: string;
+  seed: string | null;
+  status: 'PLAYING' | 'FINISHED';
+  result: { winner: number } | null;
+}
+
+export type LudoTableView = GameTableView<LudoGameView, 'CLASSICO', LudoTeamMode>;
+
+export interface LudoMatchItem extends MatchItem<'CLASSICO', LudoTeamMode> {
+  result?: { winner: number } | null;
+  pieces?: number[][];
+}
+
 export interface BoardMatchItem extends MatchItem<string, 'DUEL'> {
   result?: BoardResult;
   whiteSeat?: number;
@@ -414,6 +447,6 @@ export interface AdminStats {
     withdrawals: Partial<Record<WithdrawalStatus, { count: number; amount: string }>>;
   };
   bingoRounds: Partial<Record<RoundStatus, number>>;
-  tables: Record<'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ', Partial<Record<DominoTableView['status'], number>>>;
+  tables: Record<'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO', Partial<Record<DominoTableView['status'], number>>>;
   recentUsers: Array<{ id: string; name: string; email: string; createdAt: string }>;
 }

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import LegalDocument, { CONTACT_EMAIL, LegalSection } from '../components/LegalDocument';
 import { DamasRules, XadrezRules } from '../components/board/BoardRules';
+import LudoRules from '../components/ludo/LudoRules';
 import TrucoRules from '../components/truco/TrucoRules';
 import { formatBrl } from '../format';
 import { useGameConfig } from '../hooks/useGameConfig';
@@ -17,6 +18,7 @@ const FALLBACK = {
   trucoEnabled: false,
   damasEnabled: false,
   xadrezEnabled: false,
+  ludoEnabled: false,
   boardTurnSeconds: 60,
 };
 
@@ -168,6 +170,22 @@ export default function TermsPage() {
           </>
         ),
       })),
+    ...(config.ludoEnabled
+      ? [
+          {
+            title: 'Como funciona o Ludo',
+            content: (
+              <>
+                <LudoRules />
+                <p>
+                  Partidas de 2 ou 4 jogadores. Enquanto o Ludo for gratuito, não há entrada nem prêmio. Todas as jogadas e
+                  os dados ficam registrados.
+                </p>
+              </>
+            ),
+          },
+        ]
+      : []),
     {
       title: 'Prêmios e saques',
       content: (

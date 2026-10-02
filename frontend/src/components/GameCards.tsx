@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
 import DominoTile from './domino/DominoTile';
+import LudoDice from './ludo/LudoDice';
 import PlayingCard from './truco/PlayingCard';
 
 const fadeUp = {
@@ -108,7 +109,26 @@ export default function GameCards() {
       to: '/xadrez',
       open: config?.xadrezEnabled ?? false,
     },
-  {
+    {
+      key: 'ludo',
+      title: 'Ludo',
+      art: (
+        <>
+          <span className="ludo-token ludo-color-0" />
+          <LudoDice value={6} rollId={0} rolling={false} color={null} />
+          <span className="ludo-token ludo-color-3" />
+        </>
+      ),
+      description: 'O clássico das peças coloridas: tire 6 para sair da base, capture os adversários e chegue ao centro.',
+      bullets: [
+        'Mano a mano ou 4 jogadores',
+        'Dados verificáveis: ninguém altera o resultado',
+        (config?.ludoFree ?? true) ? 'Grátis durante os testes' : 'Mesas de 1, 2 ou 5 chaves',
+      ],
+      to: '/ludo',
+      open: config?.ludoEnabled ?? false,
+    },
+    {
       key: 'lucky',
       title: 'Números da sorte',
       art: <MiniCard />,

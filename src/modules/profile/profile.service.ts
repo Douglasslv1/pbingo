@@ -25,13 +25,14 @@ async function tableStats(userId: string, game: string) {
 /** Perfil do proprio jogador: apelido e resumo por jogo (os premios so ele ve). */
 export async function getProfile(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const [rounds, roundsWon, domino, truco, damas, xadrez, prizes] = await Promise.all([
+  const [rounds, roundsWon, domino, truco, damas, xadrez, ludo, prizes] = await Promise.all([
     prisma.ticket.findMany({ where: { userId, round: { status: 'FINISHED' } }, distinct: ['roundId'], select: { roundId: true } }),
     prisma.ticket.findMany({ where: { userId, isWinner: true }, distinct: ['roundId'], select: { roundId: true } }),
     tableStats(userId, 'DOMINO'),
     tableStats(userId, 'TRUCO'),
     tableStats(userId, 'DAMAS'),
     tableStats(userId, 'XADREZ'),
+    tableStats(userId, 'LUDO'),
     prisma.transaction.groupBy({
       by: ['game'],
       where: { userId, type: 'PRIZE_PAYOUT', status: 'COMPLETED' },
@@ -54,6 +55,7 @@ export async function getProfile(userId: string) {
       TRUCO: { ...truco, prizes: prizeOf('TRUCO') },
       DAMAS: { ...damas, prizes: prizeOf('DAMAS') },
       XADREZ: { ...xadrez, prizes: prizeOf('XADREZ') },
+      LUDO: { ...ludo, prizes: prizeOf('LUDO') },
     },
   };
 }

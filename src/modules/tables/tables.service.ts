@@ -7,6 +7,7 @@ import { HistoryPage } from '../../utils/pagination';
 import { emitToUser } from '../../websocket/socket';
 import { damasAdapter } from '../damas/damas.adapter';
 import { dominoAdapter } from '../domino/domino.adapter';
+import { ludoAdapter } from '../ludo/ludo.adapter';
 import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { trucoAdapter } from '../truco/truco.adapter';
@@ -23,6 +24,7 @@ const ADAPTERS: Record<GameName, GameAdapter> = {
   TRUCO: trucoAdapter as GameAdapter,
   DAMAS: damasAdapter as GameAdapter,
   XADREZ: xadrezAdapter as GameAdapter,
+  LUDO: ludoAdapter as GameAdapter,
 };
 const adapterOf = (table: Pick<GameTable, 'game'>): GameAdapter => ADAPTERS[table.game as GameName];
 

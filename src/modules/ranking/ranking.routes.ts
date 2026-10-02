@@ -5,7 +5,7 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { getRanking, RankingGame } from './ranking.service';
 
 const querySchema = z.object({
-  game: z.enum(['bingo', 'domino', 'truco', 'damas', 'xadrez']).transform((game) => game.toUpperCase() as RankingGame),
+  game: z.enum(['bingo', 'domino', 'truco', 'damas', 'xadrez', 'ludo']).transform((game) => game.toUpperCase() as RankingGame),
   period: z.enum(['month', 'all']).default('month'),
 });
 

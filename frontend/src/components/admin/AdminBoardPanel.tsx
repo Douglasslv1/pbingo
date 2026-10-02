@@ -1,9 +1,14 @@
 import { formatBrl } from '../../format';
 import type { BoardResult } from '../../types';
 import { formatDateTime } from '../../withdrawalFormat';
+import { COLOR_NAMES } from '../ludo/ludoGeometry';
 import AdminTablesPanel, { TableDetailProps, useAdminTable } from './AdminTablesPanel';
 
-type BoardMove = { type: 'MOVE'; path?: number[]; from?: number; to?: number; promotion?: string } | { type: 'RESIGN' | 'TIMEOUT' };
+type BoardMove =
+  | { type: 'MOVE'; path?: number[]; from?: number; to?: number; promotion?: string; piece?: number; dice?: number }
+  | { type: 'RESIGN' | 'TIMEOUT' }
+  | { type: 'ROLL'; value: number };
+type Game = 'damas' | 'xadrez' | 'ludo';
 
 interface BoardDetail {
   id: string;
@@ -11,8 +16,11 @@ interface BoardDetail {
   prizePool: string;
   createdAt: string;
   finishedAt: string | null;
-  result?: BoardResult | null;
+  result?: BoardResult | { winner: number } | null;
   whiteSeat?: number;
+  /** Ludo: cor de cada lugar e semente dos dados (revelada no fim). */
+  colors?: number[];
+  seed?: string | null;
   players: Array<{ seat: number; name: string; email: string; nickname?: string | null; prizeAmount: string | null }>;
   moves: Array<{ moveNumber: number; seat: number; action: BoardMove; automatic: boolean; createdAt: string }>;
 }
@@ -20,19 +28,27 @@ interface BoardDetail {
 const squareName = (square: number) => `${'abcdefgh'[square & 7]}${8 - (square >> 3)}`;
 
 function describeMove(action: BoardMove): string {
+  if (action.type === 'ROLL') return `rolou ${action.value}`;
   if (action.type !== 'MOVE') return action.type === 'RESIGN' ? 'desistiu' : 'deixou o tempo acabar';
+  if (action.piece !== undefined) {
+    return `moveu a peça ${action.piece + 1} com ${action.dice} (saiu ${action.from === -1 ? 'da base' : `da casa ${action.from}`})`;
+  }
   const squares = action.path ?? [action.from!, action.to!];
   return `${squares.map(squareName).join(' → ')}${action.promotion ? ` (promoveu a ${action.promotion})` : ''}`;
 }
 
-function BoardTableDetail({ game, title, tableId, onClose }: TableDetailProps & { game: 'damas' | 'xadrez'; title: string }) {
+function BoardTableDetail({ game, title, tableId, onClose }: TableDetailProps & { game: Game; title: string }) {
   const { detail, error } = useAdminTable<BoardDetail>(game, tableId);
   if (error) return <p className="error">{error}</p>;
   if (!detail) return <p className="label">Carregando mesa...</p>;
 
-  const colorOf = (seat: number) => (seat === detail.whiteSeat ? 'brancas' : 'pretas');
+  const colorOf = (seat: number) =>
+    detail.colors ? COLOR_NAMES[detail.colors[seat]] : seat === detail.whiteSeat ? 'brancas' : 'pretas';
   const nameOf = (seat: number) => detail.players.find((player) => player.seat === seat)?.name ?? `Lugar ${seat + 1}`;
-  const winnerSeat = detail.result?.winner ? (detail.result.winner === 'w' ? detail.whiteSeat : 1 - (detail.whiteSeat ?? 0)) : null;
+  const winner = detail.result?.winner;
+  const winnerSeat =
+    typeof winner === 'number' ? winner : winner ? (winner === 'w' ? detail.whiteSeat : 1 - (detail.whiteSeat ?? 0)) : null;
+  const reason = detail.result && 'reason' in detail.result ? ` (${detail.result.reason})` : '';
 
   return (
     <div className="card admin-domino-detail">
@@ -50,7 +66,13 @@ function BoardTableDetail({ game, title, tableId, onClose }: TableDetailProps & 
       </p>
       {detail.result && (
         <p>
-          Resultado: <strong>{winnerSeat === null ? 'empate' : `venceu ${nameOf(winnerSeat!)}`}</strong> ({detail.result.reason})
+          Resultado: <strong>{winnerSeat === null ? 'empate' : `venceu ${nameOf(winnerSeat!)}`}</strong>
+          {reason}
+        </p>
+      )}
+      {detail.seed && (
+        <p className="label">
+          Semente dos dados: <code>{detail.seed}</code>
         </p>
       )}
 
@@ -83,12 +105,12 @@ function BoardTableDetail({ game, title, tableId, onClose }: TableDetailProps & 
   );
 }
 
-/** Mesas de damas ou xadrez no admin, com cada lance registrado. */
-export default function AdminBoardPanel({ game, title }: { game: 'damas' | 'xadrez'; title: string }) {
+/** Mesas de damas, xadrez ou ludo no admin, com cada lance (e cada dado) registrado. */
+export default function AdminBoardPanel({ game, title }: { game: Game; title: string }) {
   return (
     <AdminTablesPanel
       game={game}
-      describe={() => `${title} · mano a mano`}
+      describe={(table) => `${title} · ${table.teamMode === 'INDIVIDUAL' ? '4 jogadores' : 'mano a mano'}`}
       Detail={(props) => <BoardTableDetail {...props} game={game} title={title} />}
     />
   );

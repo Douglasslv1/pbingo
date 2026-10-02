@@ -57,6 +57,11 @@ export const env = {
   boardGamesFree: process.env.BOARD_GAMES_FREE !== 'false',
   // Segundos por lance nas damas e no xadrez; tempo esgotado e derrota
   boardTurnSeconds: optionalNumber('BOARD_TURN_SECONDS', 60),
+  // Enquanto false, so administradores jogam ludo; gratuito (sem chave e sem premio) ate LUDO_FREE=false
+  ludoEnabled: process.env.LUDO_ENABLED === 'true',
+  ludoFree: process.env.LUDO_FREE !== 'false',
+  // Segundos para rolar o dado e para mover; tempo esgotado: o sistema joga pelo jogador
+  ludoTurnSeconds: optionalNumber('LUDO_TURN_SECONDS', 30),
   // Mesa (de qualquer jogo) que nao completa nesse prazo e cancelada, com as chaves devolvidas
   queueTimeoutMinutes: optionalNumber('DOMINO_QUEUE_TIMEOUT_MINUTES', 10),
   drawIntervalMs: optionalNumber('DRAW_INTERVAL_MS', 3_000),

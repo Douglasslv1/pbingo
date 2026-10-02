@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
 import { displayName } from '../profile/nickname';
 
-export type RankingGame = 'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ';
+export type RankingGame = 'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO';
 export type RankingPeriod = 'month' | 'all';
 
 /** Partidas minimas no periodo para entrar no ranking (evita 1 jogo e 100% de vitorias no topo). */
@@ -93,7 +93,10 @@ export async function getRanking(game: RankingGame, period: RankingPeriod, viewe
     minMatches: MIN_MATCHES,
     maxDailyWinsVsSame: game === 'BINGO' ? null : MAX_DAILY_WINS_VS_SAME,
     // Jogo hoje gratuito: o ranking vale normalmente e e das partidas gratuitas
-    free: (game === 'DOMINO' && env.dominoFree) || (['DAMAS', 'XADREZ'].includes(game) && env.boardGamesFree),
+    free:
+      (game === 'DOMINO' && env.dominoFree) ||
+      (['DAMAS', 'XADREZ'].includes(game) && env.boardGamesFree) ||
+      (game === 'LUDO' && env.ludoFree),
     entries: entries.slice(0, TOP),
     me: entries.find((entry) => entry.isMe) ?? null,
   };

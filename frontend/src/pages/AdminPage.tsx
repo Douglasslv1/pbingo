@@ -16,6 +16,7 @@ const SECTIONS = [
   { label: 'Truco', title: 'Mesas de truco', Panel: AdminTrucoPanel },
   { label: 'Damas', title: 'Mesas de damas', Panel: () => <AdminBoardPanel game="damas" title="Damas" /> },
   { label: 'Xadrez', title: 'Mesas de xadrez', Panel: () => <AdminBoardPanel game="xadrez" title="Xadrez" /> },
+  { label: 'Ludo', title: 'Mesas de ludo', Panel: () => <AdminBoardPanel game="ludo" title="Ludo" /> },
 ];
 
 export default function AdminPage() {

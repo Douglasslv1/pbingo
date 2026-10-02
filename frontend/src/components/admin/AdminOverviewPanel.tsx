@@ -57,6 +57,7 @@ export default function AdminOverviewPanel() {
     ['TRUCO', 'truco'],
     ['DAMAS', 'damas'],
     ['XADREZ', 'xadrez'],
+    ['LUDO', 'ludo'],
   ] as const;
   const pending = money.withdrawals.PENDING;
 
