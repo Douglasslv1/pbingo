@@ -1,10 +1,13 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { formatBrl } from '../../format';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import { useTurnAlert } from '../../hooks/useTurnAlert';
-import type { LudoAction, LudoTableView } from '../../types';
+import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoGameView, LudoTableView } from '../../types';
 import GameTable from '../tables/GameTable';
 import VictoryOverlay from '../tables/VictoryOverlay';
+import LudoAbilities, { ABILITY_ICONS } from './LudoAbilities';
 import LudoBoard from './LudoBoard';
 import LudoDice from './LudoDice';
 import { COLOR_NAMES, FINISH } from './ludoGeometry';
@@ -18,8 +21,34 @@ interface Props {
   onBackToLobby: () => void;
 }
 
+/** O que a ultima habilidade fez, para todos verem (ex.: "Ana protegeu uma peça"). */
+function abilityNews(game: LudoGameView, nameOf: (seat: number) => string): string | null {
+  const used = game.lastAbility;
+  // So logo depois de usada (a jogada automatica seguinte tambem conta)
+  if (!used || game.moveCount - used.move > 1) return null;
+  const who = nameOf(used.seat);
+  const name = game.abilities.find((ability) => ability.id === used.ability)?.name ?? '';
+  const text: Record<LudoAbilityId, string> = {
+    SHIELD: `${who} protegeu uma peça até a próxima vez`,
+    BOOST: `${who} ganhou casas extras neste movimento`,
+    PULL: `${who} puxou uma peça de ${nameOf(used.targetSeat ?? 0)} para trás`,
+    SWAP: `${who} trocou duas peças de lugar`,
+    SECOND_CHANCE: `${who} jogou o dado de novo`,
+    ESCAPE: `${who} armou uma fuga numa peça`,
+  };
+  return `${ABILITY_ICONS[used.ability]} ${name.toUpperCase()} · ${text[used.ability]}`;
+}
+
 export default function LudoGame({ table, busy, error, onAction, onComeBack, onBackToLobby }: Props) {
   const game = table.game;
+  const [selected, setSelected] = useState<LudoAbilityId | null>(null);
+  /** Primeira peca escolhida para a Troca. */
+  const [picked, setPicked] = useState<number | null>(null);
+  // Qualquer jogada nova cancela a escolha de habilidade em andamento
+  useEffect(() => {
+    setSelected(null);
+    setPicked(null);
+  }, [game?.moveCount]);
   const playing = table.status === 'PLAYING' && game?.status === 'PLAYING';
   const myTurn = playing && game?.turn === table.mySeat;
   const countdown = useCountdown(playing ? table.turnDeadline : null);
@@ -47,13 +76,46 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
     className: `ludo-seat ludo-color-${game.colors[seat]}`,
   }));
 
+  const ability = game.abilities.find((item) => item.id === selected);
+  const options = selected ? (game.abilityOptions[selected] ?? []) : [];
+  // Pecas que acendem: alvos da habilidade escolhida ou, sem ela, as que podem andar
+  const selectable =
+    !myTurn || busy
+      ? []
+      : ability && ability.target !== 'NONE'
+        ? options
+            .filter((option) => picked === null || option.pieces?.includes(picked))
+            .flatMap((option) =>
+              (option.pieces ?? [])
+                .filter((piece) => piece !== picked)
+                .map((piece) => ({ seat: option.targetSeat ?? mySeat, piece })),
+            )
+        : game.legalPieces.map((piece) => ({ seat: mySeat, piece }));
+
+  function applyAbility(target: LudoAbilityTarget) {
+    if (selected) onAction({ type: 'ABILITY', ability: selected, ...target });
+    setSelected(null);
+    setPicked(null);
+  }
+
+  function onSelect(seat: number, piece: number) {
+    if (!ability || ability.target === 'NONE') return onAction({ type: 'MOVE', piece });
+    if (ability.target === 'OPPONENT_PIECE') return applyAbility({ targetSeat: seat, pieces: [piece] });
+    if (ability.target === 'OWN_PIECE_PAIR' && picked === null) return setPicked(piece);
+    applyAbility({ pieces: picked === null ? [piece] : [picked, piece] });
+  }
+
+  const news = abilityNews(game, nameOf);
+  const escaped = game.lastMove?.escaped ?? [];
   const roll = game.lastRoll;
   const situation = !playing
     ? ''
     : myTurn
       ? game.phase === 'ROLL'
         ? 'Sua vez: jogue o dado.'
-        : `Você tirou ${game.dice}: toque numa peça destacada.`
+        : game.legalPieces.length === 0
+          ? `Você tirou ${game.dice} e nenhuma peça pode andar. Use uma habilidade ou passe a vez.`
+          : `Você tirou ${game.dice}${game.bonus ? ` +${game.bonus} do Impulso` : ''}: toque numa peça destacada.`
       : `Vez de ${nameOf(game.turn)}...`;
 
   return (
@@ -69,12 +131,7 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
       </div>
 
       <GameTable seats={seats} mySeat={mySeat} turnSeat={playing ? game.turn : null} countdown={countdown}>
-        <LudoBoard
-          game={game}
-          mySeat={mySeat}
-          playable={myTurn && !busy ? game.legalPieces : []}
-          onPiece={(piece) => onAction({ type: 'MOVE', piece })}
-        />
+        <LudoBoard game={game} mySeat={mySeat} selectable={selectable} onSelect={onSelect} />
       </GameTable>
 
       {winner !== null ? (
@@ -111,6 +168,23 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
             </div>
           )}
 
+          <AnimatePresence>
+            {news && (
+              <motion.p
+                key={game.lastAbility!.move}
+                className="banner ludo-news"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {news}
+              </motion.p>
+            )}
+          </AnimatePresence>
+          {escaped.length > 0 && (
+            <p className="banner ludo-news">💨 FUGA! A peça de {escaped.map((escape) => nameOf(escape.seat)).join(' e ')} escapou da captura.</p>
+          )}
+
           <div className="ludo-controls">
             <LudoDice
               value={roll?.value ?? null}
@@ -122,6 +196,11 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
             <div>
               <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
               {roll && <p className="label">Último dado: {nameOf(roll.seat)} tirou {roll.value}.</p>}
+              {myTurn && game.phase === 'MOVE' && game.legalPieces.length === 0 && (
+                <button type="button" className="secondary" onClick={() => onAction({ type: 'PASS' })} disabled={busy}>
+                  Passar a vez
+                </button>
+              )}
             </div>
           </div>
           {game.energy && (
@@ -137,6 +216,20 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
               </strong>
             </div>
           )}
+          {game.abilities.length > 0 && (
+            <LudoAbilities
+              game={game}
+              myTurn={myTurn}
+              busy={busy}
+              selected={selected}
+              onSelect={(id) => {
+                setSelected(id);
+                setPicked(null);
+              }}
+              onUse={applyAbility}
+            />
+          )}
+          {picked !== null && <p className="domino-turn mine">Agora toque na outra peça que vai trocar de lugar.</p>}
           {error && <p className="error">{error}</p>}
           <p className="label ludo-fairness" title={game.commitment}>
             Dados verificáveis · código {game.commitment.slice(0, 12)}

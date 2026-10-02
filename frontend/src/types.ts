@@ -353,7 +353,25 @@ export type DamasTableView = GameTableView<DamasView, 'BRASILEIRA', 'DUEL'>;
 export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
 
 /** Ludo: progresso das pecas -1 = base, 0..50 = volta, 51..55 = reta final, 56 = centro. */
-export type LudoAction = { type: 'ROLL' } | { type: 'MOVE'; piece: number };
+export type LudoAbilityId = 'SHIELD' | 'BOOST' | 'PULL' | 'SWAP' | 'SECOND_CHANCE' | 'ESCAPE';
+/** Alvo de uma habilidade: pecas proprias, ou a peca `pieces[0]` do lugar `targetSeat`. */
+export interface LudoAbilityTarget {
+  pieces?: number[];
+  targetSeat?: number;
+}
+export type LudoAction =
+  | { type: 'ROLL' }
+  | { type: 'MOVE'; piece: number }
+  | { type: 'PASS' }
+  | ({ type: 'ABILITY'; ability: LudoAbilityId } & LudoAbilityTarget);
+
+export interface LudoAbility {
+  id: LudoAbilityId;
+  name: string;
+  description: string;
+  target: 'NONE' | 'OWN_PIECE' | 'OPPONENT_PIECE' | 'OWN_PIECE_PAIR';
+  cost: number;
+}
 export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
 /** Classico: Ludo tradicional. Arena: com energia (e, nas proximas fases, habilidades). */
 export type LudoMode = 'CLASSICO' | 'ARENA';
@@ -378,8 +396,18 @@ export interface LudoGameView {
     from: number;
     to: number;
     captured: Array<{ seat: number; piece: number; from: number }>;
-    energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'TILE' }>;
+    escaped?: Array<{ seat: number; piece: number; from: number; to: number }>;
+    energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' }>;
   } | null;
+  /** Casas a mais no movimento atual (Impulso). */
+  bonus: number;
+  effects: Array<{ type: 'SHIELD' | 'ESCAPE'; seat: number; piece: number }>;
+  lastAbility: ({ seat: number; ability: LudoAbilityId; move: number } & LudoAbilityTarget) | null;
+  abilityUsed: boolean;
+  /** Catalogo de habilidades da modalidade (vazio no Classico). */
+  abilities: LudoAbility[];
+  /** Alvos validos de cada habilidade que o jogador pode usar agora. */
+  abilityOptions: Partial<Record<LudoAbilityId, LudoAbilityTarget[]>>;
   moveCount: number;
   legalPieces: number[];
   /** Hash da semente dos dados, publico desde o inicio; a semente e revelada no fim. */

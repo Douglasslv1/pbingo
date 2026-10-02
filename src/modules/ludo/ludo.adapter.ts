@@ -1,7 +1,7 @@
 import { env } from '../../config/env';
 import { GameAdapter } from '../tables/tables.types';
 import { LudoMode } from './ludo.config';
-import { applyAction, autoAction, dealGame, dieAt, hasSingleChoice, LudoAction, LudoState, viewFor } from './ludo.engine';
+import { applyAction, autoAction, dealGame, dieAt, isForced, LudoAction, LudoState, viewFor } from './ludo.engine';
 
 export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
   game: 'LUDO',
@@ -14,8 +14,8 @@ export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
   apply: applyAction,
   autoAction,
   actingSeat: (state) => state.turn,
-  // Uma so peca (ou pecas na mesma posicao) pode andar: o servidor move sem esperar
-  isForced: (state) => state.status === 'PLAYING' && state.phase === 'MOVE' && hasSingleChoice(state),
+  // Sem decisao (uma so peca ou nenhuma, e nenhuma habilidade possivel): o servidor joga sem esperar
+  isForced,
   isFinished: (state) => state.status === 'FINISHED',
   winnerSeats: (state) => (state.result ? [state.result.winner] : []),
   moveCount: (state) => state.moveCount,
@@ -29,7 +29,9 @@ export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
   }),
   // Grava o valor de cada dado e de onde a peca saiu, para o admin reconstruir a partida
   record: (state, _seat, action) =>
-    action.type === 'ROLL'
+    action.type === 'ROLL' || (action.type === 'ABILITY' && action.ability === 'SECOND_CHANCE')
       ? { ...action, value: dieAt(state.seed, state.rolls) }
-      : { ...action, dice: state.dice, from: state.pieces[state.turn][action.piece] },
+      : action.type === 'MOVE'
+        ? { ...action, dice: state.dice, bonus: state.bonus, from: state.pieces[state.turn][action.piece] }
+        : action,
 };

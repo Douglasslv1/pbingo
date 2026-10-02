@@ -120,7 +120,7 @@ describe('Ludo', () => {
     expect(squareOf(0, 10)).toBe(squareOf(2, 36));
     const after = move(state, 0);
     expect(after.pieces[1][0]).toBe(BASE);
-    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], energy: [] });
+    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], escaped: [], energy: [] });
     expect(after).toMatchObject({ turn: 0, phase: 'ROLL' });
   });
 
@@ -185,20 +185,23 @@ describe('Ludo', () => {
       expect(move(arena([[1, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], 5), 0).energy).toEqual([0, 0]);
     });
 
-    it('capturar da +1 para quem captura; quem perde a peca nao ganha', () => {
+    it('capturar da +1 para quem captura e +1 de compensacao para quem perde a peca', () => {
       const after = move(arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], 3), 0);
-      expect(after.energy).toEqual([1, 0]);
-      expect(after.lastMove?.energy).toEqual([{ seat: 0, amount: 1, reason: 'CAPTURE' }]);
+      expect(after.energy).toEqual([1, 1]);
+      expect(after.lastMove?.energy).toEqual([
+        { seat: 0, amount: 1, reason: 'CAPTURE' },
+        { seat: 1, amount: 1, reason: 'CAPTURED' },
+      ]);
     });
 
     it('captura numa casa de energia soma as duas', () => {
       // Casa 11 e de energia; a cor 2 esta nela com progresso 11 - 26 + 52 = 37
       const after = move(arena([[8, BASE, BASE, BASE], [37, BASE, BASE, BASE]], 3), 0);
-      expect(after.energy).toEqual([2, 0]);
+      expect(after.energy).toEqual([2, 1]);
     });
 
     it('a energia nunca passa do maximo', () => {
-      expect(move(arena([[8, BASE, BASE, BASE], [37, BASE, BASE, BASE]], 3, [9, 4]), 0).energy).toEqual([10, 4]);
+      expect(move(arena([[8, BASE, BASE, BASE], [37, BASE, BASE, BASE]], 3, [9, 4]), 0).energy).toEqual([10, 5]);
     });
   });
 

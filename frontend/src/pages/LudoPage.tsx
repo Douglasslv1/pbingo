@@ -14,7 +14,7 @@ const MODES = [
   {
     value: 'ARENA' as const,
     title: 'Arena',
-    description: 'Ganhe energia ⚡ capturando e parando nas casas de energia. Em breve ela libera habilidades.',
+    description: 'Ganhe energia ⚡ capturando e nas casas de energia, e gaste em habilidades: escudo, impulso, puxão e mais.',
   },
 ];
 

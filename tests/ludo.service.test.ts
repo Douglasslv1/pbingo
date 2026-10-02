@@ -113,6 +113,31 @@ describe('Ludo nas mesas', () => {
     expect(view.game.energyTiles).toHaveLength(8);
   });
 
+  it('Arena: habilidade pela API cobra a energia do servidor; o cliente nao inventa habilidade nem energia', async () => {
+    const players = [await registerTestUser(), await registerTestUser()];
+    let tableId = '';
+    for (const player of players) {
+      tableId = (await request(app).post('/ludo/queue').set(auth(player)).send({ mode: 'ARENA', teamMode: 'DUEL' })).body.id;
+    }
+    const seats = await prisma.gameSeat.findMany({ where: { tableId }, orderBy: { seat: 'asc' } });
+    const first = players.find((player) => player.user.id === seats[0].userId)!;
+    const table = await prisma.gameTable.findUniqueOrThrow({ where: { id: tableId } });
+    const state = table.state as unknown as LudoState;
+    await prisma.gameTable.update({
+      where: { id: tableId },
+      data: { state: { ...state, pieces: [[10, -1, -1, -1], [-1, -1, -1, -1]], phase: 'MOVE', dice: 3, energy: [2, 0] } },
+    });
+    const act = (action: Record<string, unknown>) => request(app).post(`/ludo/tables/${tableId}/moves`).set(auth(first)).send(action);
+
+    expect((await act({ type: 'ABILITY', ability: 'TELEPORTE' })).status).toBe(422);
+    expect((await act({ type: 'ABILITY', ability: 'SECOND_CHANCE', energy: 10 })).status).toBe(422);
+    const boosted = await act({ type: 'ABILITY', ability: 'BOOST' });
+    expect(boosted.status).toBe(200);
+    // Sem energia para outra habilidade e com uma so peca, o servidor ja move: 10 + 3 do dado + 2 do Impulso
+    expect(boosted.body.game).toMatchObject({ energy: [0, 0], lastAbility: { seat: 0, ability: 'BOOST' } });
+    expect(boosted.body.game.pieces[0][0]).toBe(15);
+  });
+
   it('o ranking do Ludo vale para as partidas gratuitas', async () => {
     const res = await request(app).get('/ranking/ludo');
     expect(res.status).toBe(200);

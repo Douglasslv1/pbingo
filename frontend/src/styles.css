@@ -2593,6 +2593,84 @@ button.truco-call {
   box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
 }
 
+.ludo-shield {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 0.12;
+}
+
+.ludo-escape {
+  fill: none;
+  stroke: #f8fafc;
+  stroke-width: 0.1;
+  stroke-dasharray: 0.2 0.12;
+}
+
+.ludo-news {
+  text-align: center;
+  font-weight: 700;
+}
+
+.ludo-abilities {
+  margin-bottom: 10px;
+}
+
+.ludo-ability-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 6px;
+}
+
+.ludo-ability {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--input-bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-height: 64px;
+}
+
+.ludo-ability.usable {
+  color: var(--text);
+  border-color: #facc15;
+}
+
+.ludo-ability.selected {
+  box-shadow: 0 0 0 2px #facc15;
+}
+
+.ludo-ability-icon {
+  font-size: 1.3rem;
+}
+
+.ludo-ability-cost {
+  color: #facc15;
+}
+
+.ludo-ability-detail {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+}
+
+.ludo-ability-detail p {
+  margin: 6px 0;
+}
+
+.ludo-controls button.secondary {
+  margin-top: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
 .ludo-fairness {
   text-align: center;
   overflow-wrap: anywhere;

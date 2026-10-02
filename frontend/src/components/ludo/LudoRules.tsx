@@ -35,7 +35,37 @@ export default function LudoRules() {
           Na modalidade <strong>Arena</strong>, cada jogador junta <strong>energia</strong> ⚡, de 0 a 10.
         </li>
         <li>Ganha 1 de energia por peça adversária capturada e 1 ao parar numa casa ⚡ (só passar por ela não conta).</li>
-        <li>A energia vai liberar as habilidades, que chegam nas próximas versões.</li>
+        <li>Quem tem a peça capturada também ganha 1 de energia, para voltar ao jogo.</li>
+      </ul>
+      <h3>Arena: habilidades</h3>
+      <ul>
+        <li>
+          Na sua vez, gaste energia numa habilidade. É <strong>uma habilidade por vez</strong> (as jogadas extras do 6
+          contam como a mesma vez).
+        </li>
+        <li>
+          🛡️ <strong>Escudo</strong> (2): protege uma peça contra captura até a sua próxima vez.
+        </li>
+        <li>
+          🚀 <strong>Impulso</strong> (2): depois do dado, soma 2 casas ao movimento (não vale para sair da base).
+        </li>
+        <li>
+          🧲 <strong>Puxão</strong> (3): uma peça adversária volta 2 casas. Não vale em casa segura nem em peça com escudo.
+        </li>
+        <li>
+          🔄 <strong>Troca</strong> (3): troca de lugar duas peças suas que estão na volta do tabuleiro.
+        </li>
+        <li>
+          🎲 <strong>Segunda chance</strong> (4): depois do dado, joga de novo; o novo número vale.
+        </li>
+        <li>
+          💨 <strong>Fuga</strong> (3): arma uma peça; se ela for capturada, volta 3 casas em vez de ir para a base. Vale
+          até ser usada.
+        </li>
+        <li>
+          Se nenhuma peça puder andar mas uma habilidade puder ajudar, a vez espera você decidir: use a habilidade ou
+          passe a vez.
+        </li>
       </ul>
       <h3>Tempo e dados verificáveis</h3>
       <ul>
