@@ -26,6 +26,8 @@ const REASONS: Record<string, string> = {
   MATERIAL: 'empate: não há peças suficientes para dar xeque-mate',
 };
 
+const SHOUTS: Record<string, string> = { CHECKMATE: 'Xeque‑mate!', STALEMATE: 'Rei afogado!' };
+
 export default function XadrezGame({ table, busy, error, onAction, onBackToLobby }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   /** Lance de peao ate a ultima linha, esperando a escolha da peca. */
@@ -75,6 +77,7 @@ export default function XadrezGame({ table, busy, error, onAction, onBackToLobby
       title="Xadrez"
       situation={situation}
       reasonText={(reason) => REASONS[reason] ?? reason}
+      shouts={SHOUTS}
       busy={busy}
       error={error}
       onResign={() => onAction({ type: 'RESIGN' })}

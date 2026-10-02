@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
 import DominoTile from './domino/DominoTile';
@@ -41,24 +40,10 @@ interface Game {
 export default function GameCards() {
   const config = useGameConfig();
   const isAdmin = useAuth().auth?.user.role === 'ADMIN';
-  const potOf = (seats: number, stake = 1) => (config ? formatBrl(config.prizeContributionPerTicket * seats * stake) : null);
   const boardBullet = config?.boardGamesFree ? 'Grátis durante os testes' : 'Mesas de 1, 2 ou 5 chaves';
   const seconds = config?.boardTurnSeconds ?? 60;
 
   const games: Game[] = [
-    {
-      key: 'lucky',
-      title: 'Números da sorte',
-      art: <MiniCard />,
-      description: 'Receba sua cartela, acompanhe o sorteio ao vivo e torça para completar primeiro.',
-      bullets: [
-        `Rodadas a cada ${config?.roundIntervalMinutes ?? 15} minutos`,
-        `Começa com no mínimo ${config?.minPlayersPerRound ?? 5} jogadores - senão, a chave volta`,
-        'Prêmio acumulado cresce a cada jogador',
-      ],
-      to: '/app',
-      open: true,
-    },
     {
       key: 'domino',
       title: 'Dominó',
@@ -73,7 +58,7 @@ export default function GameCards() {
       bullets: [
         '6 peças ou Burrinho, individual, em duplas ou mano a mano',
         '30 segundos por jogada - partidas rápidas',
-        config?.dominoFree ? 'Grátis durante os testes' : `Prêmio de até ${potOf(4, 5)} por mesa`,
+        config?.dominoFree ? 'Grátis durante os testes' : 'Mesas de 1, 2 ou 5 chaves',
       ],
       to: '/domino',
       open: config?.dominoEnabled ?? false,
@@ -89,7 +74,7 @@ export default function GameCards() {
         </>
       ),
       description: 'Truco Paulista com manilha pela vira: blefe, leitura do adversário e o famoso grito de truco.',
-      bullets: ['Mano a mano ou em duplas, até 12 pontos', 'Mesas de 1, 2 ou 5 chaves', `Prêmio de até ${potOf(2, 5)} por mesa`],
+      bullets: ['Mano a mano ou em duplas, até 12 pontos', 'Truco, seis, nove e doze; mão de onze e de ferro', 'Mesas de 1, 2 ou 5 chaves'],
       to: '/truco',
       open: config?.trucoEnabled ?? false,
     },
@@ -122,6 +107,19 @@ export default function GameCards() {
       bullets: [`Mano a mano, ${seconds}s por lance`, 'Roque, en passant, promoção e empates oficiais', boardBullet],
       to: '/xadrez',
       open: config?.xadrezEnabled ?? false,
+    },
+  {
+      key: 'lucky',
+      title: 'Números da sorte',
+      art: <MiniCard />,
+      description: 'Receba sua cartela, acompanhe o sorteio ao vivo e torça para completar primeiro.',
+      bullets: [
+        `Rodadas a cada ${config?.roundIntervalMinutes ?? 15} minutos`,
+        `Começa com no mínimo ${config?.minPlayersPerRound ?? 5} jogadores - senão, a chave volta`,
+        'Prêmio acumulado cresce a cada jogador',
+      ],
+      to: '/app',
+      open: true,
     },
   ];
 

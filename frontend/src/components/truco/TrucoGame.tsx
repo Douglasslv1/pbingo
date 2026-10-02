@@ -4,6 +4,8 @@ import { useCountdown } from '../../hooks/useCountdown';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import { useTurnAlert } from '../../hooks/useTurnAlert';
 import type { TrucoAction, TrucoGameView, TrucoPlay, TrucoTableView } from '../../types';
+import GameTable from '../tables/GameTable';
+import VictoryOverlay from '../tables/VictoryOverlay';
 import PlayingCard from './PlayingCard';
 import { cardName, NEXT_VALUE, rankOf, SUIT_SYMBOL, SUITS, VALUE_NAME } from './trucoLabels';
 
@@ -28,7 +30,6 @@ export default function TrucoGame({ table, busy, error, onAction, onComeBack, on
   if (!game || table.mySeat === null) return null;
 
   const mySeat = table.mySeat;
-  const seats = game.handSizes.length;
   const pairs = game.teamMode === 'PAIRS';
   const player = (seat: number) => table.players.find((p) => p.seat === seat);
   const nameOf = (seat: number) => (player(seat)?.isMe ? 'Você' : (player(seat)?.name ?? `Lugar ${seat + 1}`));
@@ -37,12 +38,21 @@ export default function TrucoGame({ table, busy, error, onAction, onComeBack, on
     team === game.myTeam ? (pairs ? 'nós' : 'você') : pairs ? 'eles' : nameOf((mySeat + 1) % 2);
   const finished = game.status === 'FINISHED';
   const urgent = countdown !== null && countdown <= 10;
+  const seats = game.handSizes.map((size, seat) => ({
+    name: nameOf(seat),
+    away: player(seat)?.away,
+    hand: seat !== mySeat && (
+      <div className="truco-backs" aria-label={`${size} cartas`}>
+        {Array.from({ length: size }, (_, i) => (
+          <PlayingCard key={i} card={null} size="small" />
+        ))}
+      </div>
+    ),
+  }));
   const iAmAway = player(mySeat)?.away ?? false;
   const has = (type: TrucoAction['type']) => game.legalActions.some((action) => action.type === type);
   const canPlay = has('PLAY');
   const canCover = game.legalActions.some((action) => action.type === 'PLAY' && action.covered);
-  const others = Array.from({ length: seats - 1 }, (_, index) => (mySeat + index + 1) % seats);
-  const isPartner = (seat: number) => pairs && seat % 2 === mySeat % 2;
 
   function play(index: number) {
     onAction({ type: 'PLAY', index, ...(covered && canCover ? { covered: true } : {}) });
@@ -103,48 +113,30 @@ export default function TrucoGame({ table, busy, error, onAction, onComeBack, on
         })}
       </ol>
 
-      <div className="domino-opponents">
-        {others.map((seat) => (
-          <div key={seat} className={!finished && game.actingSeat === seat ? 'domino-opponent turn' : 'domino-opponent'}>
-            <strong>
-              {nameOf(seat)}
-              {isPartner(seat) && <span className="partner-badge">parceiro</span>}
-            </strong>
-            {player(seat)?.away && <span className="away-badge">ausente</span>}
-            {!finished && game.actingSeat === seat && countdown !== null && (
-              <span className={urgent ? 'turn-timer urgent' : 'turn-timer'}>{countdown}s</span>
-            )}
-            <div className="truco-backs" aria-label={`${game.handSizes[seat]} cartas`}>
-              {Array.from({ length: game.handSizes[seat] }, (_, i) => (
-                <PlayingCard key={i} card={null} size="small" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className={showingPrevious ? 'truco-table previous' : 'truco-table'}>
-        {showingPrevious && (
-          <span className="label truco-table-title">
-            {newHand ? 'Última rodada da mão anterior' : 'Rodada anterior'}
-            {lastRound.winner === null ? ': empate' : `: venceu ${teamName(lastRound.winner)}`}
-          </span>
-        )}
-        {shownPlays.length === 0 && <p className="label">Mesa vazia. As cartas jogadas aparecem aqui.</p>}
-        {shownPlays.map((play) => (
-          <div key={play.seat} className="truco-play">
-            <PlayingCard
-              card={play.card}
-              manilha={play.card !== null && rankOf(play.card) === game.manilha}
-              label={play.covered ? 'Carta coberta' : undefined}
-            />
-            <span className="label">
-              {nameOf(play.seat)}
-              {play.covered && ' (coberta)'}
+      <GameTable seats={seats} mySeat={mySeat} turnSeat={finished ? null : game.actingSeat} countdown={countdown} pairs={pairs}>
+        <div className={showingPrevious ? 'truco-table previous' : 'truco-table'}>
+          {showingPrevious && (
+            <span className="label truco-table-title">
+              {newHand ? 'Última rodada da mão anterior' : 'Rodada anterior'}
+              {lastRound.winner === null ? ': empate' : `: venceu ${teamName(lastRound.winner)}`}
             </span>
-          </div>
-        ))}
-      </div>
+          )}
+          {shownPlays.length === 0 && <p className="label">Mesa vazia. As cartas jogadas aparecem aqui.</p>}
+          {shownPlays.map((play) => (
+            <div key={play.seat} className="truco-play">
+              <PlayingCard
+                card={play.card}
+                manilha={play.card !== null && rankOf(play.card) === game.manilha}
+                label={play.covered ? 'Carta coberta' : undefined}
+              />
+              <span className="label">
+                {nameOf(play.seat)}
+                {play.covered && ' (coberta)'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </GameTable>
 
       {finished ? (
         <TrucoResult table={table} game={game} teamName={teamName} onBackToLobby={onBackToLobby} />
@@ -315,13 +307,13 @@ function TrucoResult({
   const mine = game.score[game.myTeam];
   const theirs = game.score[1 - game.myTeam];
   const winner = iWon ? (pairs ? 'Vocês' : 'Você') : teamName(game.winner!).replace(/^./, (c) => c.toUpperCase());
+  const detail = `${winner} ${pairs ? 'venceram' : 'venceu'} por ${iWon ? mine : theirs} × ${iWon ? theirs : mine}.`;
 
   return (
     <div className="domino-result">
+      <VictoryOverlay won={iWon} headline={iWon ? 'Vitória!' : 'Derrota'} detail={detail} />
       <h3>{iWon ? `Vitória! ${Number(prize) > 0 ? `+${formatBrl(prize ?? 0)}` : ''}` : 'Fim de partida'}</h3>
-      <p>
-        {winner} {pairs ? 'venceram' : 'venceu'} por {iWon ? mine : theirs} × {iWon ? theirs : mine}.
-      </p>
+      <p>{detail}</p>
       {game.lastHand && <p className="label">{describeLastHand(game.lastHand, teamName)}</p>}
       <button type="button" onClick={onBackToLobby}>
         Jogar de novo

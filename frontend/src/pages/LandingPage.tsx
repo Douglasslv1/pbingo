@@ -1,36 +1,40 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import DominoTile from '../components/domino/DominoTile';
-import FloatingBalls from '../components/FloatingBalls';
 import GameCards from '../components/GameCards';
-import LiveRoundTeaser from '../components/LiveRoundTeaser';
 import Logo from '../components/Logo';
-import { formatBrl } from '../format';
+import PlayingCard from '../components/truco/PlayingCard';
 import { useGameConfig } from '../hooks/useGameConfig';
 
 const STEPS = [
-  { title: 'Crie sua conta', text: 'Cadastro rápido com nome, e-mail e data de nascimento. Sua carteira já nasce pronta.' },
-  { title: 'Compre chaves via Pix', text: 'Cada chave é uma entrada em uma rodada ou mesa. O Pix cai na hora.' },
-  { title: 'Escolha o jogo', text: 'Números da sorte para torcer; Dominó, Truco, Damas e Xadrez para mostrar estratégia.' },
-  { title: 'Ganhe e saque', text: 'O prêmio vai para o seu saldo e você saca via Pix para a sua conta.' },
+  {
+    title: 'Crie sua conta',
+    text: 'Cadastro rápido com nome, e-mail e data de nascimento. Depois escolha o apelido que os outros jogadores vão ver.',
+  },
+  { title: 'Escolha o jogo', text: 'Dominó, truco, damas ou xadrez: mano a mano, em duplas ou com quatro na mesa.' },
+  {
+    title: 'Jogue em tempo real',
+    text: 'A mesa completa e a partida começa sozinha. Cada um tem seu tempo por jogada, sem ninguém travar o jogo.',
+  },
+  { title: 'Suba no ranking', text: 'Cada vitória conta no ranking do mês e no geral. Mostre quem manda na mesa.' },
 ];
 
 const TRUST_POINTS = [
   {
-    title: 'Ninguém escolhe o resultado',
-    text: 'Os números e as pedras são sorteados pelo servidor com gerador aleatório criptográfico, sem intervenção de ninguém.',
+    title: 'Embaralhamento justo',
+    text: 'Pedras e cartas são embaralhadas pelo servidor com gerador aleatório criptográfico. Ninguém vê a mão de ninguém.',
   },
   {
-    title: 'Seu saldo sempre confere',
-    text: 'Cada chave e cada centavo ficam registrados. O sistema não deixa nenhum saldo ficar negativo.',
+    title: 'Regras oficiais',
+    text: 'Xadrez pela FIDE, damas pela regra brasileira, truco paulista e dominó como se joga no Brasil, com as regras sempre à mão.',
   },
   {
-    title: 'Jogo e prêmio separados',
-    text: 'Chaves para jogar e prêmios em dinheiro ficam em saldos diferentes - você sempre sabe o que pode sacar.',
+    title: 'Ninguém trava a partida',
+    text: 'Cada jogada tem seu tempo. Se alguém cai, o sistema joga por ele até voltar - e a mesa segue.',
   },
   {
-    title: 'Sem jogadores, sem prejuízo',
-    text: 'Rodada ou mesa que não completa o mínimo de jogadores é cancelada e a sua chave volta na hora.',
+    title: 'Mesas com entrada, sem surpresa',
+    text: 'Nas mesas com entrada, cada chave fica registrada na sua carteira e a mesa que não completa devolve a chave na hora.',
   },
 ];
 
@@ -39,29 +43,31 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
-/** Composicao do topo: bolinhas da sorte e pedras de domino flutuando. */
+/** Composicao do topo: pecas dos jogos de mesa flutuando. */
 function HeroArt() {
   const float = (delay: number, distance = 10) => ({
     animate: { y: [0, -distance, 0] },
-    transition: { duration: 4, repeat: Infinity, ease: 'easeInOut' as const, delay },
+    transition: { duration: 5, repeat: Infinity, ease: 'easeInOut' as const, delay },
   });
 
   return (
     <div className="hero-art" aria-hidden="true">
-      <motion.div className="hero-ball big" {...float(0, 12)}>
-        7
+      <motion.div className="hero-piece knight" {...float(0, 12)}>
+        <span className="chess-piece w">♞{'︎'}</span>
       </motion.div>
-      <motion.div className="hero-ball" {...float(0.8)}>
-        23
+      <motion.div className="hero-piece checkers" {...float(0.9, 8)}>
+        <span className="checker b king">♛{'︎'}</span>
+        <span className="checker w" />
       </motion.div>
-      <motion.div className="hero-ball small" {...float(1.6, 8)}>
-        61
+      <motion.div className="hero-piece cards" {...float(1.6)}>
+        <PlayingCard card="4P" size="large" />
+        <PlayingCard card="7C" size="large" />
       </motion.div>
-      <motion.div className="hero-tile one" {...float(0.4, 14)}>
-        <DominoTile first={6} second={6} vertical size={44} />
+      <motion.div className="hero-piece tile-one" {...float(0.4, 14)}>
+        <DominoTile first={6} second={6} vertical size={40} />
       </motion.div>
-      <motion.div className="hero-tile two" {...float(1.2, 10)}>
-        <DominoTile first={3} second={5} size={40} />
+      <motion.div className="hero-piece tile-two" {...float(1.2, 10)}>
+        <DominoTile first={3} second={5} size={36} />
       </motion.div>
     </div>
   );
@@ -69,8 +75,7 @@ function HeroArt() {
 
 export default function LandingPage() {
   const config = useGameConfig();
-  const keyPrice = config ? formatBrl(config.creditPriceBrl * config.ticketPriceCredits) : 'R$ 3,50';
-  const prizeShare = config ? 100 - config.houseFeePercent : 80;
+  const freeGames = [config?.dominoFree && 'dominó', config?.boardGamesFree && 'damas e xadrez'].filter(Boolean).join(', ');
 
   return (
     <div className="landing">
@@ -80,6 +85,7 @@ export default function LandingPage() {
         </Link>
         <div className="landing-nav-links">
           <a href="#jogos">Jogos</a>
+          <Link to="/ranking">Ranking</Link>
           <a href="#como-funciona">Como funciona</a>
           <Link to="/suporte">Suporte</Link>
           <Link to="/app" className="cta-button cta-small">
@@ -89,7 +95,6 @@ export default function LandingPage() {
       </nav>
 
       <header className="hero">
-        <FloatingBalls count={7} />
         <div className="hero-content">
           <motion.span
             className="hero-eyebrow"
@@ -97,18 +102,18 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            Números da sorte · Dominó · Truco · Damas · Xadrez
+            Dominó · Truco · Damas · Xadrez
           </motion.span>
           <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            Jogue com sorte e estratégia. <span>Ganhe prêmios de verdade.</span>
+            Os jogos de mesa de sempre, <span>agora online.</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Cinco jogos, uma carteira só. Compre chaves via Pix, escolha como quer jogar e saque os seus prêmios direto na
-            sua conta.
+            Sente à mesa com gente de todo o Brasil para uma partida de dominó, um truco em dupla ou um mano a mano de
+            damas e xadrez. Pelo celular ou computador, sem instalar nada.
           </motion.p>
           <motion.div
             className="hero-actions"
@@ -118,34 +123,35 @@ export default function LandingPage() {
           >
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
               <Link to="/app" className="cta-button">
-                Começar a jogar
+                Jogar agora
               </Link>
             </motion.div>
             <a href="#jogos" className="cta-secondary">
               Conhecer os jogos
             </a>
           </motion.div>
-          <LiveRoundTeaser />
         </div>
         <HeroArt />
       </header>
 
       <section className="stats-strip" aria-label="Resumo">
         <div>
-          <strong>{keyPrice}</strong>
-          <span>por chave</span>
+          <strong>4 jogos</strong>
+          <span>dominó, truco, damas e xadrez</span>
+        </div>
+        {freeGames && (
+          <div>
+            <strong>Grátis</strong>
+            <span>{freeGames} sem pagar nada</span>
+          </div>
+        )}
+        <div>
+          <strong>Ranking</strong>
+          <span>do mês e geral, em cada jogo</span>
         </div>
         <div>
-          <strong>{prizeShare}%</strong>
-          <span>de cada entrada vira prêmio</span>
-        </div>
-        <div>
-          <strong>Pix</strong>
-          <span>para comprar e sacar</span>
-        </div>
-        <div>
-          <strong>18+</strong>
-          <span>só para maiores</span>
+          <strong>Tempo real</strong>
+          <span>partidas rápidas, sem instalar nada</span>
         </div>
       </section>
 
@@ -176,7 +182,7 @@ export default function LandingPage() {
       </section>
 
       <section className="trust-section">
-        <h2>Por que confiar no Pbingu</h2>
+        <h2>Jogo limpo, do começo ao fim</h2>
         <div className="trust-grid">
           {TRUST_POINTS.map((point, index) => (
             <motion.div
@@ -196,8 +202,8 @@ export default function LandingPage() {
       </section>
 
       <section className="final-cta">
-        <h2>Pronto para testar a sua sorte?</h2>
-        <p>Crie sua conta em menos de um minuto.</p>
+        <h2>Sua mesa está esperando</h2>
+        <p>Crie sua conta e jogue a primeira partida em menos de um minuto.</p>
         <Link to="/app" className="cta-button">
           Criar minha conta
         </Link>

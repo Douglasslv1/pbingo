@@ -7,6 +7,8 @@ import { useGameConfig } from '../../hooks/useGameConfig';
 import DominoBoard from './DominoBoard';
 import DominoTile, { DominoTileBack } from './DominoTile';
 import { MODE_LABELS, TEAM_LABELS } from './dominoLabels';
+import GameTable from '../tables/GameTable';
+import VictoryOverlay from '../tables/VictoryOverlay';
 
 interface Props {
   table: DominoTableView;
@@ -35,11 +37,9 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
     const player = table.players.find((p) => p.seat === seat);
     return player?.isMe ? 'Você' : (player?.name ?? `Lugar ${seat + 1}`);
   };
-  const isPartner = (seat: number) => table.teamMode === 'PAIRS' && seat !== mySeat && seat % 2 === mySeat % 2;
   const finished = game.status === 'FINISHED';
   const myTurn = !finished && game.currentSeat === mySeat;
   const iAmAway = table.players.find((p) => p.isMe)?.away ?? false;
-  const isAway = (seat: number) => table.players.find((p) => p.seat === seat)?.away ?? false;
   const urgent = countdown !== null && countdown <= 10;
 
   const plays = game.legalActions.filter((a): a is Extract<DominoAction, { type: 'PLAY' }> => a.type === 'PLAY');
@@ -61,9 +61,17 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
     }
   }
 
-  // Adversarios na ordem de jogo a partir de mim
-  const seatCount = game.handSizes.length;
-  const opponents = Array.from({ length: seatCount - 1 }, (_, index) => (mySeat + index + 1) % seatCount);
+  const seats = game.handSizes.map((size, seat) => ({
+    name: nameOf(seat),
+    away: table.players.find((p) => p.seat === seat)?.away,
+    hand: seat !== mySeat && (
+      <div className="domino-backs" aria-label={`${size} pedras`}>
+        {Array.from({ length: size }, (_, i) => (
+          <DominoTileBack key={i} />
+        ))}
+      </div>
+    ),
+  }));
 
   return (
     <div className="card domino-game">
@@ -79,32 +87,20 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
         </span>
       </div>
 
-      <div className="domino-opponents">
-        {opponents.map((seat) => (
-          <div key={seat} className={!finished && game.currentSeat === seat ? 'domino-opponent turn' : 'domino-opponent'}>
-            <strong>
-              {nameOf(seat)}
-              {isPartner(seat) && <span className="partner-badge">parceiro</span>}
-            </strong>
-            {isAway(seat) && <span className="away-badge">ausente</span>}
-            {!finished && game.currentSeat === seat && countdown !== null && (
-              <span className={urgent ? 'turn-timer urgent' : 'turn-timer'}>{countdown}s</span>
-            )}
-            <div className="domino-backs" aria-label={`${game.handSizes[seat]} pedras`}>
-              {Array.from({ length: game.handSizes[seat] }, (_, i) => (
-                <DominoTileBack key={i} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <DominoBoard
-        line={game.line}
-        anchorIndex={game.anchorIndex}
-        targetSides={myTurn && selected ? selectedSides : []}
-        onPlaySide={(side) => selected && playTile(selected, side)}
-      />
+      <GameTable
+        seats={seats}
+        mySeat={mySeat}
+        turnSeat={finished ? null : game.currentSeat}
+        countdown={countdown}
+        pairs={table.teamMode === 'PAIRS'}
+      >
+        <DominoBoard
+          line={game.line}
+          anchorIndex={game.anchorIndex}
+          targetSides={myTurn && selected ? selectedSides : []}
+          onPlaySide={(side) => selected && playTile(selected, side)}
+        />
+      </GameTable>
 
       {finished && game.result ? (
         <DominoResult table={table} nameOf={nameOf} onBackToLobby={onBackToLobby} />
@@ -195,15 +191,14 @@ function DominoResult({
   const me = table.players.find((player) => player.isMe);
   const iWon = table.mySeat !== null && result.winnerSeats.includes(table.mySeat);
   const winners = result.winnerSeats.map(nameOf).join(' e ');
+  const won = result.reason === 'DOMINO' ? 'batendo' : 'com menos pontos na mão';
+  const detail = `${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} ${won}.`;
 
   return (
     <div className="domino-result">
+      <VictoryOverlay won={iWon} headline={result.reason === 'DOMINO' ? 'Bateu!' : 'Trancou!'} detail={detail} />
       <h3>{iWon ? `Você venceu! +${formatBrl(me?.prizeAmount ?? 0)}` : 'Fim de partida'}</h3>
-      <p>
-        {result.reason === 'DOMINO'
-          ? `${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} batendo.`
-          : `Jogo trancado: ${winners} ${result.winnerSeats.length > 1 ? 'venceram' : 'venceu'} com menos pontos na mão.`}
-      </p>
+      <p>{result.reason === 'DOMINO' ? detail : `Jogo trancado: ${detail}`}</p>
 
       {game.revealedHands && (
         <div className="domino-revealed">

@@ -12,28 +12,30 @@ interface Props {
   onPlaySide: (side: DominoSide) => void;
 }
 
-const TILE_SIZE = 26;
-const GAP = 4;
-// Pedra deitada (2x o lado menor) + espaco entre pedras
-const SLOT_WIDTH = TILE_SIZE * 2 + GAP;
+const GAP = 2;
 
-/** Colunas que cabem na largura disponivel, sempre impar para a primeira pedra ficar no meio. */
-function useColumns() {
+/**
+ * Tamanho da pedra e colunas que cabem na largura disponivel (sempre impar, para a primeira pedra
+ * ficar no meio). Todas as pedras ficam deitadas, encostadas umas nas outras.
+ */
+function useLayout() {
   const ref = useRef<HTMLDivElement>(null);
-  const [columns, setColumns] = useState(5);
+  const [layout, setLayout] = useState({ size: 26, columns: 5 });
 
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
-      const fit = Math.max(3, Math.floor((entry.contentRect.width + GAP) / SLOT_WIDTH));
-      setColumns(fit % 2 === 0 ? fit - 1 : fit);
+      const width = entry.contentRect.width;
+      const size = width < 300 ? 17 : width < 480 ? 22 : 28;
+      const fit = Math.max(3, Math.floor((width + GAP) / (size * 2 + GAP)));
+      setLayout({ size, columns: fit % 2 === 0 ? fit - 1 : fit });
     });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
-  return { ref, columns };
+  return { ref, ...layout };
 }
 
 interface Cell {
@@ -67,7 +69,7 @@ function layout(length: number, anchor: number, columns: number): Cell[] {
 }
 
 export default function DominoBoard({ line, anchorIndex, targetSides, onPlaySide }: Props) {
-  const { ref, columns } = useColumns();
+  const { ref, size, columns } = useLayout();
   const cells = layout(line.length, anchorIndex, columns);
   const topRow = Math.min(0, ...cells.map((cell) => cell.row));
   const lastIndex = line.length - 1;
@@ -77,7 +79,7 @@ export default function DominoBoard({ line, anchorIndex, targetSides, onPlaySide
       {line.length === 0 ? (
         <p className="label">A mesa está vazia. Quem tem a maior carroça começa.</p>
       ) : (
-        <div className="domino-grid" style={{ gridTemplateColumns: `repeat(${columns}, ${SLOT_WIDTH - GAP}px)`, gap: GAP }}>
+        <div className="domino-grid" style={{ gridTemplateColumns: `repeat(${columns}, ${size * 2}px)`, gap: `${GAP * 2}px ${GAP}px` }}>
           {cells.map(({ index, row, col, flipped }) => {
             const placed = line[index];
             const side: DominoSide | null = index === 0 ? 'LEFT' : index === lastIndex ? 'RIGHT' : null;
@@ -96,8 +98,7 @@ export default function DominoBoard({ line, anchorIndex, targetSides, onPlaySide
                 <DominoTile
                   first={first}
                   second={second}
-                  vertical={placed.left === placed.right}
-                  size={TILE_SIZE}
+                  size={size}
                   highlighted={isTarget}
                   onClick={isTarget && side ? () => onPlaySide(side) : undefined}
                   label={isTarget ? `Jogar nesta ponta (${side === 'LEFT' ? placed.left : placed.right})` : undefined}

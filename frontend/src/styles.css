@@ -532,8 +532,7 @@ button.link {
   border-radius: 28px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 85% 30%, rgba(250, 204, 21, 0.14), transparent 45%),
-    radial-gradient(circle at 10% 90%, rgba(34, 197, 94, 0.18), transparent 50%),
+    radial-gradient(ellipse at 75% 45%, rgba(11, 107, 79, 0.55), transparent 60%),
     linear-gradient(160deg, #13203a, #0b1324);
   border: 1px solid var(--border);
 }
@@ -547,8 +546,8 @@ button.link {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(250, 204, 21, 0.12);
-  color: #fde68a;
+  background: rgba(56, 189, 248, 0.12);
+  color: #7dd3fc;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -586,108 +585,49 @@ button.link {
   height: 300px;
 }
 
-.hero-ball {
+.hero-piece {
   position: absolute;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fef9c3, #facc15 70%, #ca8a04);
-  color: #422006;
-  font-weight: 800;
-  font-size: 1.8rem;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
-  left: 12%;
-  top: 44%;
-}
-
-.hero-ball.big {
-  width: 120px;
-  height: 120px;
-  font-size: 2.6rem;
-  left: 34%;
-  top: 10%;
-}
-
-.hero-ball.small {
-  width: 64px;
-  height: 64px;
-  font-size: 1.3rem;
-  left: 70%;
-  top: 70%;
-}
-
-.hero-tile {
-  position: absolute;
+  gap: 6px;
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.4));
 }
 
-.hero-tile.one {
-  left: 72%;
-  top: 8%;
+.hero-piece.knight {
+  left: 8%;
+  top: 6%;
+}
+
+.hero-piece.knight .chess-piece {
+  font-size: 7rem;
+}
+
+.hero-piece.checkers {
+  left: 56%;
+  top: 4%;
+}
+
+.hero-piece.checkers .checker {
+  width: 58px;
+  height: 58px;
+  font-size: 1.6rem;
+}
+
+.hero-piece.cards {
+  left: 46%;
+  top: 56%;
+  rotate: -8deg;
+}
+
+.hero-piece.tile-one {
+  left: 82%;
+  top: 30%;
   rotate: 12deg;
 }
 
-.hero-tile.two {
-  left: 30%;
-  top: 72%;
+.hero-piece.tile-two {
+  left: 6%;
+  top: 70%;
   rotate: -10deg;
-}
-
-.floating-balls {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.35;
-}
-
-.floating-ball {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.5), rgba(34, 197, 94, 0.1));
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(226, 232, 240, 0.55);
-  font-size: 0.65rem;
-  font-weight: 700;
-}
-
-.live-teaser {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 0.8rem;
-  color: var(--text);
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(1.4);
-  }
 }
 
 /* Faixa de numeros */
@@ -695,7 +635,7 @@ button.link {
 .landing .stats-strip {
   margin-top: 24px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -889,7 +829,7 @@ button.link {
   text-align: center;
   padding: 40px 24px;
   border-radius: 24px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(250, 204, 21, 0.08));
+  background: linear-gradient(135deg, rgba(11, 107, 79, 0.35), rgba(56, 189, 248, 0.08));
   border: 1px solid var(--border);
 }
 
@@ -978,10 +918,8 @@ button.link {
     height: 170px;
   }
 
-  .hero-ball.big {
-    width: 96px;
-    height: 96px;
-    font-size: 2rem;
+  .hero-piece.knight .chess-piece {
+    font-size: 5rem;
   }
 }
 
@@ -1349,36 +1287,6 @@ label.checkbox input {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-}
-
-.domino-opponents {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.domino-opponent {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.domino-opponent strong {
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.domino-opponent.turn {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .partner-badge {
@@ -1781,7 +1689,7 @@ label.checkbox input {
 }
 
 .truco-score > div.mine {
-  border-color: var(--accent);
+  border-color: #38bdf8;
 }
 
 .truco-score strong {
@@ -2043,9 +1951,9 @@ button.truco-call {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   width: 100%;
-  max-width: 480px;
+  max-width: 560px;
   aspect-ratio: 1;
-  margin: 10px auto;
+  margin: 0 auto;
   border: 2px solid #3f2d1d;
   border-radius: 4px;
   overflow: hidden;
@@ -2159,12 +2067,6 @@ button.truco-call {
   justify-content: center;
 }
 
-.board-game .domino-opponent {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
 /* Cards de damas e xadrez na lista de jogos */
 .game-card-art .checker {
   width: 34px;
@@ -2178,4 +2080,247 @@ button.truco-call {
 
 .games-page h1 {
   margin-top: 0;
+}
+
+/* Mesa de jogo: cada jogador numa ponta, o jogo no centro */
+
+.app-shell:has(.game-table) {
+  max-width: 1040px;
+}
+
+.game-table {
+  display: grid;
+  grid-template:
+    '. top .' auto
+    'left center right' 1fr
+    '. bottom .' auto / auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at center, #0b6b4f, #064e3b 70%);
+  border: 6px solid #3f2d1d;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.game-table-center {
+  grid-area: center;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* O centro ja esta sobre o feltro */
+.game-table .domino-board,
+.game-table .truco-table {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.seat-plate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid var(--border);
+  min-width: 0;
+}
+
+.seat-plate strong {
+  font-size: 0.85rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-plate.top {
+  grid-area: top;
+  justify-self: center;
+}
+
+.seat-plate.bottom {
+  grid-area: bottom;
+  justify-self: center;
+}
+
+.seat-plate.left,
+.seat-plate.right {
+  flex-direction: column;
+  align-self: center;
+  width: 92px;
+  text-align: center;
+}
+
+.seat-plate.left {
+  grid-area: left;
+}
+
+.seat-plate.right {
+  grid-area: right;
+}
+
+/* Lados: azul para voce e seu parceiro, laranja para os adversarios */
+.seat-plate.mine {
+  border-color: #38bdf8;
+}
+
+.seat-plate.theirs {
+  border-color: #fb923c;
+}
+
+.seat-plate.turn {
+  box-shadow: 0 0 0 3px var(--accent), 0 0 18px rgba(34, 197, 94, 0.6);
+}
+
+.seat-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--muted);
+}
+
+.seat-plate.mine .seat-tag {
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+}
+
+.seat-plate.theirs .seat-tag {
+  background: rgba(251, 146, 60, 0.18);
+  color: #fdba74;
+}
+
+.seat-plate .domino-backs {
+  justify-content: center;
+}
+
+/* Cartas das laterais em leque vertical, para nao alargar a placa */
+.seat-plate.left .truco-backs,
+.seat-plate.right .truco-backs {
+  flex-direction: column;
+  align-items: center;
+}
+
+.seat-plate.left .truco-backs .playing-card + .playing-card,
+.seat-plate.right .truco-backs .playing-card + .playing-card {
+  margin-top: calc(var(--w) * -0.9);
+}
+
+@media (max-width: 560px) {
+  .card.domino-game {
+    padding: 12px;
+  }
+
+  .game-table {
+    gap: 4px;
+    padding: 4px;
+    border-width: 4px;
+  }
+
+  .seat-plate {
+    padding: 4px 6px;
+  }
+
+  .seat-plate.left,
+  .seat-plate.right {
+    width: 50px;
+  }
+
+  /* Nas laterais a cor da borda ja diz o lado */
+  .seat-plate.left .seat-tag,
+  .seat-plate.right .seat-tag {
+    display: none;
+  }
+
+  .seat-plate .away-badge {
+    align-self: center;
+    font-size: 0.6rem;
+    padding: 0 3px;
+  }
+
+  .seat-plate strong {
+    font-size: 0.75rem;
+  }
+
+  .seat-plate.left .playing-card,
+  .seat-plate.right .playing-card {
+    --w: 20px;
+  }
+}
+
+/* Fim de partida */
+
+.victory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.7);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.confetti {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.victory-card {
+  position: relative;
+  text-align: center;
+  padding: 28px 36px;
+  border-radius: 24px;
+  background: var(--card-bg);
+  border: 3px solid var(--border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  max-width: 420px;
+}
+
+.victory-card h2 {
+  margin: 0 0 8px;
+  font-size: clamp(2.2rem, 10vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.victory-card p {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.victory-overlay.won .victory-card {
+  border-color: #facc15;
+}
+
+.victory-overlay.won h2 {
+  background: linear-gradient(180deg, #fef08a, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.victory-overlay.lost h2 {
+  color: #fb923c;
+}
+
+.victory-overlay.draw h2 {
+  color: #7dd3fc;
 }
