@@ -66,6 +66,8 @@ export interface AuthUser {
   termsAccepted?: boolean;
   /** null: ainda nao escolheu (undefined em sessoes salvas antes do perfil). */
   nickname?: string | null;
+  /** Ja informou a data de nascimento (o aceite de novos termos nao pede de novo). */
+  hasBirthDate?: boolean;
 }
 
 export interface GameStats {

@@ -10,6 +10,7 @@ export default function AcceptTermsCard() {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const askBirthDate = !auth?.user.hasBirthDate;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -17,7 +18,7 @@ export default function AcceptTermsCard() {
     setError(null);
     setLoading(true);
     try {
-      updateUser(await api.acceptTerms(auth.token, birthDate));
+      updateUser(await api.acceptTerms(auth.token, askBirthDate ? birthDate : undefined));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
     } finally {
@@ -29,12 +30,12 @@ export default function AcceptTermsCard() {
     <div className="card auth-card">
       <h2>Antes de continuar</h2>
       <p className="hint intro-hint">
-        Atualizamos nossos Termos de Uso e a Política de Privacidade. Para jogar, comprar chaves ou sacar, confirme sua
-        idade e aceite os documentos.
+        Atualizamos nossos Termos de Uso e a Política de Privacidade. Para jogar, comprar chaves ou sacar,
+        {askBirthDate ? ' confirme sua idade e aceite os documentos.' : ' aceite os documentos.'}
       </p>
       <form onSubmit={handleSubmit}>
         <TermsConsentFields
-          birthDate={birthDate}
+          birthDate={askBirthDate ? birthDate : undefined}
           onBirthDateChange={setBirthDate}
           accepted={accepted}
           onAcceptedChange={setAccepted}

@@ -62,7 +62,7 @@ export const api = {
 
   me: (token: string) => request<AuthUser>('/auth/me', {}, token),
 
-  acceptTerms: (token: string, birthDate: string) =>
+  acceptTerms: (token: string, birthDate?: string) =>
     request<AuthUser>('/auth/accept-terms', { method: 'POST', body: JSON.stringify({ birthDate, acceptTerms: true }) }, token),
 
   forgotPassword: (email: string) =>

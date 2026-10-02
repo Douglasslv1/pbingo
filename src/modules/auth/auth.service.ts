@@ -16,6 +16,8 @@ function toPublicUser(user: UserRecord) {
     role: user.role,
     nickname: user.nickname,
     termsAccepted: hasAcceptedCurrentTerms(user),
+    /** Ja informou a data de nascimento: o aceite de uma nova versao dos termos nao pede de novo. */
+    hasBirthDate: user.birthDate !== null,
   };
 }
 
@@ -72,11 +74,22 @@ export async function getCurrentUser(userId: string) {
   return toPublicUser(user);
 }
 
-/** Contas criadas antes dos termos (ou de uma nova versao deles) aceitam aqui e informam a data de nascimento. */
+/**
+ * Contas criadas antes dos termos (ou de uma nova versao deles) aceitam aqui. A data de nascimento so e pedida
+ * a quem ainda nao a informou; a ja registrada nao muda.
+ */
 export async function acceptTerms(userId: string, input: AcceptTermsInput) {
+  const current = await prisma.user.findUnique({ where: { id: userId }, select: { birthDate: true } });
+  if (!current) {
+    throw new AppError('Usuário não encontrado', 404);
+  }
+  const birthDate = current.birthDate ?? input.birthDate;
+  if (!birthDate) {
+    throw new AppError('Informe a data de nascimento', 400);
+  }
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { birthDate: input.birthDate, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION },
+    data: { birthDate, termsAcceptedAt: new Date(), termsVersion: CURRENT_TERMS_VERSION },
   });
   return toPublicUser(user);
 }

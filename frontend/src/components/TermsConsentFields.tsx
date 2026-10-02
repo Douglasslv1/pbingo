@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 
 interface Props {
-  birthDate: string;
+  /** Ausente: a data ja esta registrada na conta e o campo nao aparece. */
+  birthDate?: string;
   onBirthDateChange: (value: string) => void;
   accepted: boolean;
   onAcceptedChange: (value: boolean) => void;
@@ -13,10 +14,12 @@ export default function TermsConsentFields({ birthDate, onBirthDateChange, accep
 
   return (
     <>
-      <label>
-        Data de nascimento
-        <input type="date" value={birthDate} max={today} onChange={(e) => onBirthDateChange(e.target.value)} required />
-      </label>
+      {birthDate !== undefined && (
+        <label>
+          Data de nascimento
+          <input type="date" value={birthDate} max={today} onChange={(e) => onBirthDateChange(e.target.value)} required />
+        </label>
+      )}
       <label className="checkbox">
         <input type="checkbox" checked={accepted} onChange={(e) => onAcceptedChange(e.target.checked)} required />
         <span>

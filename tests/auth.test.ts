@@ -127,6 +127,35 @@ describe('Maioridade e aceite dos termos', () => {
     expect(joined.status).toBe(201);
   });
 
+  it('nova versao dos termos: quem ja informou a data de nascimento so aceita, sem digitar de novo', async () => {
+    const { token, user } = await registerTestUser();
+    const { birthDate } = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    await prisma.user.update({ where: { id: user.id }, data: { termsVersion: 'versao-antiga' } });
+
+    const me = await request(app).get('/auth/me').set('Authorization', `Bearer ${token}`);
+    expect(me.body).toMatchObject({ termsAccepted: false, hasBirthDate: true });
+
+    const accepted = await request(app)
+      .post('/auth/accept-terms')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ acceptTerms: true });
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.termsAccepted).toBe(true);
+    const saved = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(saved.birthDate).toEqual(birthDate);
+  });
+
+  it('sem data de nascimento registrada, o aceite exige a data', async () => {
+    const { token, user } = await registerTestUser();
+    await prisma.user.update({ where: { id: user.id }, data: { termsVersion: null, birthDate: null } });
+
+    const missing = await request(app)
+      .post('/auth/accept-terms')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ acceptTerms: true });
+    expect(missing.status).toBe(400);
+  });
+
   it('/auth/me devolve o papel atualizado (admin promovido nao precisa sair e entrar)', async () => {
     const { token, user } = await registerTestUser();
     await prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });

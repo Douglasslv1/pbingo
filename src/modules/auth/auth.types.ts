@@ -10,7 +10,7 @@ export const registerSchema = z.object({
 });
 
 export const acceptTermsSchema = z.object({
-  birthDate: birthDateSchema,
+  birthDate: birthDateSchema.optional(),
   acceptTerms: acceptTermsField,
 });
 
