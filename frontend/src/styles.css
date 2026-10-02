@@ -61,13 +61,16 @@ a {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
 
+/* Cada aba do tamanho do seu texto: com muitas abas (historico) elas quebram linha em vez de estourar */
 .tab {
-  flex: 1;
-  padding: 8px;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  padding: 8px 12px;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -672,11 +675,13 @@ button.link {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
 }
 
+/* 4 por linha no computador, 2 no tablet e no celular (min-width 0: a arte, reduzida no celular, nao trava a largura) */
 .game-cards > .game-card {
-  flex: 0 1 240px;
+  flex: 0 1 230px;
+  min-width: 0;
 }
 
 .game-card {
@@ -685,9 +690,9 @@ button.link {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
-  padding: 24px 20px;
-  border-radius: 20px;
+  gap: 10px;
+  padding: 20px 16px;
+  border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--card-bg);
 }
@@ -701,24 +706,26 @@ button.link {
 }
 
 .game-card h3 {
-  font-size: 1.4rem;
-  margin: 4px 0 0;
+  font-size: 1.25rem;
+  margin: 0;
 }
 
 .game-card p {
   color: var(--muted);
   margin: 0;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .game-card ul {
   list-style: none;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  line-height: 1.4;
+  gap: 4px;
+  font-size: 0.85rem;
+  line-height: 1.35;
   flex: 1;
 }
 
@@ -729,7 +736,7 @@ button.link {
 }
 
 .game-card-art {
-  height: 110px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -741,8 +748,8 @@ button.link {
 
 .soon-badge {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 10px;
+  right: 10px;
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(250, 204, 21, 0.15);
@@ -920,8 +927,12 @@ button.link {
     grid-template-columns: 1fr;
   }
 
+  .game-cards {
+    gap: 10px;
+  }
+
   .game-cards > .game-card {
-    flex-basis: 100%;
+    flex-basis: calc(50% - 5px);
   }
 
   .steps {
@@ -932,6 +943,36 @@ button.link {
 @media (max-width: 480px) {
   .landing-nav-links a:not(.cta-button) {
     display: none;
+  }
+
+  /* Dois cards por linha no celular: so arte, titulo, descricao e botao */
+  .game-card {
+    padding: 14px 10px;
+    border-radius: 14px;
+  }
+
+  .game-card ul,
+  .soon-badge {
+    display: none;
+  }
+
+  .game-card-art {
+    height: 60px;
+    transform: scale(0.75);
+  }
+
+  .game-card h3 {
+    font-size: 1.05rem;
+  }
+
+  .game-card p {
+    font-size: 0.8rem;
+  }
+
+  .game-card .cta-button,
+  .game-card .cta-disabled {
+    padding: 10px 8px;
+    font-size: 0.85rem;
   }
 
   .steps {
@@ -2110,6 +2151,11 @@ button.truco-call {
 
 .games-page h1 {
   margin-top: 0;
+}
+
+/* A pagina Jogos usa a largura da pagina inicial para os cards ficarem lado a lado */
+.app-shell.games-page {
+  max-width: 1080px;
 }
 
 /* Mesa de jogo: cada jogador numa ponta, o jogo no centro */
