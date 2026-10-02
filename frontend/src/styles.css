@@ -479,6 +479,13 @@ button.link {
   text-decoration: none;
 }
 
+.cta-button,
+.cta-secondary,
+.cta-disabled {
+  max-width: 100%;
+  text-align: center;
+}
+
 .cta-button {
   display: inline-block;
   padding: 13px 26px;
@@ -660,18 +667,26 @@ button.link {
 
 /* Jogos */
 
+/* Flex em vez de grid: o card que sobra na ultima linha fica centralizado */
 .game-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
+}
+
+.game-cards > .game-card {
+  flex: 0 1 240px;
 }
 
 .game-card {
   position: relative;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 12px;
-  padding: 28px;
+  padding: 24px 20px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--card-bg);
@@ -697,21 +712,27 @@ button.link {
 }
 
 .game-card ul {
+  list-style: none;
   margin: 0 0 8px;
-  padding-left: 18px;
-  line-height: 1.8;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.4;
   flex: 1;
 }
 
+/* Botao ocupa a largura do card: textos longos ("Jogar Numeros da sorte") nao estouram */
 .game-card .cta-button,
 .game-card .cta-disabled {
-  align-self: flex-start;
+  align-self: stretch;
 }
 
 .game-card-art {
   height: 110px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .game-card-art.tiles {
@@ -895,9 +916,12 @@ button.link {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .game-cards,
   .trust-grid {
     grid-template-columns: 1fr;
+  }
+
+  .game-cards > .game-card {
+    flex-basis: 100%;
   }
 
   .steps {
@@ -920,6 +944,12 @@ button.link {
 
   .hero-piece.knight .chess-piece {
     font-size: 5rem;
+  }
+
+  .hero-actions > *,
+  .hero-actions .cta-button {
+    flex: 1 1 100%;
+    display: block;
   }
 }
 
