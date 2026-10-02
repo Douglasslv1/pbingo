@@ -118,9 +118,9 @@ describe('Damas e xadrez nas mesas', () => {
     expect(finished.seats.every((seat) => !seat.isWinner)).toBe(true);
   });
 
-  it('o ranking das damas e do xadrez existe e marca a temporada de testes enquanto e gratuito', async () => {
+  it('o ranking das damas e do xadrez vale para as partidas gratuitas', async () => {
     env.boardGamesFree = true;
     const res = await request(app).get('/ranking/xadrez');
-    expect(res.body).toMatchObject({ testSeason: true, maxDailyWinsVsSame: 3 });
+    expect(res.body).toMatchObject({ free: true, maxDailyWinsVsSame: 3 });
   });
 });

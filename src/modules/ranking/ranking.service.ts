@@ -92,8 +92,8 @@ export async function getRanking(game: RankingGame, period: RankingPeriod, viewe
     period,
     minMatches: MIN_MATCHES,
     maxDailyWinsVsSame: game === 'BINGO' ? null : MAX_DAILY_WINS_VS_SAME,
-    // Jogo gratuito: ranking de testes, que recomeca quando as mesas passarem a ser pagas
-    testSeason: (game === 'DOMINO' && env.dominoFree) || (['DAMAS', 'XADREZ'].includes(game) && env.boardGamesFree),
+    // Jogo hoje gratuito: o ranking vale normalmente e e das partidas gratuitas
+    free: (game === 'DOMINO' && env.dominoFree) || (['DAMAS', 'XADREZ'].includes(game) && env.boardGamesFree),
     entries: entries.slice(0, TOP),
     me: entries.find((entry) => entry.isMe) ?? null,
   };

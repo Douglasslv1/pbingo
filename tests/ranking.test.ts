@@ -103,11 +103,11 @@ describe('Ranking', () => {
     ]);
   });
 
-  it('o domino gratuito aparece como temporada de testes; o ranking e publico', async () => {
+  it('o domino gratuito tem ranking normal (marcado como gratuito); o ranking e publico', async () => {
     env.dominoFree = true;
     const res = await ranking('domino');
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ testSeason: true, minMatches: 5, me: null });
+    expect(res.body).toMatchObject({ free: true, minMatches: 5, me: null });
     expect((await ranking('poker')).status).toBe(422);
   });
 });

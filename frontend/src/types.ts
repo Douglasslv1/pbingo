@@ -89,7 +89,8 @@ export interface Ranking {
   period: 'month' | 'all';
   minMatches: number;
   maxDailyWinsVsSame: number | null;
-  testSeason: boolean;
+  /** O jogo e gratuito hoje: o ranking e das partidas gratuitas. */
+  free: boolean;
   entries: RankingEntry[];
   me: RankingEntry | null;
 }

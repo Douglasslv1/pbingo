@@ -86,11 +86,7 @@ export default function RankingPage() {
             </button>
           </div>
 
-          {ranking?.testSeason && (
-            <p className="banner">
-              Temporada de testes: este jogo está gratuito. O ranking recomeça quando as mesas passarem a ser pagas.
-            </p>
-          )}
+          {ranking?.free && <p className="label">Ranking das partidas gratuitas: jogue sem gastar chaves e suba de posição.</p>}
           {error && <p className="error">{error}</p>}
           {ranking && ranking.entries.length === 0 && (
             <p className="label">
