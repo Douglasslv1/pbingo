@@ -10,6 +10,10 @@ export const ABILITY_ICONS: Record<LudoAbilityId, string> = {
   DASH: '🏃',
   FORTIFY: '🏰',
   TRICK: '🃏',
+  MAX_SPEED: '⚡',
+  FORTRESS: '🏯',
+  HUNT: '🎯',
+  CHAOS: '🌀',
 };
 
 export const CHARACTER_ICONS: Record<LudoCharacterId, string> = {
@@ -24,6 +28,7 @@ const TARGET_HINT: Record<LudoAbility['target'], string> = {
   OWN_PIECE: 'Toque numa peça sua destacada.',
   OPPONENT_PIECE: 'Toque numa peça adversária destacada.',
   OWN_PIECE_PAIR: 'Toque nas duas peças suas que vão trocar de lugar.',
+  OWN_AND_OPPONENT: 'Toque numa peça sua e depois na peça adversária que vai trocar de lugar com ela.',
 };
 
 interface Props {
@@ -43,9 +48,10 @@ interface Props {
 export default function LudoAbilities({ game, mySeat, myTurn, busy, selected, onSelect, onUse }: Props) {
   const ability = game.abilities.find((item) => item.id === selected);
   const usable = (id: LudoAbilityId) => myTurn && (game.abilityOptions[id]?.length ?? 0) > 0;
-  // Poder de personagem: so o do meu, com "1×" no lugar do custo
+  // Poder e ultimate: so os do meu personagem; no lugar do custo, "1×" ou a carga que a ultimate pede
   const mine = game.abilities.filter((item) => !item.character || item.character === game.characters[mySeat]);
-  const costOf = (item: LudoAbility) => (item.character ? (game.powerUsed[mySeat] ? 'usado' : '1×') : `⚡${item.cost}`);
+  const costOf = (item: LudoAbility) =>
+    item.ultimate ? `🔥${game.ultimateMax}` : item.character ? (game.powerUsed[mySeat] ? 'usado' : '1×') : `⚡${item.cost}`;
 
   return (
     <div className="ludo-abilities">
@@ -54,7 +60,9 @@ export default function LudoAbilities({ game, mySeat, myTurn, busy, selected, on
           <button
             key={item.id}
             type="button"
-            className={['ludo-ability', usable(item.id) && 'usable', selected === item.id && 'selected'].filter(Boolean).join(' ')}
+            className={['ludo-ability', item.ultimate && 'ultimate', usable(item.id) && 'usable', selected === item.id && 'selected']
+              .filter(Boolean)
+              .join(' ')}
             onClick={() => onSelect(selected === item.id ? null : item.id)}
             aria-pressed={selected === item.id}
             title={`${item.name}: ${item.description}${item.character ? '' : ` Custo: ${item.cost} de energia.`}`}
@@ -88,7 +96,9 @@ export default function LudoAbilities({ game, mySeat, myTurn, busy, selected, on
                 ? 'Disponível na sua vez.'
                 : game.abilityUsed
                   ? 'Você já usou uma habilidade nesta vez.'
-                  : ability.character && game.powerUsed[mySeat]
+                  : ability.ultimate && (game.ultimate?.[mySeat] ?? 0) < game.ultimateMax
+                    ? 'A ultimate ainda não está carregada.'
+                    : !ability.ultimate && ability.character && game.powerUsed[mySeat]
                     ? 'Já usado nesta partida.'
                     : (game.energy?.[game.turn] ?? 0) < ability.cost
                       ? 'Energia insuficiente.'

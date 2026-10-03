@@ -28,6 +28,8 @@ export type LudoAction =
   /** Arena: no inicio cada um escolhe o seu personagem, pela ordem dos lugares. */
   | { type: 'PICK'; character: CharacterId }
   | { type: 'ROLL' }
+  /** Velocidade maxima: escolhe um dos dois dados rolados. */
+  | { type: 'CHOOSE'; index: number }
   | { type: 'MOVE'; piece: number }
   /** Sem peca que possa andar, mas com habilidade possivel, a vez so passa quando o jogador decide. */
   | { type: 'PASS' }
@@ -67,8 +69,14 @@ export interface LudoState {
   characters: Array<CharacterId | null>;
   /** Ja usou o poder do personagem (uma vez por partida). */
   powerUsed: boolean[];
+  /** Carga da ultimate de cada lugar (so conta nas modalidades com ultimate). */
+  ultimate: number[];
+  /** Dados rolados pela Velocidade maxima, esperando a escolha (fase CHOOSE). */
+  diceChoices: number[] | null;
+  /** Capturas que ainda dao casas a mais nesta vez (Cacada). */
+  hunt: number;
   turn: number;
-  phase: 'PICK' | 'ROLL' | 'MOVE';
+  phase: 'PICK' | 'ROLL' | 'CHOOSE' | 'MOVE';
   /** Dado a ser usado no movimento (fase MOVE). */
   dice: number | null;
   /** Casas a mais neste movimento (Impulso). */
@@ -136,6 +144,9 @@ export function dealGame(seats: number, mode: LudoMode = 'CLASSICO', seed = rand
     energy: Array(seats).fill(0),
     characters: Array(seats).fill(null),
     powerUsed: Array(seats).fill(false),
+    ultimate: Array(seats).fill(0),
+    diceChoices: null,
+    hunt: 0,
     turn: 0,
     phase: LUDO_MODES[mode].charactersEnabled ? 'PICK' : 'ROLL',
     dice: null,
@@ -195,6 +206,7 @@ function nextTurn(state: LudoState): LudoState {
     phase: 'ROLL',
     dice: null,
     bonus: 0,
+    hunt: 0,
     sixes: 0,
     abilityUsed: false,
     effects: state.effects.filter((effect) => !(effect.type === 'SHIELD' && effect.seat === turn)),
@@ -205,15 +217,19 @@ function nextTurn(state: LudoState): LudoState {
 const canUseAbility = (state: LudoState) =>
   LUDO_MODES[state.mode].abilitiesEnabled && Object.keys(abilityOptions(state, state.turn)).length > 0;
 
+/** Dado que vai valer (rolado ou escolhido na Velocidade maxima). */
+function rolled(state: LudoState, seat: number, value: number): LudoState {
+  const sixes = value === 6 ? state.sixes + 1 : 0;
+  const next: LudoState = { ...state, lastRoll: { seat, value }, sixes, dice: value, diceChoices: null, phase: 'MOVE' };
+  if (sixes === MAX_SIXES) return nextTurn(next);
+  // Sem peca que ande, a vez passa sozinha, a menos que uma habilidade (ex.: Segunda chance) possa mudar isso
+  if (legalPieces(next).length === 0 && !canUseAbility(next)) return nextTurn(next);
+  return next;
+}
+
 function roll(state: LudoState, seat: number): LudoState {
   if (state.phase !== 'ROLL') throw new LudoRuleError('Escolha a peça para mover');
-  const value = dieAt(state.seed, state.rolls);
-  const sixes = value === 6 ? state.sixes + 1 : 0;
-  const rolled: LudoState = { ...state, rolls: state.rolls + 1, lastRoll: { seat, value }, sixes, dice: value, phase: 'MOVE' };
-  if (sixes === MAX_SIXES) return nextTurn(rolled);
-  // Sem peca que ande, a vez passa sozinha, a menos que uma habilidade (ex.: Segunda chance) possa mudar isso
-  if (legalPieces(rolled).length === 0 && !canUseAbility(rolled)) return nextTurn(rolled);
-  return rolled;
+  return rolled({ ...state, rolls: state.rolls + 1 }, seat, dieAt(state.seed, state.rolls));
 }
 
 /** Segunda chance: rola de novo e o novo numero substitui o anterior (o 6 descartado nao conta). */
@@ -235,6 +251,16 @@ function energyGains(state: LudoState, seat: number, square: number | null, capt
     gains.push({ seat, amount: LUDO_CONFIG.energyTileEnergy, reason: 'TILE' });
   }
   return gains;
+}
+
+/** Carga da ultimate (modalidades com ultimate): quem moveu, quem capturou, quem foi capturado e quem chegou ao centro. */
+function chargeUltimate(state: LudoState, seat: number, captured: LudoMove['captured'], to: number): number[] {
+  if (!LUDO_MODES[state.mode].ultimatesEnabled) return state.ultimate;
+  const charge = LUDO_CONFIG.ultimateCharge;
+  const gain = (i: number) =>
+    (i === seat ? charge.move + captured.length * charge.capture + (to === FINISH ? charge.finish : 0) : 0) +
+    captured.filter((capture) => capture.seat === i).length * charge.captured;
+  return state.ultimate.map((value, i) => Math.min(value + gain(i), LUDO_CONFIG.ultimateMax));
 }
 
 function move(state: LudoState, seat: number, piece: number): LudoState {
@@ -270,12 +296,16 @@ function move(state: LudoState, seat: number, piece: number): LudoState {
     state.energy,
   );
 
+  // Cacada: a captura da casas a mais no movimento da jogada extra
+  const hunting = captured.length > 0 && state.hunt > 0;
   const moved: LudoState = {
     ...state,
     pieces,
     energy,
+    ultimate: chargeUltimate(state, seat, captured, to),
     effects,
-    bonus: 0,
+    bonus: hunting ? LUDO_CONFIG.abilities.HUNT.squares : 0,
+    hunt: hunting ? state.hunt - 1 : state.hunt,
     lastMove: { seat, piece, from, to, captured, escaped, fortified, energy: gains },
   };
   if (pieces[seat].every((progress) => progress === FINISH)) {
@@ -316,16 +346,21 @@ export function applyAction(state: LudoState, seat: number, action: LudoAction):
   if ((state.phase === 'PICK') !== (action.type === 'PICK')) {
     throw new LudoRuleError(state.phase === 'PICK' ? 'Escolha seu personagem primeiro' : 'A escolha de personagens já terminou');
   }
+  if ((state.phase === 'CHOOSE') !== (action.type === 'CHOOSE')) {
+    throw new LudoRuleError(state.phase === 'CHOOSE' ? 'Escolha um dos dois dados' : 'Não há dados para escolher');
+  }
   const next =
     action.type === 'PICK'
       ? pick(state, seat, action.character)
-      : action.type === 'ROLL'
-      ? roll(state, seat)
-      : action.type === 'MOVE'
-        ? move(state, seat, action.piece)
-        : action.type === 'PASS'
-          ? pass(state)
-          : ability(state, seat, action);
+      : action.type === 'CHOOSE'
+        ? rolled(state, seat, state.diceChoices![action.index])
+        : action.type === 'ROLL'
+          ? roll(state, seat)
+          : action.type === 'MOVE'
+            ? move(state, seat, action.piece)
+            : action.type === 'PASS'
+              ? pass(state)
+              : ability(state, seat, action);
   return { ...next, moveCount: state.moveCount + 1 };
 }
 
@@ -335,6 +370,7 @@ export function applyAction(state: LudoState, seat: number, action: LudoAction):
  */
 export function autoAction(state: LudoState): LudoAction {
   if (state.phase === 'PICK') return { type: 'PICK', character: CHARACTER_IDS[state.turn % CHARACTER_IDS.length] };
+  if (state.phase === 'CHOOSE') return { type: 'CHOOSE', index: state.diceChoices![1] > state.diceChoices![0] ? 1 : 0 };
   if (state.phase === 'ROLL') return { type: 'ROLL' };
   const mine = state.pieces[state.turn];
   const [best] = legalPieces(state).sort((a, b) => mine[b] - mine[a]);
@@ -358,6 +394,10 @@ export function viewFor(state: LudoState, seat: number) {
     energyTiles: energySquares(state.mode),
     characters: state.characters,
     powerUsed: state.powerUsed,
+    ultimate: LUDO_MODES[state.mode].ultimatesEnabled ? state.ultimate : null,
+    ultimateMax: LUDO_CONFIG.ultimateMax,
+    diceChoices: state.diceChoices,
+    hunt: state.hunt,
     characterCatalog: LUDO_MODES[state.mode].charactersEnabled ? CHARACTER_IDS.map((id) => ({ id, ...CHARACTERS[id] })) : [],
     turn: state.turn,
     phase: state.phase,
@@ -372,12 +412,13 @@ export function viewFor(state: LudoState, seat: number) {
     lastAbility: state.lastAbility,
     abilityUsed: state.abilityUsed,
     abilities: LUDO_MODES[state.mode].abilitiesEnabled
-      ? Object.values(ABILITIES).map(({ id, name, description, target, character }) => ({
+      ? Object.values(ABILITIES).map(({ id, name, description, target, character, ultimate }) => ({
           id,
           name,
           description,
           target,
           character,
+          ultimate,
           cost: LUDO_CONFIG.abilities[id].cost,
         }))
       : [],

@@ -2639,6 +2639,36 @@ button.truco-call {
   box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
 }
 
+.ludo-ultimate .ludo-energy-bar span.on {
+  background: #f97316;
+  border-color: #c2410c;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
+}
+
+.ludo-ability.ultimate {
+  border-color: #f97316;
+}
+
+.ludo-ability.ultimate.usable {
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.7);
+}
+
+.ludo-news.ultimate {
+  font-size: 1.1rem;
+  color: #fff;
+  background: linear-gradient(90deg, #c2410c, #f97316);
+}
+
+.ludo-choices {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.ludo-choices button {
+  font-size: 1.2rem;
+}
+
 .ludo-shield {
   fill: none;
   stroke: #38bdf8;

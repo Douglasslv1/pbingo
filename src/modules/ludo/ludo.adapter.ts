@@ -31,7 +31,9 @@ export const ludoAdapter: GameAdapter<LudoState, LudoAction> = {
   record: (state, _seat, action) =>
     action.type === 'ROLL' || (action.type === 'ABILITY' && action.ability === 'SECOND_CHANCE')
       ? { ...action, value: dieAt(state.seed, state.rolls) }
-      : action.type === 'MOVE'
-        ? { ...action, dice: state.dice, bonus: state.bonus, from: state.pieces[state.turn][action.piece] }
-        : action,
+      : action.type === 'ABILITY' && action.ability === 'MAX_SPEED'
+        ? { ...action, values: [dieAt(state.seed, state.rolls), dieAt(state.seed, state.rolls + 1)] }
+        : action.type === 'MOVE'
+          ? { ...action, dice: state.dice, bonus: state.bonus, from: state.pieces[state.turn][action.piece] }
+          : action,
 };

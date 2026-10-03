@@ -88,6 +88,30 @@ export default function LudoRules() {
         </li>
         <li>Os poderes não gastam energia, mas contam como a habilidade da vez.</li>
       </ul>
+      <h3>Arena: ultimate</h3>
+      <ul>
+        <li>
+          A <strong>carga da ultimate</strong> 🔥 vai de 0 a 10: +1 por movimento, +2 por captura, +2 quando sua peça é
+          capturada e +2 por peça que chega ao centro.
+        </li>
+        <li>
+          Com a carga cheia, use a ultimate do seu personagem. Ela zera a carga e conta como a habilidade da vez.
+        </li>
+        <li>
+          🏃 Corredor, <strong>Velocidade máxima</strong>: antes de jogar o dado, joga dois dados e você escolhe qual usar.
+        </li>
+        <li>
+          🏰 Guardião, <strong>Fortaleza</strong>: todas as suas peças na volta do tabuleiro ganham escudo até a sua
+          próxima vez.
+        </li>
+        <li>
+          🏹 Caçador, <strong>Caçada</strong>: nesta vez, cada captura dá +3 casas no movimento seguinte (até 2 capturas).
+        </li>
+        <li>
+          🃏 Trapaceiro, <strong>Caos</strong>: troca de lugar uma peça sua com uma adversária, ambas na volta do tabuleiro.
+          Não vale em casa segura, em peça com escudo nem se uma delas passaria da entrada da reta final.
+        </li>
+      </ul>
       <h3>Tempo e dados verificáveis</h3>
       <ul>
         <li>Cada ação (jogar o dado ou mover) tem 30 segundos. Se o tempo acabar, o sistema joga por você.</li>

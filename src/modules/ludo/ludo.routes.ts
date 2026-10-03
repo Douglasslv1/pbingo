@@ -17,6 +17,7 @@ export const ludoRouters = createTableRouters('LUDO', {
   action: z.discriminatedUnion('type', [
     z.object({ type: z.literal('PICK'), character: z.enum(CHARACTER_IDS as [CharacterId, ...CharacterId[]]) }),
     z.object({ type: z.literal('ROLL') }),
+    z.object({ type: z.literal('CHOOSE'), index: z.number().int().min(0).max(1) }),
     z.object({ type: z.literal('MOVE'), piece: z.number().int().min(0).max(PIECES - 1) }),
     z.object({ type: z.literal('PASS') }),
     z.object({

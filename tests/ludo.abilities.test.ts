@@ -50,6 +50,10 @@ describe('Ludo Arena: habilidades', () => {
       'DASH',
       'FORTIFY',
       'TRICK',
+      'MAX_SPEED',
+      'FORTRESS',
+      'HUNT',
+      'CHAOS',
     ]);
     expect(mine.abilityOptions).toEqual({
       SHIELD: [{ pieces: [0] }],
@@ -185,5 +189,60 @@ describe('Ludo Arena: personagens', () => {
   it('Cacador: +1 de energia a mais por captura', () => {
     const state = withCharacters(arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], { energy: [0, 0] }), ['HUNTER', 'RUNNER']);
     expect(move(state, 0).energy).toEqual([2, 1]);
+  });
+});
+
+describe('Ludo Arena: ultimates', () => {
+  const charged = (state: LudoState, characters: LudoState['characters'], ultimate = [10, 0]) => ({ ...state, characters, ultimate });
+
+  it('a carga sobe ao mover, capturar e ser capturado, com limite; a ultimate exige carga cheia e zera', () => {
+    const state = { ...arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]]), ultimate: [9, 0] };
+    expect(move(state, 0).ultimate).toEqual([10, 2]);
+    expect(move({ ...state, mode: 'CLASSICO' as const }, 0).ultimate).toEqual([9, 0]);
+
+    const hunter = charged(arena([[10, BASE, BASE, BASE], EMPTY]), ['HUNTER', 'RUNNER'], [9, 10]);
+    expect(viewFor(hunter, 0).abilityOptions.HUNT).toBeUndefined();
+    expect(() => use(hunter, 'HUNT')).toThrow('Caçada: a ultimate ainda não está carregada');
+    // Ultimate de outro personagem nao vale, mesmo com carga
+    expect(() => use({ ...hunter, turn: 1 }, 'HUNT')).toThrow('Caçada não está disponível');
+    expect(use({ ...hunter, ultimate: [10, 0] }, 'HUNT')).toMatchObject({ ultimate: [0, 0], hunt: 2, abilityUsed: true });
+  });
+
+  it('Velocidade maxima: rola dois dados da semente e o jogador escolhe um', () => {
+    const state = { ...charged(arena([[10, BASE, BASE, BASE], EMPTY], { phase: 'ROLL' }), ['RUNNER', 'HUNTER']), rolls: 4 };
+    const two = use(state, 'MAX_SPEED');
+    expect(two).toMatchObject({ phase: 'CHOOSE', rolls: 6, diceChoices: [dieAt(SEED, 4), dieAt(SEED, 5)] });
+    expect(() => applyAction(two, 0, { type: 'ROLL' })).toThrow('Escolha um dos dois dados');
+    expect(autoAction(two)).toEqual({ type: 'CHOOSE', index: dieAt(SEED, 5) > dieAt(SEED, 4) ? 1 : 0 });
+    const chosen = applyAction(two, 0, { type: 'CHOOSE', index: 1 });
+    expect(chosen).toMatchObject({ lastRoll: { seat: 0, value: dieAt(SEED, 5) }, diceChoices: null });
+    expect(() => applyAction(arena([[10, BASE, BASE, BASE], EMPTY]), 0, { type: 'CHOOSE', index: 0 })).toThrow('Não há dados para escolher');
+  });
+
+  it('Fortaleza: escudo em todas as pecas na volta ate a proxima vez', () => {
+    const state = charged(arena([[10, 20, BASE, 52], EMPTY]), ['GUARDIAN', 'RUNNER']);
+    expect(use(state, 'FORTRESS').effects).toEqual([
+      { type: 'SHIELD', seat: 0, piece: 0 },
+      { type: 'SHIELD', seat: 0, piece: 1 },
+    ]);
+  });
+
+  it('Cacada: capturas da vez dao casas a mais no movimento seguinte, ate o limite', () => {
+    const state = { ...charged(arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]]), ['HUNTER', 'RUNNER'], [0, 0]), hunt: 1 };
+    const after = move(state, 0);
+    expect(after).toMatchObject({ phase: 'ROLL', turn: 0, bonus: 3, hunt: 0 });
+    // Sem Cacada, a captura so da a jogada extra
+    expect(move({ ...state, hunt: 0 }, 0).bonus).toBe(0);
+  });
+
+  it('Caos: troca uma peca propria com uma adversaria; nao vale em casa segura nem passando da reta final', () => {
+    const state = charged(arena([[10, BASE, BASE, BASE], [30, BASE, BASE, BASE]]), ['TRICKSTER', 'RUNNER']);
+    // Peca adversaria (cor 2, progresso 30) esta na casa 4, que para a cor 0 e o progresso 4; a sua vai para a casa 10 = progresso 36 da cor 2
+    const swapped = use(state, 'CHAOS', { targetSeat: 1, pieces: [0, 0] });
+    expect(swapped.pieces).toEqual([[4, BASE, BASE, BASE], [36, BASE, BASE, BASE]]);
+    // Peca adversaria em casa segura (progresso 34 da cor 2 = estrela)
+    expect(() => use(charged(arena([[10, BASE, BASE, BASE], [34, BASE, BASE, BASE]]), ['TRICKSTER', 'RUNNER']), 'CHAOS', { targetSeat: 1, pieces: [0, 0] })).toThrow('Alvo inválido');
+    // A peca adversaria iria para alem da entrada da reta final dela (cor 2 indo para a casa 25 = progresso 51)
+    expect(() => use(charged(arena([[25, BASE, BASE, BASE], [30, BASE, BASE, BASE]]), ['TRICKSTER', 'RUNNER']), 'CHAOS', { targetSeat: 1, pieces: [0, 0] })).toThrow('Alvo inválido');
   });
 });

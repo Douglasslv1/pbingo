@@ -353,7 +353,20 @@ export type DamasTableView = GameTableView<DamasView, 'BRASILEIRA', 'DUEL'>;
 export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
 
 /** Ludo: progresso das pecas -1 = base, 0..50 = volta, 51..55 = reta final, 56 = centro. */
-export type LudoAbilityId = 'SHIELD' | 'BOOST' | 'PULL' | 'SWAP' | 'SECOND_CHANCE' | 'ESCAPE' | 'DASH' | 'FORTIFY' | 'TRICK';
+export type LudoAbilityId =
+  | 'SHIELD'
+  | 'BOOST'
+  | 'PULL'
+  | 'SWAP'
+  | 'SECOND_CHANCE'
+  | 'ESCAPE'
+  | 'DASH'
+  | 'FORTIFY'
+  | 'TRICK'
+  | 'MAX_SPEED'
+  | 'FORTRESS'
+  | 'HUNT'
+  | 'CHAOS';
 export type LudoCharacterId = 'RUNNER' | 'GUARDIAN' | 'HUNTER' | 'TRICKSTER';
 /** Alvo de uma habilidade: pecas proprias, ou a peca `pieces[0]` do lugar `targetSeat`. */
 export interface LudoAbilityTarget {
@@ -363,6 +376,7 @@ export interface LudoAbilityTarget {
 export type LudoAction =
   | { type: 'PICK'; character: LudoCharacterId }
   | { type: 'ROLL' }
+  | { type: 'CHOOSE'; index: number }
   | { type: 'MOVE'; piece: number }
   | { type: 'PASS' }
   | ({ type: 'ABILITY'; ability: LudoAbilityId } & LudoAbilityTarget);
@@ -371,9 +385,12 @@ export interface LudoAbility {
   id: LudoAbilityId;
   name: string;
   description: string;
-  target: 'NONE' | 'OWN_PIECE' | 'OPPONENT_PIECE' | 'OWN_PIECE_PAIR';
+  /** OWN_AND_OPPONENT: `pieces` = [peca propria, peca do lugar `targetSeat`]. */
+  target: 'NONE' | 'OWN_PIECE' | 'OPPONENT_PIECE' | 'OWN_PIECE_PAIR' | 'OWN_AND_OPPONENT';
   /** Poder de personagem: so de quem o escolheu, uma vez por partida e sem energia. */
   character?: LudoCharacterId;
+  /** Ultimate do personagem: exige a carga cheia. */
+  ultimate?: boolean;
   cost: number;
 }
 export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
@@ -392,10 +409,15 @@ export interface LudoGameView {
   /** Personagem de cada lugar (null ate escolher). */
   characters: Array<LudoCharacterId | null>;
   powerUsed: boolean[];
+  /** Carga da ultimate de cada lugar; null nas modalidades sem ultimate. */
+  ultimate: number[] | null;
+  ultimateMax: number;
+  /** Dois dados da Velocidade maxima esperando a escolha (fase CHOOSE). */
+  diceChoices: number[] | null;
   /** Personagens da modalidade (vazio no Classico). */
   characterCatalog: Array<{ id: LudoCharacterId; name: string; description: string }>;
   turn: number;
-  phase: 'PICK' | 'ROLL' | 'MOVE';
+  phase: 'PICK' | 'ROLL' | 'CHOOSE' | 'MOVE';
   dice: number | null;
   rolls: number;
   lastRoll: { seat: number; value: number } | null;
