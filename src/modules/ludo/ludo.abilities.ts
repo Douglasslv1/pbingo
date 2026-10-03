@@ -1,5 +1,6 @@
+import type { CharacterId } from './ludo.characters';
 import { LUDO_CONFIG } from './ludo.config';
-import type { LudoState } from './ludo.engine';
+import type { LudoEffect, LudoState } from './ludo.engine';
 import { isSafeSquare, LAST_TRACK, legalPieces, LudoRuleError, rerollDice, squareOf } from './ludo.engine';
 
 export type AbilityId = keyof typeof LUDO_CONFIG.abilities;
@@ -17,6 +18,8 @@ export interface Ability {
   target: 'NONE' | 'OWN_PIECE' | 'OPPONENT_PIECE' | 'OWN_PIECE_PAIR';
   /** Fases da vez em que pode ser usada: antes de rolar o dado e/ou antes de mover. */
   phases: Array<LudoState['phase']>;
+  /** Poder de personagem: so quem o escolheu usa, uma vez por partida e sem energia. */
+  character?: CharacterId;
   /** Todos os alvos validos agora (vazio: nao pode ser usada). */
   options(state: LudoState, seat: number): AbilityTarget[];
   execute(state: LudoState, seat: number, target: AbilityTarget): LudoState;
@@ -41,15 +44,26 @@ const withPieces = (state: LudoState, seat: number, change: (mine: number[]) => 
 /** Volta uma peca algumas casas, sem passar da casa de saida e sem capturar ninguem. */
 export const retreat = (progress: number, squares: number) => Math.max(progress - squares, 0);
 
+/** Arma um efeito numa peca propria na volta (Escudo, Fuga, Fortificar). */
+const armPiece = (type: LudoEffect['type']): Pick<Ability, 'options' | 'execute'> => ({
+  options: (state, seat) =>
+    ownTrackPieces(state, seat).filter((piece) => !hasEffect(state, type, seat, piece)).map((piece) => ({ pieces: [piece] })),
+  execute: (state, seat, { pieces }) => ({ ...state, effects: [...state.effects, { type, seat, piece: pieces![0] }] }),
+});
+
+/** Casas a mais no movimento deste dado (Impulso, Arrancada). */
+const addSquares = (squares: number): Pick<Ability, 'options' | 'execute'> => ({
+  options: (state) => (legalPieces({ ...state, bonus: squares }).length > 0 ? [{}] : []),
+  execute: (state) => ({ ...state, bonus: squares }),
+});
+
 const SHIELD: Ability = {
   id: 'SHIELD',
   name: 'Escudo',
   description: 'Protege uma peça sua contra captura até a sua próxima vez.',
   target: 'OWN_PIECE',
   phases: ['ROLL', 'MOVE'],
-  options: (state, seat) =>
-    ownTrackPieces(state, seat).filter((piece) => !hasEffect(state, 'SHIELD', seat, piece)).map((piece) => ({ pieces: [piece] })),
-  execute: (state, seat, { pieces }) => ({ ...state, effects: [...state.effects, { type: 'SHIELD', seat, piece: pieces![0] }] }),
+  ...armPiece('SHIELD'),
 };
 
 const BOOST: Ability = {
@@ -58,8 +72,7 @@ const BOOST: Ability = {
   description: `Soma ${LUDO_CONFIG.abilities.BOOST.squares} casas ao dado deste movimento (não vale para sair da base).`,
   target: 'NONE',
   phases: ['MOVE'],
-  options: (state) => (legalPieces({ ...state, bonus: LUDO_CONFIG.abilities.BOOST.squares }).length > 0 ? [{}] : []),
-  execute: (state) => ({ ...state, bonus: LUDO_CONFIG.abilities.BOOST.squares }),
+  ...addSquares(LUDO_CONFIG.abilities.BOOST.squares),
 };
 
 const PULL: Ability = {
@@ -122,19 +135,53 @@ const ESCAPE: Ability = {
   description: `Arma uma peça: se ela for capturada, volta ${LUDO_CONFIG.abilities.ESCAPE.squares} casas em vez de ir para a base. Vale até ser usada.`,
   target: 'OWN_PIECE',
   phases: ['ROLL', 'MOVE'],
-  options: (state, seat) =>
-    ownTrackPieces(state, seat).filter((piece) => !hasEffect(state, 'ESCAPE', seat, piece)).map((piece) => ({ pieces: [piece] })),
-  execute: (state, seat, { pieces }) => ({ ...state, effects: [...state.effects, { type: 'ESCAPE', seat, piece: pieces![0] }] }),
+  ...armPiece('ESCAPE'),
 };
 
-export const ABILITIES: Record<AbilityId, Ability> = { SHIELD, BOOST, PULL, SWAP, SECOND_CHANCE, ESCAPE };
+const DASH: Ability = {
+  id: 'DASH',
+  name: 'Arrancada',
+  description: `Corredor: soma ${LUDO_CONFIG.abilities.DASH.squares} casas ao dado deste movimento (não vale para sair da base). Uma vez por partida.`,
+  target: 'NONE',
+  phases: ['MOVE'],
+  character: 'RUNNER',
+  ...addSquares(LUDO_CONFIG.abilities.DASH.squares),
+};
+
+const FORTIFY: Ability = {
+  id: 'FORTIFY',
+  name: 'Fortificar',
+  description: 'Guardião: arma uma peça; a próxima captura dela é ignorada e ela fica onde está. Uma vez por partida.',
+  target: 'OWN_PIECE',
+  phases: ['ROLL', 'MOVE'],
+  character: 'GUARDIAN',
+  ...armPiece('FORTIFY'),
+};
+
+const TRICK: Ability = {
+  ...SWAP,
+  id: 'TRICK',
+  name: 'Truque',
+  description: 'Trapaceiro: troca de lugar duas peças suas que estão na volta do tabuleiro, sem gastar energia. Uma vez por partida.',
+  character: 'TRICKSTER',
+};
+
+export const ABILITIES: Record<AbilityId, Ability> = { SHIELD, BOOST, PULL, SWAP, SECOND_CHANCE, ESCAPE, DASH, FORTIFY, TRICK };
+
+/** O jogador tem o poder deste personagem e ainda nao o usou? */
+const powerAvailable = (state: LudoState, seat: number, ability: Ability) =>
+  state.characters[seat] === ability.character && !state.powerUsed[seat];
 
 /** Alvos de cada habilidade que o jogador da vez pode usar agora (com energia e na fase certa). */
 export function abilityOptions(state: LudoState, seat: number): Partial<Record<AbilityId, AbilityTarget[]>> {
   if (state.status !== 'PLAYING' || state.turn !== seat || state.abilityUsed) return {};
   return Object.fromEntries(
     Object.values(ABILITIES)
-      .filter((ability) => ability.phases.includes(state.phase) && state.energy[seat] >= cost(ability.id))
+      .filter(
+        (ability) =>
+          ability.phases.includes(state.phase) &&
+          (ability.character ? powerAvailable(state, seat, ability) : state.energy[seat] >= cost(ability.id)),
+      )
       .map((ability) => [ability.id, ability.options(state, seat)] as const)
       .filter(([, options]) => options.length > 0),
   );
@@ -150,6 +197,7 @@ export function useAbility(state: LudoState, seat: number, id: AbilityId, target
   if (!ability.phases.includes(state.phase)) {
     throw new LudoRuleError(state.phase === 'ROLL' ? `${ability.name}: jogue o dado primeiro` : `${ability.name}: só antes de jogar o dado`);
   }
+  if (ability.character && !powerAvailable(state, seat, ability)) throw new LudoRuleError(`${ability.name} não está disponível`);
   if (state.energy[seat] < cost(id)) throw new LudoRuleError(`Energia insuficiente para ${ability.name}`);
   if (!ability.options(state, seat).some((option) => sameTarget(option, target))) {
     throw new LudoRuleError(`Alvo inválido para ${ability.name}`);
@@ -158,6 +206,7 @@ export function useAbility(state: LudoState, seat: number, id: AbilityId, target
     ...state,
     energy: state.energy.map((value, i) => (i === seat ? value - cost(id) : value)),
     abilityUsed: true,
+    powerUsed: ability.character ? state.powerUsed.map((used, i) => used || i === seat) : state.powerUsed,
     lastAbility: { seat, ability: id, ...target, move: state.moveCount + 1 },
   };
   return ability.execute(paid, seat, target);

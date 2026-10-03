@@ -109,7 +109,7 @@ describe('Ludo nas mesas', () => {
     }
     const view = (await request(app).get('/ludo/tables/me').set(auth(players[0]))).body;
     expect(view.mode).toBe('ARENA');
-    expect(view.game).toMatchObject({ mode: 'ARENA', energy: [0, 0], maxEnergy: 10 });
+    expect(view.game).toMatchObject({ mode: 'ARENA', phase: 'PICK', characters: [null, null], energy: [0, 0], maxEnergy: 10 });
     expect(view.game.energyTiles).toHaveLength(8);
   });
 
@@ -129,6 +129,7 @@ describe('Ludo nas mesas', () => {
     });
     const act = (action: Record<string, unknown>) => request(app).post(`/ludo/tables/${tableId}/moves`).set(auth(first)).send(action);
 
+    expect((await act({ type: 'PICK', character: 'NINJA' })).status).toBe(422);
     expect((await act({ type: 'ABILITY', ability: 'TELEPORTE' })).status).toBe(422);
     expect((await act({ type: 'ABILITY', ability: 'SECOND_CHANCE', energy: 10 })).status).toBe(422);
     const boosted = await act({ type: 'ABILITY', ability: 'BOOST' });

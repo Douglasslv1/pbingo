@@ -40,7 +40,17 @@ describe('Ludo Arena: habilidades', () => {
   it('a visao mostra so os alvos validos de quem esta na vez', () => {
     const state = arena([[10, BASE, BASE, BASE], [36, BASE, BASE, BASE]]);
     const mine = viewFor(state, 0);
-    expect(mine.abilities.map((ability) => ability.id)).toEqual(['SHIELD', 'BOOST', 'PULL', 'SWAP', 'SECOND_CHANCE', 'ESCAPE']);
+    expect(mine.abilities.map((ability) => ability.id)).toEqual([
+      'SHIELD',
+      'BOOST',
+      'PULL',
+      'SWAP',
+      'SECOND_CHANCE',
+      'ESCAPE',
+      'DASH',
+      'FORTIFY',
+      'TRICK',
+    ]);
     expect(mine.abilityOptions).toEqual({
       SHIELD: [{ pieces: [0] }],
       BOOST: [{}],
@@ -109,7 +119,7 @@ describe('Ludo Arena: habilidades', () => {
   });
 
   it('dado sem jogada: com habilidade possivel a vez espera o jogador, que pode passar', () => {
-    const stuck = { ...dealGame(2, 'ARENA', seedRolling(3)), energy: [4, 0] };
+    const stuck = { ...dealGame(2, 'ARENA', seedRolling(3)), phase: 'ROLL' as const, energy: [4, 0] };
     const rolled = applyAction(stuck, 0, { type: 'ROLL' });
     expect(rolled).toMatchObject({ turn: 0, phase: 'MOVE', dice: 3 });
     expect(isForced(rolled)).toBe(false);
@@ -124,5 +134,56 @@ describe('Ludo Arena: habilidades', () => {
   it('com uma so peca para mover, o servidor so joga sozinho se nao houver habilidade possivel', () => {
     expect(isForced(arena([[10, BASE, BASE, BASE], EMPTY], { energy: [0, 0] }))).toBe(true);
     expect(isForced(arena([[10, BASE, BASE, BASE], EMPTY], { energy: [2, 0] }))).toBe(false);
+  });
+});
+
+describe('Ludo Arena: personagens', () => {
+  const withCharacters = (state: LudoState, characters: LudoState['characters']) => ({ ...state, characters });
+
+  it('cada um escolhe o personagem pela ordem dos lugares antes do primeiro dado', () => {
+    const start = dealGame(2, 'ARENA', SEED);
+    expect(start).toMatchObject({ phase: 'PICK', turn: 0, characters: [null, null] });
+    expect(dealGame(2, 'CLASSICO', SEED).phase).toBe('ROLL');
+    expect(() => applyAction(start, 0, { type: 'ROLL' })).toThrow('Escolha seu personagem primeiro');
+    expect(() => applyAction(start, 1, { type: 'PICK', character: 'HUNTER' })).toThrow('Não é a sua vez');
+
+    const first = applyAction(start, 0, { type: 'PICK', character: 'RUNNER' });
+    expect(first).toMatchObject({ phase: 'PICK', turn: 1 });
+    // Tempo esgotado: o sistema escolhe pelo lugar
+    expect(autoAction(first)).toEqual({ type: 'PICK', character: 'GUARDIAN' });
+    const ready = applyAction(first, 1, autoAction(first));
+    expect(ready).toMatchObject({ phase: 'ROLL', turn: 0, characters: ['RUNNER', 'GUARDIAN'] });
+    expect(() => applyAction(ready, 0, { type: 'PICK', character: 'HUNTER' })).toThrow('A escolha de personagens já terminou');
+  });
+
+  it('o poder e so de quem escolheu o personagem, sem energia e uma vez por partida', () => {
+    const state = withCharacters(arena([[10, BASE, BASE, BASE], EMPTY], { energy: [0, 0] }), ['RUNNER', 'HUNTER']);
+    expect(viewFor(state, 0).abilityOptions).toEqual({ DASH: [{}] });
+    expect(() => use(state, 'TRICK', { pieces: [0, 1] })).toThrow('Truque não está disponível');
+
+    const dashed = use(state, 'DASH');
+    expect(dashed).toMatchObject({ bonus: 3, energy: [0, 0], powerUsed: [true, false] });
+    expect(move(dashed, 0).pieces[0][0]).toBe(16);
+    expect(() => use({ ...dashed, abilityUsed: false }, 'DASH')).toThrow('Arrancada não está disponível');
+  });
+
+  it('Guardiao: a peca fortificada ignora uma captura e fica onde esta', () => {
+    const state = {
+      ...arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]]),
+      effects: [
+        { type: 'FORTIFY' as const, seat: 1, piece: 0 },
+        { type: 'ESCAPE' as const, seat: 1, piece: 0 },
+      ],
+    };
+    const after = move(state, 0);
+    expect(after.pieces[1][0]).toBe(36);
+    expect(after.lastMove).toMatchObject({ captured: [], escaped: [], fortified: [{ seat: 1, piece: 0 }] });
+    // O fortificar e gasto; a fuga continua armada
+    expect(after.effects).toEqual([{ type: 'ESCAPE', seat: 1, piece: 0 }]);
+  });
+
+  it('Cacador: +1 de energia a mais por captura', () => {
+    const state = withCharacters(arena([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], { energy: [0, 0] }), ['HUNTER', 'RUNNER']);
+    expect(move(state, 0).energy).toEqual([2, 1]);
   });
 });

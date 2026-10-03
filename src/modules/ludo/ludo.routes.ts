@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { createTableRouters } from '../tables/tables.routes';
 import { stakeSchema } from '../tables/tables.schemas';
 import { AbilityId } from './ludo.abilities';
+import { CHARACTER_IDS, CharacterId } from './ludo.characters';
 import { LUDO_CONFIG } from './ludo.config';
 import { PIECES } from './ludo.engine';
 
@@ -14,6 +15,7 @@ export const ludoRouters = createTableRouters('LUDO', {
       stake: stakeSchema.default(1),
     }),
   action: z.discriminatedUnion('type', [
+    z.object({ type: z.literal('PICK'), character: z.enum(CHARACTER_IDS as [CharacterId, ...CharacterId[]]) }),
     z.object({ type: z.literal('ROLL') }),
     z.object({ type: z.literal('MOVE'), piece: z.number().int().min(0).max(PIECES - 1) }),
     z.object({ type: z.literal('PASS') }),

@@ -7,7 +7,7 @@ import { useTurnAlert } from '../../hooks/useTurnAlert';
 import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoGameView, LudoTableView } from '../../types';
 import GameTable from '../tables/GameTable';
 import VictoryOverlay from '../tables/VictoryOverlay';
-import LudoAbilities, { ABILITY_ICONS } from './LudoAbilities';
+import LudoAbilities, { ABILITY_ICONS, CHARACTER_ICONS } from './LudoAbilities';
 import LudoBoard from './LudoBoard';
 import LudoDice from './LudoDice';
 import { COLOR_NAMES, FINISH } from './ludoGeometry';
@@ -35,6 +35,9 @@ function abilityNews(game: LudoGameView, nameOf: (seat: number) => string): stri
     SWAP: `${who} trocou duas peças de lugar`,
     SECOND_CHANCE: `${who} jogou o dado de novo`,
     ESCAPE: `${who} armou uma fuga numa peça`,
+    DASH: `${who} ganhou casas extras neste movimento`,
+    FORTIFY: `${who} fortificou uma peça`,
+    TRICK: `${who} trocou duas peças de lugar`,
   };
   return `${ABILITY_ICONS[used.ability]} ${name.toUpperCase()} · ${text[used.ability]}`;
 }
@@ -63,10 +66,13 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
   const iAmAway = player(mySeat)?.away ?? false;
   const home = (seat: number) => game.pieces[seat].filter((progress) => progress === FINISH).length;
   const winner = game.result?.winner ?? null;
+  const characterOf = (seat: number) => game.characterCatalog.find((item) => item.id === game.characters[seat]);
 
   const seats = game.pieces.map((_, seat) => ({
     name: nameOf(seat),
-    tag: COLOR_NAMES[game.colors[seat]],
+    tag: [COLOR_NAMES[game.colors[seat]], characterOf(seat) && `${CHARACTER_ICONS[characterOf(seat)!.id]} ${characterOf(seat)!.name}`]
+      .filter(Boolean)
+      .join(' · '),
     away: player(seat)?.away,
     hand: (
       <span className="label">
@@ -107,15 +113,20 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
 
   const news = abilityNews(game, nameOf);
   const escaped = game.lastMove?.escaped ?? [];
+  const fortified = game.lastMove?.fortified ?? [];
   const roll = game.lastRoll;
   const situation = !playing
     ? ''
-    : myTurn
+    : game.phase === 'PICK'
+      ? myTurn
+        ? 'Escolha seu personagem.'
+        : `${nameOf(game.turn)} está escolhendo o personagem...`
+      : myTurn
       ? game.phase === 'ROLL'
         ? 'Sua vez: jogue o dado.'
         : game.legalPieces.length === 0
           ? `Você tirou ${game.dice} e nenhuma peça pode andar. Use uma habilidade ou passe a vez.`
-          : `Você tirou ${game.dice}${game.bonus ? ` +${game.bonus} do Impulso` : ''}: toque numa peça destacada.`
+          : `Você tirou ${game.dice}${game.bonus ? ` +${game.bonus} casas` : ''}: toque numa peça destacada.`
       : `Vez de ${nameOf(game.turn)}...`;
 
   return (
@@ -184,6 +195,34 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
           {escaped.length > 0 && (
             <p className="banner ludo-news">💨 FUGA! A peça de {escaped.map((escape) => nameOf(escape.seat)).join(' e ')} escapou da captura.</p>
           )}
+          {fortified.length > 0 && (
+            <p className="banner ludo-news">
+              🏰 FORTIFICADA! A peça de {fortified.map((victim) => nameOf(victim.seat)).join(' e ')} ignorou a captura.
+            </p>
+          )}
+
+          {game.phase === 'PICK' ? (
+            <div className="ludo-abilities">
+              <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
+              <div className="ludo-ability-list ludo-character-list">
+                {game.characterCatalog.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={myTurn ? 'ludo-ability usable' : 'ludo-ability'}
+                    onClick={() => onAction({ type: 'PICK', character: item.id })}
+                    disabled={!myTurn || busy}
+                  >
+                    <span className="ludo-ability-icon" aria-hidden="true">
+                      {CHARACTER_ICONS[item.id]}
+                    </span>
+                    <span>{item.name}</span>
+                    <small>{item.description}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
 
           <div className="ludo-controls">
             <LudoDice
@@ -203,6 +242,7 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
               )}
             </div>
           </div>
+          )}
           {game.energy && (
             <div className="ludo-energy">
               <span>⚡ Energia</span>
@@ -216,9 +256,10 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
               </strong>
             </div>
           )}
-          {game.abilities.length > 0 && (
+          {game.abilities.length > 0 && game.phase !== 'PICK' && (
             <LudoAbilities
               game={game}
+              mySeat={mySeat}
               myTurn={myTurn}
               busy={busy}
               selected={selected}

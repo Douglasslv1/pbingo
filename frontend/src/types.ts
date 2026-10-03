@@ -353,13 +353,15 @@ export type DamasTableView = GameTableView<DamasView, 'BRASILEIRA', 'DUEL'>;
 export type XadrezTableView = GameTableView<XadrezView, 'CLASSICO', 'DUEL'>;
 
 /** Ludo: progresso das pecas -1 = base, 0..50 = volta, 51..55 = reta final, 56 = centro. */
-export type LudoAbilityId = 'SHIELD' | 'BOOST' | 'PULL' | 'SWAP' | 'SECOND_CHANCE' | 'ESCAPE';
+export type LudoAbilityId = 'SHIELD' | 'BOOST' | 'PULL' | 'SWAP' | 'SECOND_CHANCE' | 'ESCAPE' | 'DASH' | 'FORTIFY' | 'TRICK';
+export type LudoCharacterId = 'RUNNER' | 'GUARDIAN' | 'HUNTER' | 'TRICKSTER';
 /** Alvo de uma habilidade: pecas proprias, ou a peca `pieces[0]` do lugar `targetSeat`. */
 export interface LudoAbilityTarget {
   pieces?: number[];
   targetSeat?: number;
 }
 export type LudoAction =
+  | { type: 'PICK'; character: LudoCharacterId }
   | { type: 'ROLL' }
   | { type: 'MOVE'; piece: number }
   | { type: 'PASS' }
@@ -370,6 +372,8 @@ export interface LudoAbility {
   name: string;
   description: string;
   target: 'NONE' | 'OWN_PIECE' | 'OPPONENT_PIECE' | 'OWN_PIECE_PAIR';
+  /** Poder de personagem: so de quem o escolheu, uma vez por partida e sem energia. */
+  character?: LudoCharacterId;
   cost: number;
 }
 export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
@@ -385,8 +389,13 @@ export interface LudoGameView {
   maxEnergy: number;
   /** Casas de energia (0..51 na volta do tabuleiro). */
   energyTiles: number[];
+  /** Personagem de cada lugar (null ate escolher). */
+  characters: Array<LudoCharacterId | null>;
+  powerUsed: boolean[];
+  /** Personagens da modalidade (vazio no Classico). */
+  characterCatalog: Array<{ id: LudoCharacterId; name: string; description: string }>;
   turn: number;
-  phase: 'ROLL' | 'MOVE';
+  phase: 'PICK' | 'ROLL' | 'MOVE';
   dice: number | null;
   rolls: number;
   lastRoll: { seat: number; value: number } | null;
@@ -397,11 +406,12 @@ export interface LudoGameView {
     to: number;
     captured: Array<{ seat: number; piece: number; from: number }>;
     escaped?: Array<{ seat: number; piece: number; from: number; to: number }>;
+    fortified?: Array<{ seat: number; piece: number }>;
     energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' }>;
   } | null;
   /** Casas a mais no movimento atual (Impulso). */
   bonus: number;
-  effects: Array<{ type: 'SHIELD' | 'ESCAPE'; seat: number; piece: number }>;
+  effects: Array<{ type: 'SHIELD' | 'ESCAPE' | 'FORTIFY'; seat: number; piece: number }>;
   lastAbility: ({ seat: number; ability: LudoAbilityId; move: number } & LudoAbilityTarget) | null;
   abilityUsed: boolean;
   /** Catalogo de habilidades da modalidade (vazio no Classico). */

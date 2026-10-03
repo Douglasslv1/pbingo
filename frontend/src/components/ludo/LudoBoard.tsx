@@ -108,6 +108,7 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
             {canPlay && <circle r={0.62} className="ludo-piece-ring" />}
             {effect('SHIELD') && <circle r={0.52} className="ludo-shield" />}
             {effect('ESCAPE') && <circle r={0.52} className="ludo-escape" />}
+            {effect('FORTIFY') && <circle r={0.46} className="ludo-fortify" />}
             <circle r={0.4} className="ludo-piece-body" />
             <circle r={0.18} className="ludo-piece-top" />
           </motion.g>

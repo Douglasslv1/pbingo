@@ -2645,6 +2645,12 @@ button.truco-call {
   stroke-width: 0.12;
 }
 
+.ludo-fortify {
+  fill: none;
+  stroke: #facc15;
+  stroke-width: 0.1;
+}
+
 .ludo-escape {
   fill: none;
   stroke: #f8fafc;
@@ -2692,6 +2698,14 @@ button.truco-call {
 
 .ludo-ability-icon {
   font-size: 1.3rem;
+}
+
+.ludo-character-list {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.ludo-ability small {
+  font-weight: 400;
 }
 
 .ludo-ability-cost {

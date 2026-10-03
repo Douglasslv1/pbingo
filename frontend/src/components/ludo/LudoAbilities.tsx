@@ -1,4 +1,4 @@
-import type { LudoAbility, LudoAbilityId, LudoAbilityTarget, LudoGameView } from '../../types';
+import type { LudoAbility, LudoAbilityId, LudoAbilityTarget, LudoCharacterId, LudoGameView } from '../../types';
 
 export const ABILITY_ICONS: Record<LudoAbilityId, string> = {
   SHIELD: '🛡️',
@@ -7,6 +7,16 @@ export const ABILITY_ICONS: Record<LudoAbilityId, string> = {
   SWAP: '🔄',
   SECOND_CHANCE: '🎲',
   ESCAPE: '💨',
+  DASH: '🏃',
+  FORTIFY: '🏰',
+  TRICK: '🃏',
+};
+
+export const CHARACTER_ICONS: Record<LudoCharacterId, string> = {
+  RUNNER: '🏃',
+  GUARDIAN: '🏰',
+  HUNTER: '🏹',
+  TRICKSTER: '🃏',
 };
 
 const TARGET_HINT: Record<LudoAbility['target'], string> = {
@@ -18,6 +28,7 @@ const TARGET_HINT: Record<LudoAbility['target'], string> = {
 
 interface Props {
   game: LudoGameView;
+  mySeat: number;
   myTurn: boolean;
   busy: boolean;
   selected: LudoAbilityId | null;
@@ -29,27 +40,30 @@ interface Props {
  * Habilidades da Arena: tocar numa mostra o que ela faz (funciona no celular, sem depender de hover).
  * Sem alvo, usa com "Usar"; com alvo, as pecas validas acendem no tabuleiro.
  */
-export default function LudoAbilities({ game, myTurn, busy, selected, onSelect, onUse }: Props) {
+export default function LudoAbilities({ game, mySeat, myTurn, busy, selected, onSelect, onUse }: Props) {
   const ability = game.abilities.find((item) => item.id === selected);
   const usable = (id: LudoAbilityId) => myTurn && (game.abilityOptions[id]?.length ?? 0) > 0;
+  // Poder de personagem: so o do meu, com "1×" no lugar do custo
+  const mine = game.abilities.filter((item) => !item.character || item.character === game.characters[mySeat]);
+  const costOf = (item: LudoAbility) => (item.character ? (game.powerUsed[mySeat] ? 'usado' : '1×') : `⚡${item.cost}`);
 
   return (
     <div className="ludo-abilities">
       <div className="ludo-ability-list">
-        {game.abilities.map((item) => (
+        {mine.map((item) => (
           <button
             key={item.id}
             type="button"
             className={['ludo-ability', usable(item.id) && 'usable', selected === item.id && 'selected'].filter(Boolean).join(' ')}
             onClick={() => onSelect(selected === item.id ? null : item.id)}
             aria-pressed={selected === item.id}
-            title={`${item.name}: ${item.description} Custo: ${item.cost} de energia.`}
+            title={`${item.name}: ${item.description}${item.character ? '' : ` Custo: ${item.cost} de energia.`}`}
           >
             <span className="ludo-ability-icon" aria-hidden="true">
               {ABILITY_ICONS[item.id]}
             </span>
             <span>{item.name}</span>
-            <span className="ludo-ability-cost">⚡{item.cost}</span>
+            <span className="ludo-ability-cost">{costOf(item)}</span>
           </button>
         ))}
       </div>
@@ -57,7 +71,7 @@ export default function LudoAbilities({ game, myTurn, busy, selected, onSelect, 
       {ability && (
         <div className="ludo-ability-detail">
           <strong>
-            {ABILITY_ICONS[ability.id]} {ability.name} · ⚡{ability.cost}
+            {ABILITY_ICONS[ability.id]} {ability.name} · {costOf(ability)}
           </strong>
           <p>{ability.description}</p>
           {usable(ability.id) ? (
@@ -74,9 +88,11 @@ export default function LudoAbilities({ game, myTurn, busy, selected, onSelect, 
                 ? 'Disponível na sua vez.'
                 : game.abilityUsed
                   ? 'Você já usou uma habilidade nesta vez.'
-                  : (game.energy?.[game.turn] ?? 0) < ability.cost
-                    ? 'Energia insuficiente.'
-                    : 'Não pode ser usada agora.'}
+                  : ability.character && game.powerUsed[mySeat]
+                    ? 'Já usado nesta partida.'
+                    : (game.energy?.[game.turn] ?? 0) < ability.cost
+                      ? 'Energia insuficiente.'
+                      : 'Não pode ser usada agora.'}
             </p>
           )}
           <button type="button" className="link" onClick={() => onSelect(null)}>

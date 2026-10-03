@@ -120,7 +120,7 @@ describe('Ludo', () => {
     expect(squareOf(0, 10)).toBe(squareOf(2, 36));
     const after = move(state, 0);
     expect(after.pieces[1][0]).toBe(BASE);
-    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], escaped: [], energy: [] });
+    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], escaped: [], fortified: [], energy: [] });
     expect(after).toMatchObject({ turn: 0, phase: 'ROLL' });
   });
 

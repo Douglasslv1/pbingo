@@ -67,6 +67,27 @@ export default function LudoRules() {
           passe a vez.
         </li>
       </ul>
+      <h3>Arena: personagens</h3>
+      <ul>
+        <li>
+          Antes do primeiro dado, cada jogador escolhe um personagem, pela ordem da mesa. Nenhum é melhor que os outros:
+          cada um é um estilo de jogo.
+        </li>
+        <li>
+          🏃 <strong>Corredor</strong>: Arrancada, uma vez por partida, soma 3 casas a um movimento.
+        </li>
+        <li>
+          🏰 <strong>Guardião</strong>: Fortificar, uma vez por partida, arma uma peça que ignora a próxima captura e
+          fica onde está.
+        </li>
+        <li>
+          🏹 <strong>Caçador</strong>: cada captura dá 1 de energia a mais.
+        </li>
+        <li>
+          🃏 <strong>Trapaceiro</strong>: Truque, uma vez por partida, troca de lugar duas peças suas sem gastar energia.
+        </li>
+        <li>Os poderes não gastam energia, mas contam como a habilidade da vez.</li>
+      </ul>
       <h3>Tempo e dados verificáveis</h3>
       <ul>
         <li>Cada ação (jogar o dado ou mover) tem 30 segundos. Se o tempo acabar, o sistema joga por você.</li>

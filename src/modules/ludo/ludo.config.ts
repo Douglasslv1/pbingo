@@ -9,6 +9,8 @@ export const LUDO_CONFIG = {
   energyTileEnergy: 1,
   /** Casas de energia: posicao dentro de cada quarto da volta (0 = saida da cor, 8 = estrela). */
   energyTileOffsets: [4, 11],
+  /** Energia a mais por captura do Cacador. */
+  hunterCaptureEnergy: 1,
   abilities: {
     SHIELD: { cost: 2 },
     BOOST: { cost: 2, squares: 2 },
@@ -16,13 +18,17 @@ export const LUDO_CONFIG = {
     SWAP: { cost: 3 },
     SECOND_CHANCE: { cost: 4 },
     ESCAPE: { cost: 3, squares: 3 },
+    // Poderes dos personagens: uma vez por partida, sem energia
+    DASH: { cost: 0, squares: 3 },
+    FORTIFY: { cost: 0 },
+    TRICK: { cost: 0 },
   },
 };
 
 export type LudoMode = 'CLASSICO' | 'ARENA';
 
 /** O que cada modalidade liga. O Classico e o Ludo tradicional; a Arena soma os recursos estrategicos. */
-export const LUDO_MODES: Record<LudoMode, { energyEnabled: boolean; abilitiesEnabled: boolean }> = {
-  CLASSICO: { energyEnabled: false, abilitiesEnabled: false },
-  ARENA: { energyEnabled: true, abilitiesEnabled: true },
+export const LUDO_MODES: Record<LudoMode, { energyEnabled: boolean; abilitiesEnabled: boolean; charactersEnabled: boolean }> = {
+  CLASSICO: { energyEnabled: false, abilitiesEnabled: false, charactersEnabled: false },
+  ARENA: { energyEnabled: true, abilitiesEnabled: true, charactersEnabled: true },
 };
