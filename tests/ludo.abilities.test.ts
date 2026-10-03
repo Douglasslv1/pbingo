@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AbilityId, AbilityTarget } from '../src/modules/ludo/ludo.abilities';
-import { applyAction, autoAction, BASE, dealGame, dieAt, isForced, LudoState, viewFor } from '../src/modules/ludo/ludo.engine';
+import { applyAction, autoAction, BASE, dealGame, dieAt, isForced, LudoState, randomAt, viewFor } from '../src/modules/ludo/ludo.engine';
+import { boardTiles } from '../src/modules/ludo/ludo.tiles';
 
 const SEED = 'semente-de-teste';
 const EMPTY = [BASE, BASE, BASE, BASE];
@@ -244,5 +245,62 @@ describe('Ludo Arena: ultimates', () => {
     expect(() => use(charged(arena([[10, BASE, BASE, BASE], [34, BASE, BASE, BASE]]), ['TRICKSTER', 'RUNNER']), 'CHAOS', { targetSeat: 1, pieces: [0, 0] })).toThrow('Alvo inválido');
     // A peca adversaria iria para alem da entrada da reta final dela (cor 2 indo para a casa 25 = progresso 51)
     expect(() => use(charged(arena([[25, BASE, BASE, BASE], [30, BASE, BASE, BASE]]), ['TRICKSTER', 'RUNNER']), 'CHAOS', { targetSeat: 1, pieces: [0, 0] })).toThrow('Alvo inválido');
+  });
+});
+
+describe('Ludo Arena: casas especiais', () => {
+  const none = { energy: [0, 0] };
+
+  it('cada quarto da volta tem as mesmas casas, nenhuma segura; o Classico nao tem nenhuma', () => {
+    const count = (tile: string) => Object.values(boardTiles('ARENA')).filter((t) => t === tile).length;
+    expect([count('ENERGY'), count('ARENA'), count('CHEST'), count('PORTAL'), count('EVENT')]).toEqual([8, 4, 4, 4, 4]);
+    expect(boardTiles('CLASSICO')).toEqual({});
+  });
+
+  it('Arena: capturar nela da +1 de energia a mais; so parar nao da nada', () => {
+    // Casa 2: a cor 2 esta nela com progresso 2 - 26 + 52 = 28
+    const after = move(arena([[0, BASE, BASE, BASE], [28, BASE, BASE, BASE]], { dice: 2, ...none }), 0);
+    expect(after.lastMove?.energy).toContainEqual({ seat: 0, amount: 1, reason: 'ARENA' });
+    expect(after.energy).toEqual([2, 1]);
+    expect(move(arena([[0, BASE, BASE, BASE], EMPTY], { dice: 2, ...none }), 0).energy).toEqual([0, 0]);
+  });
+
+  it('Portal: leva ao proximo portal sem capturar, mas nunca passa da entrada da reta final', () => {
+    const after = move(arena([[6, BASE, BASE, BASE], [48, BASE, BASE, BASE]], none), 0);
+    expect(after.lastMove).toMatchObject({ to: 9, special: { tile: 'PORTAL', to: 22 } });
+    expect(after.pieces).toEqual([[22, BASE, BASE, BASE], [48, BASE, BASE, BASE]]);
+    // Casa 48 e portal, mas o proximo ja passaria da entrada da reta final
+    const end = move(arena([[45, BASE, BASE, BASE], EMPTY], none), 0);
+    expect(end.pieces[0][0]).toBe(48);
+    expect(end.lastMove?.special).toBeNull();
+  });
+
+  it('Bau: sorteia uma habilidade da semente, guarda uma por vez e ela sai de graca', () => {
+    const state = arena([[3, BASE, BASE, BASE], EMPTY], none);
+    const after = move(state, 0);
+    const ability = ['SHIELD', 'BOOST', 'PULL', 'SWAP', 'SECOND_CHANCE', 'ESCAPE'][randomAt(SEED, state.rolls, 6)];
+    expect(after).toMatchObject({ chest: [ability, null], rolls: state.rolls + 1, lastMove: { special: { tile: 'CHEST', ability } } });
+    // Com o bau cheio, parar de novo nao sorteia nada
+    const full = move({ ...state, chest: ['SHIELD', null] }, 0);
+    expect(full).toMatchObject({ chest: ['SHIELD', null], rolls: state.rolls, lastMove: { special: null } });
+
+    const shielded = use({ ...state, chest: ['SHIELD', null] }, 'SHIELD', { pieces: [0] });
+    expect(shielded).toMatchObject({ energy: [0, 0], chest: [null, null] });
+    expect(viewFor({ ...state, chest: ['SHIELD', null] }, 0).abilityOptions.SHIELD).toEqual([{ pieces: [0] }]);
+  });
+
+  it('Evento: sorteado da semente; avanco geral, energia ou carga para todos', () => {
+    /** Primeira semente cujo sorteio numero 0 escolhe o evento pedido (pesos iguais). */
+    const seedFor = (event: number) => {
+      for (let i = 0; ; i++) if (randomAt(`e${i}`, 0, 3) === event) return `e${i}`;
+    };
+    // Casa 12 e de evento
+    const at = (event: number) =>
+      move({ ...arena([[9, BASE, BASE, BASE], [30, BASE, BASE, BASE]], none), seed: seedFor(event), rolls: 0 }, 0);
+
+    expect(at(0)).toMatchObject({ pieces: [[13, BASE, BASE, BASE], [31, BASE, BASE, BASE]], lastMove: { special: { tile: 'EVENT', event: 'ADVANCE' } } });
+    expect(at(1)).toMatchObject({ energy: [1, 1], rolls: 1, lastMove: { special: { event: 'ENERGY' } } });
+    // A carga do proprio movimento (+1) soma com a do evento (+2)
+    expect(at(2)).toMatchObject({ ultimate: [3, 2], lastMove: { special: { event: 'CHARGE' } } });
   });
 });

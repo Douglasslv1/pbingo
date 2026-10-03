@@ -6,7 +6,6 @@ import {
   commitmentOf,
   dealGame,
   dieAt,
-  energySquares,
   FINISH,
   hasSingleChoice,
   isSafeSquare,
@@ -16,6 +15,7 @@ import {
   squareOf,
   viewFor,
 } from '../src/modules/ludo/ludo.engine';
+import { boardTiles } from '../src/modules/ludo/ludo.tiles';
 
 const SEED = 'semente-de-teste';
 
@@ -120,7 +120,7 @@ describe('Ludo', () => {
     expect(squareOf(0, 10)).toBe(squareOf(2, 36));
     const after = move(state, 0);
     expect(after.pieces[1][0]).toBe(BASE);
-    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], escaped: [], fortified: [], energy: [] });
+    expect(after.lastMove).toEqual({ seat: 0, piece: 0, from: 7, to: 10, captured: [{ seat: 1, piece: 0, from: 36 }], escaped: [], fortified: [], energy: [], special: null });
     expect(after).toMatchObject({ turn: 0, phase: 'ROLL' });
   });
 
@@ -163,8 +163,8 @@ describe('Ludo', () => {
   describe('energia (Arena)', () => {
     it('o Classico nao tem energia nem casas de energia', () => {
       const state = dealGame(2, 'CLASSICO', SEED);
-      expect(energySquares('CLASSICO')).toEqual([]);
-      expect(viewFor(state, 0)).toMatchObject({ energy: null, energyTiles: [] });
+      expect(boardTiles('CLASSICO')).toEqual({});
+      expect(viewFor(state, 0)).toMatchObject({ energy: null, tiles: {} });
       const after = move(position([[7, BASE, BASE, BASE], [36, BASE, BASE, BASE]], 3), 0);
       expect(after.lastMove?.energy).toEqual([]);
     });
@@ -172,13 +172,13 @@ describe('Ludo', () => {
     it('a Arena comeca com 0/10 e mostra as 8 casas de energia, fora das casas seguras', () => {
       const view = viewFor(dealGame(4, 'ARENA', SEED), 0);
       expect(view).toMatchObject({ energy: [0, 0, 0, 0], maxEnergy: 10 });
-      expect(view.energyTiles).toHaveLength(8);
-      expect(view.energyTiles.some(isSafeSquare)).toBe(false);
+      expect(Object.values(view.tiles).filter((tile) => tile === 'ENERGY')).toHaveLength(8);
+      expect(Object.keys(view.tiles).map(Number).some(isSafeSquare)).toBe(false);
     });
 
     it('parar numa casa de energia da +1', () => {
       const after = move(arena([[1, BASE, BASE, BASE], [BASE, BASE, BASE, BASE]], 3), 0);
-      expect(energySquares('ARENA')).toContain(squareOf(0, 4));
+      expect(boardTiles('ARENA')[squareOf(0, 4)!]).toBe('ENERGY');
       expect(after.energy).toEqual([1, 0]);
       expect(after.lastMove?.energy).toEqual([{ seat: 0, amount: 1, reason: 'TILE' }]);
       // So passar pela casa nao conta

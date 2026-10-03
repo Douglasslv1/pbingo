@@ -110,7 +110,7 @@ describe('Ludo nas mesas', () => {
     const view = (await request(app).get('/ludo/tables/me').set(auth(players[0]))).body;
     expect(view.mode).toBe('ARENA');
     expect(view.game).toMatchObject({ mode: 'ARENA', phase: 'PICK', characters: [null, null], energy: [0, 0], maxEnergy: 10 });
-    expect(view.game.energyTiles).toHaveLength(8);
+    expect(Object.values(view.game.tiles).filter((tile) => tile === 'ENERGY')).toHaveLength(8);
   });
 
   it('Arena: habilidade pela API cobra a energia do servidor; o cliente nao inventa habilidade nem energia', async () => {

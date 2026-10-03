@@ -393,6 +393,8 @@ export interface LudoAbility {
   ultimate?: boolean;
   cost: number;
 }
+export type LudoTile = 'ENERGY' | 'ARENA' | 'CHEST' | 'PORTAL' | 'EVENT';
+export type LudoEventId = 'ADVANCE' | 'ENERGY' | 'CHARGE';
 export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
 /** Classico: Ludo tradicional. Arena: com energia (e, nas proximas fases, habilidades). */
 export type LudoMode = 'CLASSICO' | 'ARENA';
@@ -404,8 +406,10 @@ export interface LudoGameView {
   /** Energia de cada lugar; null nas modalidades sem energia. */
   energy: number[] | null;
   maxEnergy: number;
-  /** Casas de energia (0..51 na volta do tabuleiro). */
-  energyTiles: number[];
+  /** Casas especiais, por casa da volta do tabuleiro (0..51). */
+  tiles: Record<number, LudoTile>;
+  /** Habilidade ganha no bau por cada lugar, que sai de graca. */
+  chest: Array<LudoAbilityId | null>;
   /** Personagem de cada lugar (null ate escolher). */
   characters: Array<LudoCharacterId | null>;
   powerUsed: boolean[];
@@ -429,7 +433,13 @@ export interface LudoGameView {
     captured: Array<{ seat: number; piece: number; from: number }>;
     escaped?: Array<{ seat: number; piece: number; from: number; to: number }>;
     fortified?: Array<{ seat: number; piece: number }>;
-    energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' }>;
+    energy?: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' | 'ARENA' }>;
+    /** Portal (`to` = onde a peca saiu do outro portal), bau ou evento da casa onde a peca parou. */
+    special?:
+      | { tile: 'PORTAL'; to: number }
+      | { tile: 'CHEST'; ability: LudoAbilityId }
+      | { tile: 'EVENT'; event: LudoEventId }
+      | null;
   } | null;
   /** Casas a mais no movimento atual (Impulso). */
   bonus: number;

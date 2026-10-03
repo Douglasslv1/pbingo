@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { LudoGameView } from '../../types';
+import type { LudoGameView, LudoTile } from '../../types';
 import { BASE_AREA, boardCells, COLOR_NAMES, pathOf, pointOf, Point, SIZE, viewTurns } from './ludoGeometry';
 
 interface Props {
@@ -12,6 +12,8 @@ interface Props {
 
 /** Segundos por casa na animacao do movimento. */
 const STEP = 0.16;
+
+export const TILE_ICONS: Record<LudoTile, string> = { ENERGY: '⚡', ARENA: '⚔️', CHEST: '🎁', PORTAL: '🌀', EVENT: '❓' };
 
 /**
  * Tabuleiro de Ludo em SVG (15x15 casas), girado para a cor de quem joga ficar embaixo a direita.
@@ -56,7 +58,7 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
         slots.map(([y, x], index) => <circle key={`${color}-${index}`} cx={x} cy={y} r={0.55} className={`ludo-slot ludo-color-${color}`} />),
       )}
       {cells.track.map(({ point: [y, x], color, safe }, index) => {
-        const energy = game.energyTiles.includes(index);
+        const tile = game.tiles[index];
         return (
           <g key={index}>
             <rect
@@ -64,11 +66,11 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
               y={y - 0.5}
               width={1}
               height={1}
-              className={color === null ? `ludo-cell${energy ? ' energy' : ''}` : `ludo-cell ludo-color-${color} filled`}
+              className={color === null ? `ludo-cell${tile ? ` ${tile.toLowerCase()}` : ''}` : `ludo-cell ludo-color-${color} filled`}
             />
-            {((safe && color === null) || energy) && (
-              <text x={x} y={y + 0.32} textAnchor="middle" className={energy ? 'ludo-bolt' : 'ludo-star'}>
-                {energy ? '⚡' : '★'}
+            {((safe && color === null) || tile) && (
+              <text x={x} y={y + 0.32} textAnchor="middle" className={tile ? 'ludo-tile-icon' : 'ludo-star'}>
+                {tile ? TILE_ICONS[tile] : '★'}
               </text>
             )}
           </g>
@@ -87,7 +89,9 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
         // Capturadas e fugidas so se movem depois que a peca que chegou termina de andar
         const hit = [...(last?.captured ?? []), ...(last?.escaped ?? [])].some((victim) => victim.seat === seat && victim.piece === piece);
         const effect = (type: string) => game.effects.some((e) => e.type === type && e.seat === seat && e.piece === piece);
-        const route = moved ? pathOf(color, last.from, last.to, piece, turns).slice(0, -1).concat([target]) : [target];
+        // Pelo portal, a peca anda ate ele e salta para o outro
+        const path = moved ? pathOf(color, last.from, last.to, piece, turns) : [];
+        const route = moved ? (last.special?.tile === 'PORTAL' ? path : path.slice(0, -1)).concat([target]) : [target];
         const canPlay = selectable.some((option) => option.seat === seat && option.piece === piece);
 
         return (

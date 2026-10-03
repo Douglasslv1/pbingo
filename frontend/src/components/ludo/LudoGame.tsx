@@ -4,11 +4,11 @@ import { formatBrl } from '../../format';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import { useTurnAlert } from '../../hooks/useTurnAlert';
-import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoGameView, LudoTableView } from '../../types';
+import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoEventId, LudoGameView, LudoTableView } from '../../types';
 import GameTable from '../tables/GameTable';
 import VictoryOverlay from '../tables/VictoryOverlay';
 import LudoAbilities, { ABILITY_ICONS, CHARACTER_ICONS } from './LudoAbilities';
-import LudoBoard from './LudoBoard';
+import LudoBoard, { TILE_ICONS } from './LudoBoard';
 import LudoDice from './LudoDice';
 import { COLOR_NAMES, FINISH } from './ludoGeometry';
 
@@ -44,6 +44,24 @@ function abilityNews(game: LudoGameView, nameOf: (seat: number) => string): stri
     CHAOS: `${who} trocou uma peça de lugar com uma de ${nameOf(used.targetSeat ?? 0)}`,
   };
   return `${ABILITY_ICONS[used.ability]} ${name.toUpperCase()} · ${text[used.ability]}`;
+}
+
+const EVENT_TEXT: Record<LudoEventId, string> = {
+  ADVANCE: 'AVANÇO GERAL · todas as peças na volta andaram 1 casa',
+  ENERGY: 'ENERGIA · todos ganharam +1 de energia',
+  CHARGE: 'CARGA · todos ganharam +2 de carga da ultimate',
+};
+
+/** O que a casa especial do ultimo movimento fez (portal, bau ou evento). */
+function specialNews(game: LudoGameView, nameOf: (seat: number) => string): string | null {
+  const special = game.lastMove?.special;
+  if (!special) return null;
+  const who = nameOf(game.lastMove!.seat);
+  const icon = TILE_ICONS[special.tile];
+  if (special.tile === 'PORTAL') return `${icon} PORTAL · a peça de ${who} saltou para o próximo portal`;
+  if (special.tile === 'EVENT') return `${icon} EVENTO: ${EVENT_TEXT[special.event]}`;
+  const name = game.abilities.find((ability) => ability.id === special.ability)?.name ?? '';
+  return `${icon} BAÚ · ${who} ganhou ${name} (sai de graça)`;
 }
 
 /** Barra de 0 ao maximo (energia, ultimate). */
@@ -145,6 +163,7 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
   }
 
   const news = abilityNews(game, nameOf);
+  const tileNews = specialNews(game, nameOf);
   const newsIsUltimate = game.abilities.find((item) => item.id === game.lastAbility?.ability)?.ultimate;
   const escaped = game.lastMove?.escaped ?? [];
   const fortified = game.lastMove?.fortified ?? [];
@@ -228,6 +247,7 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
               </motion.p>
             )}
           </AnimatePresence>
+          {tileNews && <p className="banner ludo-news">{tileNews}</p>}
           {escaped.length > 0 && (
             <p className="banner ludo-news">💨 FUGA! A peça de {escaped.map((escape) => nameOf(escape.seat)).join(' e ')} escapou da captura.</p>
           )}

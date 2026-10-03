@@ -273,11 +273,14 @@ export const ABILITIES: Record<AbilityId, Ability> = {
   CHAOS,
 };
 
-/** Pode pagar a habilidade: energia, poder de personagem ainda nao usado ou ultimate carregada. */
+/** Habilidade guardada no bau: sai de graca. */
+const fromChest = (state: LudoState, seat: number, ability: Ability) => !ability.character && state.chest[seat] === ability.id;
+
+/** Pode pagar a habilidade: energia, bau, poder de personagem ainda nao usado ou ultimate carregada. */
 function affordable(state: LudoState, seat: number, ability: Ability): boolean {
   if (ability.character && state.characters[seat] !== ability.character) return false;
   if (ability.ultimate) return state.ultimate[seat] >= LUDO_CONFIG.ultimateMax;
-  return ability.character ? !state.powerUsed[seat] : state.energy[seat] >= cost(ability.id);
+  return ability.character ? !state.powerUsed[seat] : fromChest(state, seat, ability) || state.energy[seat] >= cost(ability.id);
 }
 
 /** Alvos de cada habilidade que o jogador da vez pode usar agora (com energia e na fase certa). */
@@ -296,7 +299,7 @@ const targetKey = (target: AbilityTarget) =>
   target.targetSeat === undefined ? [...(target.pieces ?? [])].sort().join() : (target.pieces ?? []).join();
 const sameTarget = (a: AbilityTarget, b: AbilityTarget) => a.targetSeat === b.targetSeat && targetKey(a) === targetKey(b);
 
-/** Usa uma habilidade: confere fase, energia e alvo, cobra a energia e marca a vez como ja usada. */
+/** Usa uma habilidade: confere fase, energia e alvo, cobra a energia (ou gasta o bau) e marca a vez como ja usada. */
 export function useAbility(state: LudoState, seat: number, id: AbilityId, target: AbilityTarget): LudoState {
   if (state.abilityUsed) throw new LudoRuleError('Você já usou uma habilidade nesta vez');
   const ability = ABILITIES[id];
@@ -315,9 +318,11 @@ export function useAbility(state: LudoState, seat: number, id: AbilityId, target
   if (!ability.options(state, seat).some((option) => sameTarget(option, target))) {
     throw new LudoRuleError(`Alvo inválido para ${ability.name}`);
   }
+  const free = fromChest(state, seat, ability);
   const paid: LudoState = {
     ...state,
-    energy: state.energy.map((value, i) => (i === seat ? value - cost(id) : value)),
+    energy: state.energy.map((value, i) => (i === seat && !free ? value - cost(id) : value)),
+    chest: free ? state.chest.map((held, i) => (i === seat ? null : held)) : state.chest,
     abilityUsed: true,
     powerUsed: ability.character && !ability.ultimate ? state.powerUsed.map((used, i) => used || i === seat) : state.powerUsed,
     ultimate: ability.ultimate ? state.ultimate.map((charge, i) => (i === seat ? 0 : charge)) : state.ultimate,

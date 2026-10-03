@@ -50,8 +50,17 @@ export default function LudoAbilities({ game, mySeat, myTurn, busy, selected, on
   const usable = (id: LudoAbilityId) => myTurn && (game.abilityOptions[id]?.length ?? 0) > 0;
   // Poder e ultimate: so os do meu personagem; no lugar do custo, "1×" ou a carga que a ultimate pede
   const mine = game.abilities.filter((item) => !item.character || item.character === game.characters[mySeat]);
+  // Habilidade guardada no bau sai de graca
   const costOf = (item: LudoAbility) =>
-    item.ultimate ? `🔥${game.ultimateMax}` : item.character ? (game.powerUsed[mySeat] ? 'usado' : '1×') : `⚡${item.cost}`;
+    item.ultimate
+      ? `🔥${game.ultimateMax}`
+      : item.character
+        ? game.powerUsed[mySeat]
+          ? 'usado'
+          : '1×'
+        : game.chest[mySeat] === item.id
+          ? '🎁 grátis'
+          : `⚡${item.cost}`;
 
   return (
     <div className="ludo-abilities">

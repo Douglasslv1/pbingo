@@ -112,6 +112,26 @@ export default function LudoRules() {
           Não vale em casa segura, em peça com escudo nem se uma delas passaria da entrada da reta final.
         </li>
       </ul>
+      <h3>Arena: casas especiais</h3>
+      <ul>
+        <li>Só valem ao parar na casa com um movimento (passar por ela não conta).</li>
+        <li>
+          ⚔️ <strong>Arena</strong>: capturar nela dá 1 de energia a mais.
+        </li>
+        <li>
+          🎁 <strong>Baú</strong>: ganha uma habilidade sorteada (Escudo, Impulso, Puxão, Troca, Segunda chance ou Fuga)
+          que sai de graça. Guarda uma por vez; com uma guardada, o baú não dá outra.
+        </li>
+        <li>
+          🌀 <strong>Portal</strong>: a peça salta para o próximo portal, sem capturar ninguém lá. Não salta se passaria da
+          entrada da sua reta final.
+        </li>
+        <li>
+          ❓ <strong>Evento</strong>: sorteia um evento que vale para todos: avanço geral (todas as peças na volta andam 1
+          casa, sem capturar), +1 de energia ou +2 de carga da ultimate.
+        </li>
+        <li>Baús e eventos são sorteados com a mesma semente dos dados, então também podem ser conferidos no fim.</li>
+      </ul>
       <h3>Tempo e dados verificáveis</h3>
       <ul>
         <li>Cada ação (jogar o dado ou mover) tem 30 segundos. Se o tempo acabar, o sistema joga por você.</li>

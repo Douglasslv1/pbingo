@@ -2598,7 +2598,23 @@ button.truco-call {
   fill: #fef9c3;
 }
 
-.ludo-bolt {
+.ludo-cell.arena {
+  fill: #fee2e2;
+}
+
+.ludo-cell.chest {
+  fill: #fde68a;
+}
+
+.ludo-cell.portal {
+  fill: #ede9fe;
+}
+
+.ludo-cell.event {
+  fill: #e0f2fe;
+}
+
+.ludo-tile-icon {
   font-size: 0.7px;
 }
 

@@ -3,6 +3,7 @@ import { GameRuleError } from '../tables/tables.types';
 import { ABILITIES, AbilityId, abilityOptions, AbilityTarget, retreat, useAbility } from './ludo.abilities';
 import { CHARACTER_IDS, CHARACTERS, CharacterId } from './ludo.characters';
 import { LUDO_CONFIG, LUDO_MODES, LudoMode } from './ludo.config';
+import { boardTiles, landOn, LudoSpecial } from './ludo.tiles';
 
 /**
  * Ludo: cada jogador tem 4 pecas que saem da base com um 6, dao a volta no tabuleiro (52 casas)
@@ -54,7 +55,9 @@ export interface LudoMove {
   /** Pecas fortificadas (Guardiao) que ignoraram a captura e ficaram onde estavam. */
   fortified: Array<{ seat: number; piece: number }>;
   /** Energia ganha com o movimento (Arena), inclusive por quem perdeu a peca. */
-  energy: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' }>;
+  energy: Array<{ seat: number; amount: number; reason: 'CAPTURE' | 'CAPTURED' | 'TILE' | 'ARENA' }>;
+  /** Portal, bau ou evento da casa onde a peca parou (`to` e a casa onde ela parou, antes do portal). */
+  special: LudoSpecial | null;
 }
 
 export interface LudoState {
@@ -71,6 +74,8 @@ export interface LudoState {
   powerUsed: boolean[];
   /** Carga da ultimate de cada lugar (so conta nas modalidades com ultimate). */
   ultimate: number[];
+  /** Habilidade ganha no bau, guardada ate ser usada de graca (uma por lugar). */
+  chest: Array<AbilityId | null>;
   /** Dados rolados pela Velocidade maxima, esperando a escolha (fase CHOOSE). */
   diceChoices: number[] | null;
   /** Capturas que ainda dao casas a mais nesta vez (Cacada). */
@@ -88,7 +93,7 @@ export interface LudoState {
   lastAbility: ({ seat: number; ability: AbilityId; move: number } & AbilityTarget) | null;
   /** 6 seguidos nesta vez. */
   sixes: number;
-  /** Dados ja rolados na partida: o proximo sai da semente com este numero. */
+  /** Sorteios ja feitos na partida (dados, bau, eventos): o proximo sai da semente com este numero. */
   rolls: number;
   /** Semente secreta dos dados; o hash dela e publico desde o inicio e ela e revelada no fim. */
   seed: string;
@@ -112,28 +117,22 @@ export function squareOf(color: LudoColor, progress: number): number | null {
 /** Casas seguras: a saida de cada cor e a estrela 8 casas depois dela. */
 export const isSafeSquare = (square: number) => SAFE_OFFSETS.includes(square % COLOR_OFFSET);
 
-/** Casas de energia do tabuleiro (0..51), nas modalidades com energia. */
-export const energySquares = (mode: LudoMode) =>
-  LUDO_MODES[mode].energyEnabled
-    ? Array.from({ length: TRACK_LENGTH / COLOR_OFFSET }).flatMap((_, quarter) =>
-        LUDO_CONFIG.energyTileOffsets.map((offset) => quarter * COLOR_OFFSET + offset),
-      )
-    : [];
-
 export const commitmentOf = (seed: string) => createHash('sha256').update(seed).digest('hex');
 
 /**
- * Dado numero `index` da partida, derivado da semente: o resultado e fixado no inicio (o hash da
- * semente e mostrado aos jogadores) e qualquer um confere todos os dados quando ela e revelada.
- * Descarta os valores que deixariam o dado viciado (rejeicao), sem nunca usar Math.random.
+ * Sorteio numero `index` da partida (0..sides-1), derivado da semente: o resultado e fixado no inicio
+ * (o hash da semente e mostrado aos jogadores) e qualquer um confere todos quando ela e revelada.
+ * Descarta os valores que deixariam o sorteio viciado (rejeicao), sem nunca usar Math.random.
  */
-export function dieAt(seed: string, index: number): number {
+export function randomAt(seed: string, index: number, sides: number): number {
   for (let attempt = 0; ; attempt++) {
     const value = createHmac('sha256', seed).update(`${index}:${attempt}`).digest().readUInt32BE(0);
-    const limit = Math.floor(0x1_0000_0000 / 6) * 6;
-    if (value < limit) return (value % 6) + 1;
+    const limit = Math.floor(0x1_0000_0000 / sides) * sides;
+    if (value < limit) return value % sides;
   }
 }
+
+export const dieAt = (seed: string, index: number) => randomAt(seed, index, 6) + 1;
 
 export function dealGame(seats: number, mode: LudoMode = 'CLASSICO', seed = randomBytes(32).toString('hex')): LudoState {
   if (seats !== 2 && seats !== 4) throw new LudoRuleError('O Ludo é jogado por 2 ou 4 jogadores');
@@ -145,6 +144,7 @@ export function dealGame(seats: number, mode: LudoMode = 'CLASSICO', seed = rand
     characters: Array(seats).fill(null),
     powerUsed: Array(seats).fill(false),
     ultimate: Array(seats).fill(0),
+    chest: Array(seats).fill(null),
     diceChoices: null,
     hunt: 0,
     turn: 0,
@@ -238,8 +238,8 @@ export function rerollDice(state: LudoState, seat: number): LudoState {
 }
 
 /**
- * Energia ganha ao parar numa casa (so nas modalidades com energia): por captura, por casa de energia
- * e, para quem perdeu a peca, um pouco de compensacao.
+ * Energia ganha ao parar numa casa (so nas modalidades com energia): por captura (mais ainda numa casa de
+ * arena), por casa de energia e, para quem perdeu a peca, um pouco de compensacao.
  */
 function energyGains(state: LudoState, seat: number, square: number | null, captured: LudoMove['captured']): LudoMove['energy'] {
   if (!LUDO_MODES[state.mode].energyEnabled) return [];
@@ -247,9 +247,9 @@ function energyGains(state: LudoState, seat: number, square: number | null, capt
   const perCapture = LUDO_CONFIG.captureEnergy + (state.characters[seat] === 'HUNTER' ? LUDO_CONFIG.hunterCaptureEnergy : 0);
   if (captured.length > 0) gains.push({ seat, amount: captured.length * perCapture, reason: 'CAPTURE' });
   captured.forEach((capture) => gains.push({ seat: capture.seat, amount: LUDO_CONFIG.capturedEnergy, reason: 'CAPTURED' }));
-  if (square !== null && energySquares(state.mode).includes(square)) {
-    gains.push({ seat, amount: LUDO_CONFIG.energyTileEnergy, reason: 'TILE' });
-  }
+  const tile = square === null ? undefined : boardTiles(state.mode)[square];
+  if (tile === 'ARENA' && captured.length > 0) gains.push({ seat, amount: LUDO_CONFIG.arenaCaptureEnergy, reason: 'ARENA' });
+  if (tile === 'ENERGY') gains.push({ seat, amount: LUDO_CONFIG.energyTileEnergy, reason: 'TILE' });
   return gains;
 }
 
@@ -298,17 +298,26 @@ function move(state: LudoState, seat: number, piece: number): LudoState {
 
   // Cacada: a captura da casas a mais no movimento da jogada extra
   const hunting = captured.length > 0 && state.hunt > 0;
+  // Depois da captura e da energia vem a casa especial (portal, bau ou evento)
+  const landed = landOn(
+    {
+      ...state,
+      pieces,
+      energy,
+      ultimate: chargeUltimate(state, seat, captured, to),
+      effects,
+      bonus: hunting ? LUDO_CONFIG.abilities.HUNT.squares : 0,
+      hunt: hunting ? state.hunt - 1 : state.hunt,
+    },
+    seat,
+    piece,
+    square,
+  );
   const moved: LudoState = {
-    ...state,
-    pieces,
-    energy,
-    ultimate: chargeUltimate(state, seat, captured, to),
-    effects,
-    bonus: hunting ? LUDO_CONFIG.abilities.HUNT.squares : 0,
-    hunt: hunting ? state.hunt - 1 : state.hunt,
-    lastMove: { seat, piece, from, to, captured, escaped, fortified, energy: gains },
+    ...landed.state,
+    lastMove: { seat, piece, from, to, captured, escaped, fortified, energy: gains, special: landed.special },
   };
-  if (pieces[seat].every((progress) => progress === FINISH)) {
+  if (moved.pieces[seat].every((progress) => progress === FINISH)) {
     return { ...moved, status: 'FINISHED', result: { winner: seat }, phase: 'ROLL', dice: null };
   }
   // Tirar 6, capturar ou chegar ao centro da direito a jogar de novo
@@ -391,7 +400,8 @@ export function viewFor(state: LudoState, seat: number) {
     pieces: state.pieces,
     energy: LUDO_MODES[state.mode].energyEnabled ? state.energy : null,
     maxEnergy: LUDO_CONFIG.maxEnergy,
-    energyTiles: energySquares(state.mode),
+    tiles: boardTiles(state.mode),
+    chest: state.chest,
     characters: state.characters,
     powerUsed: state.powerUsed,
     ultimate: LUDO_MODES[state.mode].ultimatesEnabled ? state.ultimate : null,
