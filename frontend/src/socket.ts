@@ -21,6 +21,17 @@ export function getSocket(): Socket {
   return socket;
 }
 
+/**
+ * Pedido com resposta pela conexao ja aberta (sem esperar abrir uma requisicao nova). Devolve null quando
+ * nao da para usar o WebSocket agora (desconectado ou com outro login): ai o pedido vai por HTTP.
+ * Enviado e sem resposta em 10s, rejeita; nao reenviar por HTTP, que poderia repetir a jogada.
+ */
+export function socketRequest(token: string, event: string, payload: unknown): Promise<{ data?: unknown; error?: string; status?: number }> | null {
+  const active = getSocket();
+  if (!active.connected || currentToken !== token) return null;
+  return active.timeout(10_000).emitWithAck(event, payload);
+}
+
 /** Conecta com o login (eventos privados do domino) ou anonimo; reconecta so se o token mudou. */
 export function setSocketToken(token: string | null): void {
   if (token === currentToken) return;

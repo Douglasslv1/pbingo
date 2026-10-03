@@ -3,10 +3,23 @@ import { Server as SocketIOServer } from 'socket.io';
 import { env } from '../config/env';
 import { logger } from '../lib/logger';
 import { authenticateToken } from '../lib/session';
+import { errorResponse } from '../middleware/error.middleware';
 
 let io: SocketIOServer | null = null;
 
 const userRoom = (userId: string) => `user:${userId}`;
+
+type RequestHandler = (userId: string, payload: unknown) => Promise<unknown>;
+const requestHandlers = new Map<string, RequestHandler>();
+
+/**
+ * Pedido do cliente pelo WebSocket, respondido no ack com `{ data }` ou `{ error, status }`, como no HTTP.
+ * A conexao ja esta aberta, entao a jogada nao espera abrir uma requisicao nova. O token e conferido a
+ * cada pedido: sessao encerrada (senha trocada) nao age.
+ */
+export function onSocketRequest(event: string, handler: RequestHandler): void {
+  requestHandlers.set(event, handler);
+}
 
 export function initSocket(httpServer: HttpServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
@@ -31,6 +44,26 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
         logger.warn('Conexão WebSocket com token inválido recusada');
         next(new Error('Token de autenticação inválido ou expirado'));
       });
+  });
+
+  io.on('connection', (socket) => {
+    requestHandlers.forEach((handler, event) =>
+      socket.on(event, async (payload: unknown, ack: unknown) => {
+        if (typeof ack !== 'function') return;
+        const startedAt = Date.now();
+        let userId: string | undefined;
+        let reply: { data: unknown } | { error: string; status: number };
+        try {
+          userId = await authenticateToken(String(socket.handshake.auth?.token ?? ''));
+          reply = { data: await handler(userId, payload) };
+        } catch (err) {
+          const { status, body } = errorResponse(err, { event, userId });
+          reply = { ...body, status };
+        }
+        logger.info('Pedido WebSocket', { event, userId, status: 'status' in reply ? reply.status : 200, durationMs: Date.now() - startedAt });
+        ack(reply);
+      }),
+    );
   });
 
   return io;

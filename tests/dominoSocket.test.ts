@@ -3,6 +3,7 @@ import { AddressInfo } from 'net';
 import { io as connect, Socket } from 'socket.io-client';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { env } from '../src/config/env';
 import { prisma } from '../src/lib/prisma';
 import { DominoState } from '../src/modules/domino/domino.types';
 import { initSocket } from '../src/websocket/socket';
@@ -93,5 +94,32 @@ describe('WebSocket do domino', () => {
     }
 
     expect(stranger).toHaveLength(0);
+  });
+});
+
+describe('Jogadas pelo WebSocket', () => {
+  it('valida como no HTTP: login, vez e formato; a resposta traz a mesa atualizada', async () => {
+    const enabled = env.ludoEnabled;
+    env.ludoEnabled = true;
+    try {
+      const players = [await registerTestUser(), await registerTestUser()];
+      let tableId = '';
+      for (const player of players) {
+        tableId = (await request(app).post('/ludo/queue').set('Authorization', `Bearer ${player.token}`).send({ teamMode: 'DUEL' })).body.id;
+      }
+      const first = (await prisma.gameSeat.findFirstOrThrow({ where: { tableId, seat: 0 } })).userId;
+      const [mine, theirs] = players[0].user.id === first ? players : [players[1], players[0]];
+      const [mySocket, theirSocket, anonymous] = await Promise.all([open(mine.token), open(theirs.token), open()]);
+      const roll = { id: tableId, action: { type: 'ROLL' } };
+
+      expect(await theirSocket.emitWithAck('ludo:move', roll)).toMatchObject({ error: 'Não é a sua vez' });
+      expect(await anonymous.emitWithAck('ludo:move', roll)).toMatchObject({ status: 401 });
+      expect(await mySocket.emitWithAck('ludo:move', { id: 'x', action: {} })).toMatchObject({ status: 422 });
+
+      const reply = await mySocket.emitWithAck('ludo:move', roll);
+      expect(reply.data).toMatchObject({ id: tableId, mySeat: 0, game: { rolls: 1 } });
+    } finally {
+      env.ludoEnabled = enabled;
+    }
   });
 });

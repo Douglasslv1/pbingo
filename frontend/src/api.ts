@@ -20,6 +20,7 @@ import type {
   WithdrawalRequest,
   WithdrawalStatus,
 } from './types';
+import { socketRequest } from './socket';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -136,8 +137,14 @@ export const api = {
   leaveTable: (game: TableGame, token: string) =>
     request<{ tableId: string; refundedCredits: number }>(`/${game}/queue/leave`, { method: 'POST' }, token),
 
-  playTable: <V>(game: TableGame, token: string, tableId: string, action: unknown) =>
-    request<V>(`/${game}/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token),
+  /** Jogada pelo WebSocket quando conectado (mais rapido); senao, por HTTP. */
+  playTable: async <V>(game: TableGame, token: string, tableId: string, action: unknown): Promise<V> => {
+    const sent = socketRequest(token, `${game}:move`, { id: tableId, action });
+    if (!sent) return request<V>(`/${game}/tables/${tableId}/moves`, { method: 'POST', body: JSON.stringify(action) }, token);
+    const reply = await sent;
+    if (reply.error) throw new ApiError(reply.error, reply.status ?? 500);
+    return reply.data as V;
+  },
 
   comeBackToTable: <V>(game: TableGame, token: string, tableId: string) =>
     request<V>(`/${game}/tables/${tableId}/back`, { method: 'POST' }, token),

@@ -6,6 +6,7 @@ import { requireTermsAccepted } from '../../middleware/terms.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { AppError } from '../../utils/errors';
 import { historyQuerySchema } from '../../utils/pagination';
+import { onSocketRequest } from '../../websocket/socket';
 import { tableIdParamSchema, tableStatusFilterSchema } from './tables.schemas';
 import {
   getActiveTable,
@@ -50,6 +51,10 @@ export function createTableRouters(game: GameName, schemas: { queue: ZodType<Que
   router.post(
     '/tables/:id/moves',
     handle((req) => playMove(game, requireUserId(req), tableId(req), schemas.action.parse(req.body))),
+  );
+  // A mesma jogada pelo WebSocket: { id, action }
+  onSocketRequest(`${game.toLowerCase()}:move`, (userId, payload) =>
+    playMove(game, userId, tableIdParamSchema.parse(payload).id, schemas.action.parse((payload as { action?: unknown }).action)),
   );
   router.post('/tables/:id/back', handle((req) => returnToTable(game, requireUserId(req), tableId(req))));
 
