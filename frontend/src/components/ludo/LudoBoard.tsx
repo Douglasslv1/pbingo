@@ -25,6 +25,8 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
   const last = game.lastMove;
   const moverDuration = last ? (last.from === -1 ? 1 : last.to - last.from) * STEP : 0;
   const landing = last ? pointOf(game.colors[last.seat], last.to, last.piece, turns) : [0, 0];
+  // Numero do ultimo movimento: os efeitos dele nao se repetem nas jogadas seguintes (ex.: o dado extra)
+  const moveId = [...(game.log ?? [])].reverse().find((entry) => entry.type === 'MOVE')?.move ?? game.moveCount;
 
   // Varias pecas na mesma casa ficam levemente deslocadas para todas aparecerem
   const stacks = new Map<string, number>();
@@ -109,6 +111,7 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
             role={canPlay ? 'button' : undefined}
             aria-label={`Peça ${piece + 1} ${COLOR_NAMES[color]}${progress === -1 ? ' (na base)' : ''}`}
           >
+            {canPlay && <circle r={0.75} className="ludo-hit" />}
             {canPlay && <circle r={0.62} className="ludo-piece-ring" />}
             {effect('SHIELD') && <circle r={0.52} className="ludo-shield" />}
             {effect('ESCAPE') && <circle r={0.52} className="ludo-escape" />}
@@ -119,11 +122,27 @@ export default function LudoBoard({ game, mySeat, selectable, onSelect }: Props)
         );
       })}
 
+      {/* Captura ou casa especial: o icone estoura na casa onde a peca parou */}
+      {last && (last.captured.length > 0 || last.special) && (
+        <g transform={`translate(${landing[1]} ${landing[0] + 0.3})`}>
+          <motion.text
+            key={moveId}
+            textAnchor="middle"
+            className="ludo-burst"
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.3, 1.8, 2.2] }}
+            transition={{ duration: 0.9, delay: moverDuration }}
+          >
+            {last.captured.length > 0 ? '💥' : TILE_ICONS[last.special!.tile]}
+          </motion.text>
+        </g>
+      )}
+
       {/* Energia ganha no ultimo movimento sobe da casa onde a peca parou */}
       {last?.energy && last.energy.length > 0 && (
         <g transform={`translate(${landing[1]} ${landing[0] - 0.6})`}>
           <motion.text
-            key={game.moveCount}
+            key={moveId}
             textAnchor="middle"
             className="ludo-energy-gain"
             initial={{ opacity: 0, y: 0 }}

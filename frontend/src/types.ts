@@ -399,6 +399,15 @@ export type LudoTeamMode = 'DUEL' | 'INDIVIDUAL';
 /** Classico: Ludo tradicional. Arena: com energia (e, nas proximas fases, habilidades). */
 export type LudoMode = 'CLASSICO' | 'ARENA';
 
+/** Linha do historico da partida: acao do jogador, dado que saiu ou movimento feito. */
+export type LudoLogEntry = { move: number } & (
+  | { type: 'PICK'; seat: number; character: LudoCharacterId }
+  | ({ type: 'ABILITY'; seat: number; ability: LudoAbilityId } & LudoAbilityTarget)
+  | { type: 'PASS'; seat: number }
+  | { type: 'ROLL'; seat: number; value: number }
+  | ({ type: 'MOVE' } & NonNullable<LudoGameView['lastMove']>)
+);
+
 export interface LudoGameView {
   mode: LudoMode;
   colors: number[];
@@ -441,6 +450,8 @@ export interface LudoGameView {
       | { tile: 'EVENT'; event: LudoEventId }
       | null;
   } | null;
+  /** Ultimas jogadas da partida (as mais recentes no fim). */
+  log: LudoLogEntry[];
   /** Casas a mais no movimento atual (Impulso). */
   bonus: number;
   effects: Array<{ type: 'SHIELD' | 'ESCAPE' | 'FORTIFY'; seat: number; piece: number }>;

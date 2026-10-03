@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { playTones } from '../sounds';
 
 const STORAGE_KEY = 'pbingu_sound';
 
@@ -10,26 +11,8 @@ function readSoundPreference(): boolean {
   }
 }
 
-/** Dois bipes curtos gerados no navegador (sem arquivo de audio). */
-function playChime(): void {
-  try {
-    const context = new AudioContext();
-    [0, 0.18].forEach((delay, index) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.frequency.value = index === 0 ? 660 : 880;
-      gain.gain.setValueAtTime(0.0001, context.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + delay + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + delay + 0.15);
-      oscillator.connect(gain).connect(context.destination);
-      oscillator.start(context.currentTime + delay);
-      oscillator.stop(context.currentTime + delay + 0.16);
-    });
-    setTimeout(() => context.close(), 600);
-  } catch {
-    // Navegador sem audio (ou bloqueado ate a primeira interacao): segue sem som
-  }
-}
+/** Dois bipes curtos: chegou a sua vez. */
+const playChime = () => playTones([[660, 0], [880, 0.18]]);
 
 /**
  * Avisa com som e vibracao quando a vez passa a ser do jogador.

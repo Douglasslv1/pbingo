@@ -10,7 +10,7 @@ import { useGameTable } from './useGameTable';
  */
 export function useTableRoom<V extends GameTableView<unknown>, A>(game: TableGame, predict?: (table: V, action: A) => V | null) {
   const { auth } = useAuth();
-  const { table, setTable, loading, refresh } = useGameTable<V>(game);
+  const { table, setTable, loading, offline, refresh } = useGameTable<V>(game);
   const [keysBalance, setKeysBalance] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +39,7 @@ export function useTableRoom<V extends GameTableView<unknown>, A>(game: TableGam
   return {
     table,
     loading,
+    offline,
     busy,
     error,
     keysBalance,

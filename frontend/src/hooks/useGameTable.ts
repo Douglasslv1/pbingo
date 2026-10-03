@@ -12,6 +12,8 @@ export function useGameTable<V extends GameTableView<unknown>>(game: TableGame) 
   const { auth } = useAuth();
   const [table, setTable] = useState<V | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Caiu a conexao em tempo real (a tela avisa enquanto reconecta). */
+  const [offline, setOffline] = useState(false);
   const token = auth?.token;
 
   const refresh = useCallback(async () => {
@@ -40,18 +42,24 @@ export function useGameTable<V extends GameTableView<unknown>>(game: TableGame) 
     }
     // Ao reconectar, busca o estado atual para nao perder jogadas feitas enquanto estava fora
     function onReconnect() {
+      setOffline(false);
       refresh().catch(() => {});
+    }
+    function onDisconnect() {
+      setOffline(true);
     }
 
     socket.on(`${game}:table`, onTable);
     socket.on(`${game}:left`, onLeft);
     socket.on('connect', onReconnect);
+    socket.on('disconnect', onDisconnect);
     return () => {
+      socket.off('disconnect', onDisconnect);
       socket.off(`${game}:table`, onTable);
       socket.off(`${game}:left`, onLeft);
       socket.off('connect', onReconnect);
     };
   }, [game, refresh]);
 
-  return { table, setTable, loading, refresh };
+  return { table, setTable, loading, offline, refresh };
 }

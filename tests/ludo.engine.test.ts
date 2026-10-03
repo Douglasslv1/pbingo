@@ -205,6 +205,16 @@ describe('Ludo', () => {
     });
   });
 
+  it('guarda as ultimas jogadas no historico, com limite', () => {
+    const rolled = applyAction(dealGame(2, 'CLASSICO', seedRolling(6)), 0, { type: 'ROLL' });
+    expect(rolled.log).toEqual([{ type: 'ROLL', seat: 0, value: 6, move: 1 }]);
+    const moved = move(rolled, 0);
+    expect(moved.log[1]).toMatchObject({ type: 'MOVE', seat: 0, from: BASE, to: 0, move: 2 });
+    const full = move({ ...rolled, log: Array(12).fill(rolled.log[0]) }, 0);
+    expect(full.log).toHaveLength(12);
+    expect(full.log[11]).toMatchObject({ type: 'MOVE', move: 2 });
+  });
+
   it('jogada automatica: rola o dado ou move a peca mais adiantada', () => {
     expect(autoAction(dealGame(2, 'CLASSICO', SEED))).toEqual({ type: 'ROLL' });
     expect(autoAction(position([[10, 30, BASE, BASE], [BASE, BASE, BASE, BASE]], 2))).toEqual({ type: 'MOVE', piece: 1 });

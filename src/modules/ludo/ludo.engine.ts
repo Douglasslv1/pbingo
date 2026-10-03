@@ -60,6 +60,13 @@ export interface LudoMove {
   special: LudoSpecial | null;
 }
 
+/** Linha do historico da partida: acao do jogador, dado que saiu ou movimento feito. */
+export type LudoLogEntry = { move: number } & (
+  | (Extract<LudoAction, { type: 'PICK' | 'ABILITY' | 'PASS' }> & { seat: number })
+  | { type: 'ROLL'; seat: number; value: number }
+  | ({ type: 'MOVE' } & LudoMove)
+);
+
 export interface LudoState {
   mode: LudoMode;
   /** Cor de cada lugar da mesa. */
@@ -100,6 +107,8 @@ export interface LudoState {
   moveCount: number;
   lastRoll: { seat: number; value: number } | null;
   lastMove: LudoMove | null;
+  /** Ultimas jogadas da partida. */
+  log: LudoLogEntry[];
   status: 'PLAYING' | 'FINISHED';
   result: { winner: number } | null;
 }
@@ -160,6 +169,7 @@ export function dealGame(seats: number, mode: LudoMode = 'CLASSICO', seed = rand
     moveCount: 0,
     lastRoll: null,
     lastMove: null,
+    log: [],
     status: 'PLAYING',
     result: null,
   };
@@ -370,7 +380,13 @@ export function applyAction(state: LudoState, seat: number, action: LudoAction):
             : action.type === 'PASS'
               ? pass(state)
               : ability(state, seat, action);
-  return { ...next, moveCount: state.moveCount + 1 };
+  const count = state.moveCount + 1;
+  const logged: LudoLogEntry[] = [];
+  if (action.type === 'PICK' || action.type === 'ABILITY' || action.type === 'PASS') logged.push({ ...action, seat, move: count });
+  if (next.lastRoll !== state.lastRoll) logged.push({ type: 'ROLL', ...next.lastRoll!, move: count });
+  if (next.lastMove !== state.lastMove) logged.push({ type: 'MOVE', ...next.lastMove!, move: count });
+  // Partidas comecadas antes do historico existir nao tem `log`
+  return { ...next, moveCount: count, log: [...(state.log ?? []), ...logged].slice(-LUDO_CONFIG.logSize) };
 }
 
 /**
@@ -415,6 +431,7 @@ export function viewFor(state: LudoState, seat: number) {
     rolls: state.rolls,
     lastRoll: state.lastRoll,
     lastMove: state.lastMove,
+    log: state.log ?? [],
     moveCount: state.moveCount,
     legalPieces: !finished && state.turn === seat ? legalPieces(state) : [],
     bonus: state.bonus,

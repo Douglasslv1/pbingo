@@ -2782,6 +2782,76 @@ button.truco-call {
   overflow-wrap: anywhere;
 }
 
+/* Area de toque maior que a peca, para acertar no celular */
+.ludo-hit {
+  fill: transparent;
+}
+
+.ludo-burst {
+  font-size: 0.8px;
+  pointer-events: none;
+}
+
+.ludo-offline {
+  text-align: center;
+  background: #7f1d1d;
+  color: #fff;
+}
+
+.ludo-log {
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+.ludo-log summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.ludo-log ol {
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ludo-log li {
+  padding: 4px 8px;
+  border-left: 4px solid var(--ludo);
+  margin-bottom: 3px;
+  background: var(--input-bg);
+  border-radius: 4px;
+}
+
+/* Carregando: um anel girando antes do texto */
+.card.loading::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ludo-piece-ring,
+  .ludo-dice-button,
+  .card.loading::before {
+    animation: none;
+  }
+}
+
 /* Ludo a 4 no celular: as placas vao para os cantos, ao lado da base de cada cor, e o tabuleiro usa a largura toda */
 @media (max-width: 560px) {
   .game-table.seats-4:has(.ludo-board) {

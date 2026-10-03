@@ -1,20 +1,24 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { formatBrl } from '../../format';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useGameConfig } from '../../hooks/useGameConfig';
 import { useTurnAlert } from '../../hooks/useTurnAlert';
-import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoEventId, LudoGameView, LudoTableView } from '../../types';
+import type { LudoAbilityId, LudoAbilityTarget, LudoAction, LudoGameView, LudoTableView } from '../../types';
 import GameTable from '../tables/GameTable';
 import VictoryOverlay from '../tables/VictoryOverlay';
 import LudoAbilities, { ABILITY_ICONS, CHARACTER_ICONS } from './LudoAbilities';
-import LudoBoard, { TILE_ICONS } from './LudoBoard';
+import LudoBoard from './LudoBoard';
 import LudoDice from './LudoDice';
+import LudoLog, { specialText } from './LudoLog';
+import { playLudoSound } from './ludoSounds';
 import { COLOR_NAMES, FINISH } from './ludoGeometry';
 
 interface Props {
   table: LudoTableView;
   busy: boolean;
+  /** Conexao em tempo real caida (reconectando). */
+  offline: boolean;
   error: string | null;
   onAction: (action: LudoAction) => void;
   onComeBack: () => void;
@@ -46,24 +50,6 @@ function abilityNews(game: LudoGameView, nameOf: (seat: number) => string): stri
   return `${ABILITY_ICONS[used.ability]} ${name.toUpperCase()} · ${text[used.ability]}`;
 }
 
-const EVENT_TEXT: Record<LudoEventId, string> = {
-  ADVANCE: 'AVANÇO GERAL · todas as peças na volta andaram 1 casa',
-  ENERGY: 'ENERGIA · todos ganharam +1 de energia',
-  CHARGE: 'CARGA · todos ganharam +2 de carga da ultimate',
-};
-
-/** O que a casa especial do ultimo movimento fez (portal, bau ou evento). */
-function specialNews(game: LudoGameView, nameOf: (seat: number) => string): string | null {
-  const special = game.lastMove?.special;
-  if (!special) return null;
-  const who = nameOf(game.lastMove!.seat);
-  const icon = TILE_ICONS[special.tile];
-  if (special.tile === 'PORTAL') return `${icon} PORTAL · a peça de ${who} saltou para o próximo portal`;
-  if (special.tile === 'EVENT') return `${icon} EVENTO: ${EVENT_TEXT[special.event]}`;
-  const name = game.abilities.find((ability) => ability.id === special.ability)?.name ?? '';
-  return `${icon} BAÚ · ${who} ganhou ${name} (sai de graça)`;
-}
-
 /** Barra de 0 ao maximo (energia, ultimate). */
 function Meter({ label, value, max, className }: { label: string; value: number; max: number; className: string }) {
   return (
@@ -81,7 +67,7 @@ function Meter({ label, value, max, className }: { label: string; value: number;
   );
 }
 
-export default function LudoGame({ table, busy, error, onAction, onComeBack, onBackToLobby }: Props) {
+export default function LudoGame({ table, busy, offline, error, onAction, onComeBack, onBackToLobby }: Props) {
   const game = table.game;
   const [selected, setSelected] = useState<LudoAbilityId | null>(null);
   /** Primeira peca escolhida para a Troca. */
@@ -96,6 +82,17 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
   const countdown = useCountdown(playing ? table.turnDeadline : null);
   const { soundOn, toggleSound } = useTurnAlert(myTurn);
   const turnSeconds = useGameConfig()?.ludoTurnSeconds ?? 30;
+  // Som das jogadas novas (nao toca ao abrir a mesa, so no que acontece depois)
+  const seen = useRef<number | null>(null);
+  useEffect(() => {
+    if (!game || table.mySeat === null) return;
+    const before = seen.current;
+    seen.current = game.moveCount;
+    if (before !== null && soundOn && game.moveCount > before) {
+      playLudoSound(game, table.mySeat, game.log.filter((entry) => entry.move > before));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.moveCount]);
   if (!game || table.mySeat === null) return null;
 
   const mySeat = table.mySeat;
@@ -163,7 +160,8 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
   }
 
   const news = abilityNews(game, nameOf);
-  const tileNews = specialNews(game, nameOf);
+  const special = game.lastMove?.special;
+  const tileNews = special ? specialText(game, special, nameOf(game.lastMove!.seat)) : null;
   const newsIsUltimate = game.abilities.find((item) => item.id === game.lastAbility?.ability)?.ultimate;
   const escaped = game.lastMove?.escaped ?? [];
   const fortified = game.lastMove?.fortified ?? [];
@@ -185,159 +183,172 @@ export default function LudoGame({ table, busy, error, onAction, onComeBack, onB
       : `Vez de ${nameOf(game.turn)}...`;
 
   return (
-    <div className="card domino-game ludo-game">
-      <div className="domino-header">
-        <span className="label">
-          Ludo {game.mode === 'ARENA' ? 'Arena' : 'Clássico'} · {game.pieces.length === 2 ? 'mano a mano' : '4 jogadores'} ·{' '}
-          {Number(table.prizePool) === 0 ? 'partida gratuita' : `prêmio ${formatBrl(table.prizePool)}`}
-        </span>
-        <button type="button" className="link" onClick={toggleSound} aria-pressed={soundOn}>
-          {soundOn ? 'Som: ligado' : 'Som: desligado'}
-        </button>
-      </div>
-
-      <GameTable seats={seats} mySeat={mySeat} turnSeat={playing ? game.turn : null} countdown={countdown}>
-        <LudoBoard game={game} mySeat={mySeat} selectable={selectable} onSelect={onSelect} />
-      </GameTable>
-
-      {winner !== null ? (
-        <div className="domino-result">
-          <VictoryOverlay
-            won={winner === mySeat}
-            headline={winner === mySeat ? 'Vitória!' : 'Derrota'}
-            detail={`${nameOf(winner)} levou as 4 peças ao centro.`}
-          />
-          <h3>{winner === mySeat ? 'Você venceu!' : 'Fim de partida'}</h3>
-          <p>{`${nameOf(winner)} levou as 4 peças ao centro.`}</p>
-          <p className="label ludo-fairness">
-            Semente dos dados: <code>{game.seed}</code>. O código mostrado durante a partida é o SHA-256 dela: com os dois,
-            qualquer um confere que nenhum dado foi alterado.
-          </p>
-          <button type="button" onClick={onBackToLobby}>
-            Jogar de novo
+    <MotionConfig reducedMotion="user">
+      <div className="card domino-game ludo-game">
+        <div className="domino-header">
+          <span className="label">
+            Ludo {game.mode === 'ARENA' ? 'Arena' : 'Clássico'} · {game.pieces.length === 2 ? 'mano a mano' : '4 jogadores'} ·{' '}
+            {Number(table.prizePool) === 0 ? 'partida gratuita' : `prêmio ${formatBrl(table.prizePool)}`}
+          </span>
+          <button type="button" className="link" onClick={toggleSound} aria-pressed={soundOn}>
+            {soundOn ? 'Som: ligado' : 'Som: desligado'}
           </button>
         </div>
-      ) : (
-        <>
-          {iAmAway && (
-            <div className="banner away-banner">
-              <span>Você ficou ausente e o sistema está jogando por você.</span>
-              <button type="button" onClick={onComeBack} disabled={busy}>
-                Voltei
-              </button>
-            </div>
-          )}
 
-          {myTurn && countdown !== null && (
-            <div className={urgent ? 'turn-bar urgent' : 'turn-bar'} aria-hidden="true">
-              <div style={{ width: `${Math.min((countdown / turnSeconds) * 100, 100)}%` }} />
-            </div>
-          )}
+        {offline && (
+          <div className="banner ludo-offline" role="status">
+            Sem conexão com o servidor. Reconectando...
+          </div>
+        )}
 
-          <AnimatePresence>
-            {news && (
-              <motion.p
-                key={game.lastAbility!.move}
-                className={newsIsUltimate ? 'banner ludo-news ultimate' : 'banner ludo-news'}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                {news}
-              </motion.p>
-            )}
-          </AnimatePresence>
-          {tileNews && <p className="banner ludo-news">{tileNews}</p>}
-          {escaped.length > 0 && (
-            <p className="banner ludo-news">💨 FUGA! A peça de {escaped.map((escape) => nameOf(escape.seat)).join(' e ')} escapou da captura.</p>
-          )}
-          {fortified.length > 0 && (
-            <p className="banner ludo-news">
-              🏰 FORTIFICADA! A peça de {fortified.map((victim) => nameOf(victim.seat)).join(' e ')} ignorou a captura.
-            </p>
-          )}
+        <GameTable seats={seats} mySeat={mySeat} turnSeat={playing ? game.turn : null} countdown={countdown}>
+          <LudoBoard game={game} mySeat={mySeat} selectable={selectable} onSelect={onSelect} />
+        </GameTable>
 
-          {game.phase === 'PICK' ? (
-            <div className="ludo-abilities">
-              <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
-              <div className="ludo-ability-list ludo-character-list">
-                {game.characterCatalog.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={myTurn ? 'ludo-ability usable' : 'ludo-ability'}
-                    onClick={() => onAction({ type: 'PICK', character: item.id })}
-                    disabled={!myTurn || busy}
-                  >
-                    <span className="ludo-ability-icon" aria-hidden="true">
-                      {CHARACTER_ICONS[item.id]}
-                    </span>
-                    <span>{item.name}</span>
-                    <small>{item.description}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="ludo-controls">
-              <LudoDice
-                value={roll?.value ?? null}
-                rollId={game.rolls}
-                rolling={busy && myTurn && game.phase === 'ROLL'}
-                color={roll ? game.colors[roll.seat] : null}
-                onRoll={myTurn && game.phase === 'ROLL' ? () => onAction({ type: 'ROLL' }) : undefined}
-              />
-              <div>
-                <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
-                {roll && <p className="label">Último dado: {nameOf(roll.seat)} tirou {roll.value}.</p>}
-                {myTurn && game.phase === 'CHOOSE' && (
-                  <div className="ludo-choices">
-                    {game.diceChoices!.map((value, index) => (
-                      <button key={index} type="button" onClick={() => onAction({ type: 'CHOOSE', index })} disabled={busy}>
-                        🎲 {value}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {myTurn && game.phase === 'MOVE' && game.legalPieces.length === 0 && (
-                  <button type="button" className="secondary" onClick={() => onAction({ type: 'PASS' })} disabled={busy}>
-                    Passar a vez
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          {game.energy && <Meter label="⚡ Energia" value={game.energy[mySeat]} max={game.maxEnergy} className="ludo-energy" />}
-          {game.ultimate && game.characters[mySeat] && (
-            <Meter label="🔥 Ultimate" value={game.ultimate[mySeat]} max={game.ultimateMax} className="ludo-energy ludo-ultimate" />
-          )}
-          {game.abilities.length > 0 && game.phase !== 'PICK' && (
-            <LudoAbilities
-              game={game}
-              mySeat={mySeat}
-              myTurn={myTurn}
-              busy={busy}
-              selected={selected}
-              onSelect={(id) => {
-                setSelected(id);
-                setPicked(null);
-              }}
-              onUse={applyAbility}
+        {winner !== null ? (
+          <div className="domino-result">
+            <VictoryOverlay
+              won={winner === mySeat}
+              headline={winner === mySeat ? 'Vitória!' : 'Derrota'}
+              detail={`${nameOf(winner)} levou as 4 peças ao centro.`}
             />
-          )}
-          {picked !== null && (
-            <p className="domino-turn mine">
-              {ability?.target === 'OWN_AND_OPPONENT'
-                ? 'Agora toque na peça adversária que vai trocar de lugar com a sua.'
-                : 'Agora toque na outra peça que vai trocar de lugar.'}
+            <h3>{winner === mySeat ? 'Você venceu!' : 'Fim de partida'}</h3>
+            <p>{`${nameOf(winner)} levou as 4 peças ao centro.`}</p>
+            <p className="label ludo-fairness">
+              Semente dos dados: <code>{game.seed}</code>. O código mostrado durante a partida é o SHA-256 dela: com os dois,
+              qualquer um confere que nenhum dado foi alterado.
             </p>
-          )}
-          {error && <p className="error">{error}</p>}
-          <p className="label ludo-fairness" title={game.commitment}>
-            Dados verificáveis · código {game.commitment.slice(0, 12)}
-          </p>
-        </>
-      )}
-    </div>
+            <button type="button" onClick={onBackToLobby}>
+              Jogar de novo
+            </button>
+          </div>
+        ) : (
+          <>
+            {iAmAway && (
+              <div className="banner away-banner">
+                <span>Você ficou ausente e o sistema está jogando por você.</span>
+                <button type="button" onClick={onComeBack} disabled={busy}>
+                  Voltei
+                </button>
+              </div>
+            )}
+
+            {myTurn && countdown !== null && (
+              <div className={urgent ? 'turn-bar urgent' : 'turn-bar'} aria-hidden="true">
+                <div style={{ width: `${Math.min((countdown / turnSeconds) * 100, 100)}%` }} />
+              </div>
+            )}
+
+            <AnimatePresence>
+              {news && (
+                <motion.p
+                  key={game.lastAbility!.move}
+                  className={newsIsUltimate ? 'banner ludo-news ultimate' : 'banner ludo-news'}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {news}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            {tileNews && <p className="banner ludo-news">{tileNews}</p>}
+            {escaped.length > 0 && (
+              <p className="banner ludo-news">💨 FUGA! A peça de {escaped.map((escape) => nameOf(escape.seat)).join(' e ')} escapou da captura.</p>
+            )}
+            {fortified.length > 0 && (
+              <p className="banner ludo-news">
+                🏰 FORTIFICADA! A peça de {fortified.map((victim) => nameOf(victim.seat)).join(' e ')} ignorou a captura.
+              </p>
+            )}
+
+            {game.phase === 'PICK' ? (
+              <div className="ludo-abilities">
+                <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
+                <div className="ludo-ability-list ludo-character-list">
+                  {game.characterCatalog.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={myTurn ? 'ludo-ability usable' : 'ludo-ability'}
+                      onClick={() => onAction({ type: 'PICK', character: item.id })}
+                      disabled={!myTurn || busy}
+                    >
+                      <span className="ludo-ability-icon" aria-hidden="true">
+                        {CHARACTER_ICONS[item.id]}
+                      </span>
+                      <span>{item.name}</span>
+                      <small>{item.description}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="ludo-controls">
+                <LudoDice
+                  value={roll?.value ?? null}
+                  rollId={game.rolls}
+                  rolling={busy && myTurn && game.phase === 'ROLL'}
+                  color={roll ? game.colors[roll.seat] : null}
+                  onRoll={myTurn && game.phase === 'ROLL' ? () => onAction({ type: 'ROLL' }) : undefined}
+                />
+                <div>
+                  <p className={myTurn ? 'domino-turn mine' : 'domino-turn'}>{situation}</p>
+                  {roll && <p className="label">Último dado: {nameOf(roll.seat)} tirou {roll.value}.</p>}
+                  {myTurn && game.phase === 'CHOOSE' && (
+                    <div className="ludo-choices">
+                      {game.diceChoices!.map((value, index) => (
+                        <button key={index} type="button" onClick={() => onAction({ type: 'CHOOSE', index })} disabled={busy}>
+                          🎲 {value}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {myTurn && game.phase === 'MOVE' && game.legalPieces.length === 0 && (
+                    <button type="button" className="secondary" onClick={() => onAction({ type: 'PASS' })} disabled={busy}>
+                      Passar a vez
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {game.energy && <Meter label="⚡ Energia" value={game.energy[mySeat]} max={game.maxEnergy} className="ludo-energy" />}
+            {game.ultimate && game.characters[mySeat] && (
+              <Meter label="🔥 Ultimate" value={game.ultimate[mySeat]} max={game.ultimateMax} className="ludo-energy ludo-ultimate" />
+            )}
+            {game.abilities.length > 0 && game.phase !== 'PICK' && (
+              <LudoAbilities
+                game={game}
+                mySeat={mySeat}
+                myTurn={myTurn}
+                busy={busy}
+                selected={selected}
+                onSelect={(id) => {
+                  setSelected(id);
+                  setPicked(null);
+                }}
+                onUse={applyAbility}
+              />
+            )}
+            {picked !== null && (
+              <p className="domino-turn mine">
+                {ability?.target === 'OWN_AND_OPPONENT'
+                  ? 'Agora toque na peça adversária que vai trocar de lugar com a sua.'
+                  : 'Agora toque na outra peça que vai trocar de lugar.'}
+              </p>
+            )}
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            <LudoLog game={game} nameOf={nameOf} />
+            <p className="label ludo-fairness" title={game.commitment}>
+              Dados verificáveis · código {game.commitment.slice(0, 12)}
+            </p>
+          </>
+        )}
+      </div>
+    </MotionConfig>
   );
 }

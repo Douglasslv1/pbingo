@@ -14,7 +14,8 @@ const MODES = [
   {
     value: 'ARENA' as const,
     title: 'Arena',
-    description: 'Ganhe energia ⚡ capturando e nas casas de energia, e gaste em habilidades: escudo, impulso, puxão e mais.',
+    description:
+      'Escolha um personagem, junte energia ⚡ e carga 🔥 para habilidades e ultimates, e use as casas especiais: baú, portal, arena e eventos.',
   },
 ];
 
@@ -32,7 +33,7 @@ function LudoRoom() {
   const { table } = room;
   const free = config?.ludoFree ?? true;
 
-  if (room.loading) return <div className="card">Carregando...</div>;
+  if (room.loading) return <div className="card loading">Carregando...</div>;
 
   if (table?.status === 'WAITING') {
     return (
@@ -52,6 +53,7 @@ function LudoRoom() {
       <LudoGame
         table={table}
         busy={room.busy}
+        offline={room.offline}
         error={room.error}
         onAction={room.act}
         onComeBack={room.comeBack}

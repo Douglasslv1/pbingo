@@ -11,6 +11,8 @@ export const LUDO_CONFIG = {
   tiles: { ENERGY: [4, 11], ARENA: [2], CHEST: [6], PORTAL: [9], EVENT: [12] },
   /** Energia a mais por capturar numa casa de arena. */
   arenaCaptureEnergy: 1,
+  /** Jogadas guardadas no historico da partida (o que a tela mostra, inclusive depois de reconectar). */
+  logSize: 12,
   /** Habilidades que o bau pode dar (de graca, uma guardada por vez). */
   chestAbilities: ['SHIELD', 'BOOST', 'PULL', 'SWAP', 'SECOND_CHANCE', 'ESCAPE'],
   /** Eventos das casas de evento: peso no sorteio e quanto dao (sem eventos que punam alguem). */
