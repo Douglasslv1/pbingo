@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Logo from './Logo';
+import TournamentBanner from './TournamentBanner';
 import VenoxBadge from './VenoxBadge';
 
 function navClass({ isActive }: { isActive: boolean }): string {
@@ -50,6 +51,7 @@ export default function AppHeader() {
           </button>
         )}
       </nav>
+      {auth && <TournamentBanner token={auth.token} />}
     </header>
   );
 }

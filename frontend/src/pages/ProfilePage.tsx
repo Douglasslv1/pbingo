@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import GamePage from '../components/GamePage';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
-import type { Profile } from '../types';
+import type { Profile, VenoxHistoryItem } from '../types';
+import { formatDateTime } from '../withdrawalFormat';
 
 const GAMES = [
   { key: 'TRUCO', label: 'Truco', unit: 'partidas' },
@@ -75,6 +76,87 @@ function NicknameForm({ profile, onSaved }: { profile: Profile; onSaved: (profil
   );
 }
 
+const VENOX_REASONS: Record<VenoxHistoryItem['reason'], string> = {
+  WIN: 'Vitória',
+  DAILY: 'Visita diária',
+  TOURNAMENT_ENTRY: 'Inscrição em torneio',
+  TOURNAMENT_REFUND: 'Inscrição devolvida',
+  TOURNAMENT_PRIZE: 'Prêmio de torneio',
+};
+
+/** Torneios (titulos e podios) e o extrato de Venox, com "ver mais". */
+function TournamentsAndVenox({ profile }: { profile: Profile }) {
+  const { auth } = useAuth();
+  const token = auth?.token;
+  const [items, setItems] = useState<VenoxHistoryItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+
+  const load = useCallback(
+    (after?: string) => {
+      if (!token) return;
+      api
+        .getVenoxHistory(token, after)
+        .then((page) => {
+          setItems((previous) => (after ? [...previous, ...page.items] : page.items));
+          setCursor(page.nextCursor);
+        })
+        .catch(() => undefined);
+    },
+    [token],
+  );
+  useEffect(() => load(), [load]);
+
+  const { tournaments } = profile;
+  return (
+    <div className="card">
+      <h2>Torneios e Venox</h2>
+      <div className="round-stats">
+        <div>
+          <span className="label">Saldo</span>
+          <strong>{profile.venox} Venox</strong>
+        </div>
+        <div>
+          <span className="label">Títulos</span>
+          <strong>{tournaments.titles}</strong>
+          <span className="label">em {tournaments.played} torneios</span>
+        </div>
+        <div>
+          <span className="label">Pódios</span>
+          <strong>{tournaments.podiums}</strong>
+        </div>
+        <div>
+          <span className="label">Ganhos em torneios</span>
+          <strong>{tournaments.venoxWon} Venox</strong>
+        </div>
+      </div>
+      <h3>Extrato de Venox</h3>
+      {items.length === 0 && (
+        <p className="hint">
+          Ainda sem movimentações. Vença partidas, resgate a visita diária e use o Venox nos{' '}
+          <Link to="/torneios">torneios</Link>.
+        </p>
+      )}
+      <ul className="venox-history">
+        {items.map((item) => (
+          <li key={item.id}>
+            <span>{VENOX_REASONS[item.reason]}</span>
+            <span className="hint">{formatDateTime(item.createdAt)}</span>
+            <strong className={item.amount < 0 ? 'negative' : 'positive'}>
+              {item.amount > 0 ? '+' : ''}
+              {item.amount}
+            </strong>
+          </li>
+        ))}
+      </ul>
+      {cursor && (
+        <button type="button" className="link" onClick={() => load(cursor)}>
+          Ver mais
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ProfileContent() {
   const { auth } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -94,13 +176,22 @@ function ProfileContent() {
   return (
     <>
       <div className="card profile-header">
-        <h1>{profile.displayName}</h1>
+        <h1>
+          {profile.displayName}
+          {profile.tournaments.titles > 0 && (
+            <span className="champion-badge" title="Campeão de torneio">
+              🏆 {profile.tournaments.titles > 1 ? `${profile.tournaments.titles}x campeão` : 'Campeão'}
+            </span>
+          )}
+        </h1>
         <p className="label">
           {profile.email} · jogando desde {new Date(profile.memberSince).toLocaleDateString('pt-BR')}
         </p>
       </div>
 
       <NicknameForm profile={profile} onSaved={setProfile} />
+
+      <TournamentsAndVenox profile={profile} />
 
       <div className="card">
         <h2>Seus números</h2>

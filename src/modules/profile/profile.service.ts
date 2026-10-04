@@ -39,6 +39,10 @@ export async function getProfile(userId: string) {
       _sum: { amountFiat: true },
     }),
   ]);
+  const tournamentEntries = await prisma.tournamentEntry.findMany({
+    where: { userId, tournament: { status: 'FINISHED' } },
+    select: { placement: true, prize: true },
+  });
   const prizeOf = (game: string) =>
     (prizes.find((row) => row.game === game)?._sum.amountFiat ?? new Prisma.Decimal(0)).toString();
 
@@ -49,6 +53,13 @@ export async function getProfile(userId: string) {
     displayName: displayName(user),
     memberSince: user.createdAt.toISOString(),
     nicknameChangeAt: nextChangeAt(user)?.toISOString() ?? null,
+    venox: user.venox,
+    tournaments: {
+      played: tournamentEntries.length,
+      titles: tournamentEntries.filter((entry) => entry.placement === 1).length,
+      podiums: tournamentEntries.filter((entry) => entry.placement !== null).length,
+      venoxWon: tournamentEntries.reduce((sum, entry) => sum + entry.prize, 0),
+    },
     games: {
       BINGO: { matches: rounds.length, wins: roundsWon.length, prizes: prizeOf('BINGO') },
       DOMINO: { ...domino, prizes: prizeOf('DOMINO') },

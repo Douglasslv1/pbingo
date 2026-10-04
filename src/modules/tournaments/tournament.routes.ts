@@ -2,10 +2,12 @@ import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { adminMiddleware } from '../../middleware/admin.middleware';
 import { authMiddleware } from '../../middleware/auth.middleware';
+import { prisma } from '../../lib/prisma';
 import { viewerOf } from '../../lib/session';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { GameName } from '../tables/tables.types';
 import {
+  activeTournamentOf,
   cancelTournament,
   createTournament,
   getTournament,
@@ -46,6 +48,12 @@ const joinSchema = z.object({ partner: z.string().trim().min(1).max(20).optional
 /** Lista e chave sao publicas; inscrever e desistir exigem login. */
 export const tournamentsRouter = Router();
 
+// Torneio em que o jogador esta vivo agora (e se a partida dele esta aberta): o aviso do cabecalho
+tournamentsRouter.get(
+  '/me/active',
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => res.json(await activeTournamentOf(prisma, req.userId!))),
+);
 tournamentsRouter.get('/', asyncHandler(async (req: Request, res: Response) => res.json(await listTournaments(await viewerOf(req)))));
 tournamentsRouter.get('/:id', asyncHandler(async (req: Request, res: Response) => res.json(await getTournament(idOf(req), await viewerOf(req)))));
 tournamentsRouter.post(

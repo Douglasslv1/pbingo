@@ -524,6 +524,55 @@ button.link {
   font-weight: 700;
 }
 
+.tournament-banner {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+
+.champion-badge {
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+.venox-history {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.venox-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.venox-history li strong {
+  margin-left: auto;
+}
+
+.venox-history .positive {
+  color: var(--accent);
+}
+
+.venox-history .negative {
+  color: var(--danger);
+}
+
 .greeting {
   color: var(--muted);
   margin: 0 0 16px;

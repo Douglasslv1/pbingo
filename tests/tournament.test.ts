@@ -204,4 +204,32 @@ describe('Torneios', () => {
     const total = (await Promise.all(players.map(venoxOf))).reduce((sum, v) => sum + v, 0);
     expect(total).toBe(1000 - 80 + 72);
   });
+
+  it('quem esta vivo no torneio sai da fila comum, nao entra em outra, ve o aviso e ganha titulo no perfil', async () => {
+    const id = (await createTournament()).body.id;
+    const players = await playersWithVenox(4);
+    for (const player of players) await request(app).post(`/tournaments/${id}/entry`).set(auth(player));
+    const [ana] = players;
+    const queue = (player: Player) => request(app).post('/damas/queue').set(auth(player)).send({ stake: 1 });
+    expect((await queue(ana)).status).toBe(201);
+
+    await start(id);
+    // Ana estava aguardando numa mesa comum: saiu dela e esta na mesa da chave
+    const anaSeats = await prisma.gameSeat.findMany({ where: { userId: ana.user.id }, include: { table: true } });
+    expect(anaSeats.find((seat) => seat.table.tournamentId === null)).toBeUndefined();
+    expect((await queue(ana)).status).toBe(409);
+    const active = (await request(app).get('/tournaments/me/active').set(auth(ana))).body;
+    expect(active).toMatchObject({ id, name: 'Relâmpago', game: 'DAMAS', live: true });
+
+    await playLiveMatches(id, players);
+    const semi = await prisma.tournamentMatch.findMany({ where: { tournamentId: id, round: 1 } });
+    const loser = players.find((p) => p.user.id === semi[0].player1Id)!;
+    expect((await request(app).get('/tournaments/me/active').set(auth(loser))).body).toBeNull();
+
+    await playLiveMatches(id, players);
+    const final = await prisma.tournamentMatch.findFirstOrThrow({ where: { tournamentId: id, round: 2 } });
+    const winner = players.find((p) => p.user.id === final.winnerId)!;
+    const profile = (await request(app).get('/profile/me').set(auth(winner))).body;
+    expect(profile.tournaments).toEqual({ played: 1, titles: 1, podiums: 1, venoxWon: 36 });
+  });
 });

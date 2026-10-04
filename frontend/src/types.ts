@@ -98,6 +98,21 @@ export interface TournamentDetail extends TournamentSummary {
   podium: Array<TournamentPlayer & { placement: number; prize: number }>;
 }
 
+export interface VenoxHistoryItem {
+  id: string;
+  amount: number;
+  reason: 'WIN' | 'DAILY' | 'TOURNAMENT_ENTRY' | 'TOURNAMENT_REFUND' | 'TOURNAMENT_PRIZE';
+  createdAt: string;
+}
+
+export interface ActiveTournament {
+  id: string;
+  name: string;
+  game: TournamentSummary['game'];
+  /** A partida do jogador esta com mesa aberta agora. */
+  live: boolean;
+}
+
 export interface Wallet {
   credits: { balance: number };
   prizes: { balanceFiat: string };
@@ -153,6 +168,9 @@ export interface Profile {
   memberSince: string;
   /** Quando o apelido pode ser trocado de novo (null: agora). */
   nicknameChangeAt: string | null;
+  venox: number;
+  /** Torneios encerrados: disputados, titulos (1o lugar), podios (1o ao 4o) e Venox ganho em premios. */
+  tournaments: { played: number; titles: number; podiums: number; venoxWon: number };
   games: Record<'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO', GameStats>;
 }
 

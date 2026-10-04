@@ -10,7 +10,7 @@ import { dominoAdapter } from '../domino/domino.adapter';
 import { ludoAdapter } from '../ludo/ludo.adapter';
 import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
-import { advanceTournament, recordTournamentResult } from '../tournaments/tournament.service';
+import { activeTournamentOf, advanceTournament, recordTournamentResult } from '../tournaments/tournament.service';
 import { trucoAdapter } from '../truco/truco.adapter';
 import { rewardWinners } from '../venox/venox.service';
 import { xadrezAdapter } from '../xadrez/xadrez.adapter';
@@ -182,6 +182,10 @@ export async function joinQueue(game: GameName, userId: string, choice: QueueCho
     });
     if (active) {
       throw new AppError(`Você já está em uma mesa de ${adapterOf(active.table).label}`, 409);
+    }
+    const tournament = await activeTournamentOf(tx, userId);
+    if (tournament) {
+      throw new AppError(`Você está no torneio "${tournament.name}": aguarde suas partidas da chave`, 409);
     }
     if ((credits[0]?.balance ?? 0) < price) {
       throw new AppError('Saldo de chaves insuficiente para entrar na mesa', 400);

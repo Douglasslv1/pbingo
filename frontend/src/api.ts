@@ -1,4 +1,5 @@
 import type {
+  ActiveTournament,
   AuthResult,
   AdminTableSummary,
   AdminStats,
@@ -17,6 +18,7 @@ import type {
   TournamentSummary,
   TransactionItem,
   Venox,
+  VenoxHistoryItem,
   Wallet,
   Withdrawal,
   WithdrawalForReview,
@@ -89,6 +91,11 @@ export const api = {
   getWallet: (token: string) => request<Wallet>('/wallet/me', {}, token),
 
   getVenox: (token: string) => request<Venox>('/venox/me', {}, token),
+
+  getVenoxHistory: (token: string, cursor?: string) =>
+    request<Page<VenoxHistoryItem>>(`/venox/history${cursor ? `?cursor=${cursor}` : ''}`, {}, token),
+
+  getActiveTournament: (token: string) => request<ActiveTournament | null>('/tournaments/me/active', {}, token),
 
   getTournaments: (token?: string) => request<TournamentSummary[]>('/tournaments', {}, token),
 

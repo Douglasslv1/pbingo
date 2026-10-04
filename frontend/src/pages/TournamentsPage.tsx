@@ -140,7 +140,7 @@ export default function TournamentsPage() {
             Inscreva-se com Venox, a moeda que você ganha jogando: 10 por vitória e 2 por visita diária. Mata-mata: quem
             vence avança. Na dupla, convide o parceiro pelo apelido (cada um paga metade) ou entre sozinho e a dupla é
             sorteada na largada. Os prêmios saem do pote das inscrições, e a casa fica com 10%. Se faltar jogador na sua vez,
-            vale a regra de tempo da mesa. Com menos de 4 inscritos, o torneio é cancelado e o Venox volta para você.
+            vale a regra de tempo da mesa. Enquanto estiver vivo no torneio, você não entra em mesas comuns. Com menos de 4 inscritos, o torneio é cancelado e o Venox volta para você.
           </p>
           {error && <p className="error">{error}</p>}
           {list.length === 0 && <p className="hint">Nenhum torneio no momento. Volte em breve!</p>}

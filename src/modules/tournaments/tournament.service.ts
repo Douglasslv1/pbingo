@@ -5,7 +5,7 @@ import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/errors';
 import { emitToUser } from '../../websocket/socket';
 import { displayName } from '../profile/nickname';
-import { announceTables, startTournamentTable } from '../tables/tables.service';
+import { announceTables, leaveQueue, startTournamentTable } from '../tables/tables.service';
 import { GameName } from '../tables/tables.types';
 import { addVenox } from '../venox/venox.service';
 
@@ -338,8 +338,52 @@ export async function recordTournamentResult(
   await decideMatch(tx, tournament, match, [...winners][0]);
 }
 
+/**
+ * Torneio em andamento em que o jogador ainda esta vivo (sua equipe nao perdeu), e se a partida
+ * dele esta com mesa aberta agora. Quem esta vivo nao entra em mesas comuns.
+ */
+export async function activeTournamentOf(db: Tx | typeof prisma, userId: string) {
+  const [row] = await db.$queryRaw<Array<{ id: string; name: string; game: string; live: boolean }>>`
+    SELECT t.id, t.name, t.game,
+      EXISTS (
+        SELECT 1 FROM tournament_matches m
+        WHERE m.tournament_id = t.id AND m.table_id IS NOT NULL AND m.winner_id IS NULL
+          AND e.captain_id IN (m.player0_id, m.player1_id)
+      ) AS live
+    FROM tournament_entries e JOIN tournaments t ON t.id = e.tournament_id
+    WHERE e.user_id = ${userId}::uuid AND t.status = 'RUNNING' AND e.captain_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM tournament_matches m
+        WHERE m.tournament_id = t.id AND m.winner_id IS NOT NULL AND m.winner_id <> e.captain_id
+          AND e.captain_id IN (m.player0_id, m.player1_id)
+      )
+    ORDER BY live DESC, t.starts_at
+    LIMIT 1
+  `;
+  return row ?? null;
+}
+
+/** Quem vai jogar pela chave e esta so aguardando numa fila comum sai dela (com as chaves de volta). */
+async function leaveRegularQueues(tournamentId: string): Promise<void> {
+  const ready = await prisma.tournamentMatch.findMany({
+    where: { tournamentId, winnerId: null, tableId: null, player0Id: { not: null }, player1Id: { not: null } },
+    select: { player0Id: true, player1Id: true },
+  });
+  if (ready.length === 0) return;
+  const captains = ready.flatMap((match) => [match.player0Id!, match.player1Id!]);
+  const members = await prisma.tournamentEntry.findMany({ where: { tournamentId, captainId: { in: captains } }, select: { userId: true } });
+  const waiting = await prisma.gameSeat.findMany({
+    where: { userId: { in: members.map((member) => member.userId) }, table: { status: 'WAITING', tournamentId: null } },
+    select: { userId: true },
+  });
+  for (const { userId } of waiting) {
+    await leaveQueue(userId).catch((err) => logger.warn('Não saiu da fila comum para o torneio', { err, userId }));
+  }
+}
+
 /** Abre as mesas das partidas que ja tem as duas equipes e avisa os inscritos. */
 export async function advanceTournament(id: string): Promise<void> {
+  await leaveRegularQueues(id);
   const tables = await prisma.$transaction(async (tx) => {
     const tournament = await lockTournament(tx, id);
     if (tournament.status !== 'RUNNING') return [];
