@@ -434,6 +434,96 @@ button.link {
   cursor: default;
 }
 
+/* Torneios */
+.tournament-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tournament-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.tournament-item.selected {
+  border-color: var(--accent);
+}
+
+.tournament-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tournament-actions .tab {
+  flex: 0 0 auto;
+}
+
+.tournament-podium,
+.tournament-entrants {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.tournament-podium {
+  list-style: none;
+  padding-left: 0;
+}
+
+.bracket {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 10px;
+  min-width: 170px;
+}
+
+.bracket-round h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.bracket-match {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  font-size: 0.875rem;
+}
+
+.bracket-match.live {
+  border-color: var(--accent);
+}
+
+.bracket-player.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.bracket-player.won {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .greeting {
   color: var(--muted);
   margin: 0 0 16px;

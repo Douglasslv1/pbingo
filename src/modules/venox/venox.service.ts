@@ -4,7 +4,7 @@ import { HistoryPage } from '../../utils/pagination';
 import { MAX_DAILY_WINS_VS_SAME } from '../ranking/ranking.service';
 
 type Tx = Prisma.TransactionClient;
-export type VenoxReason = 'WIN' | 'DAILY';
+export type VenoxReason = 'WIN' | 'DAILY' | 'TOURNAMENT_ENTRY' | 'TOURNAMENT_REFUND' | 'TOURNAMENT_PRIZE';
 
 export const VENOX_PER_WIN = 10;
 export const VENOX_DAILY = 2;
@@ -13,8 +13,8 @@ const TIME_ZONE = 'America/Sao_Paulo';
 /** Data de hoje no horario de Brasilia (AAAA-MM-DD): a visita diaria vira a meia-noite de Brasilia. */
 const todayBrt = (now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(now);
 
-/** Credita Venox uma unica vez por (motivo, ref). Retorna se creditou. */
-async function grant(tx: Tx, userId: string, amount: number, reason: VenoxReason, ref: string): Promise<boolean> {
+/** Lanca Venox (negativo debita) uma unica vez por (motivo, ref). Retorna se lancou. */
+export async function addVenox(tx: Tx, userId: string, amount: number, reason: VenoxReason, ref: string): Promise<boolean> {
   const inserted = await tx.$queryRaw<unknown[]>`
     INSERT INTO venox_ledger (user_id, amount, reason, ref) VALUES (${userId}::uuid, ${amount}, ${reason}, ${ref})
     ON CONFLICT (user_id, reason, ref) DO NOTHING RETURNING id
@@ -27,9 +27,11 @@ async function grant(tx: Tx, userId: string, amount: number, reason: VenoxReason
 /**
  * Vencedores de uma mesa encerrada ganham Venox. Como no ranking, so contam ate 3 vitorias por dia
  * contra os mesmos adversarios (somando todos os jogos), para nao valer a pena combinar resultados.
- * Empate (sem vencedores) nao rende. Chamado depois de marcar os vencedores, na transacao da mesa.
+ * Empate (sem vencedores) e partida de torneio nao rendem. Chamado depois de marcar os vencedores, na transacao da mesa.
  */
 export async function rewardWinners(tx: Tx, table: GameTable, seats: GameSeat[], winnerSeats: number[]): Promise<void> {
+  // No torneio o premio e o pote: vitoria de chave nao rende os 10 Venox
+  if (table.tournamentId) return;
   const losers = seats.filter((seat) => !winnerSeats.includes(seat.seat)).map((seat) => seat.userId).sort();
   if (winnerSeats.length === 0 || losers.length === 0) return;
 
@@ -42,7 +44,7 @@ export async function rewardWinners(tx: Tx, table: GameTable, seats: GameSeat[],
         AND (SELECT string_agg(l.user_id::text, ',' ORDER BY l.user_id) FROM game_seats l WHERE l.table_id = t.id AND NOT l.is_winner) = ${losers.join(',')}
     `;
     if (wins <= MAX_DAILY_WINS_VS_SAME) {
-      await grant(tx, winner.userId, VENOX_PER_WIN, 'WIN', table.id);
+      await addVenox(tx, winner.userId, VENOX_PER_WIN, 'WIN', table.id);
     }
   }
 }
@@ -58,7 +60,7 @@ export async function getVenox(userId: string) {
 
 /** Resgata a visita diaria (uma vez por dia de Brasilia; repetir nao credita de novo). */
 export async function claimDaily(userId: string) {
-  const claimed = await prisma.$transaction((tx) => grant(tx, userId, VENOX_DAILY, 'DAILY', todayBrt()));
+  const claimed = await prisma.$transaction((tx) => addVenox(tx, userId, VENOX_DAILY, 'DAILY', todayBrt()));
   return { claimed, ...(await getVenox(userId)) };
 }
 

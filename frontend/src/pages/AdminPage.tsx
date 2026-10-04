@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
 import AdminBoardPanel from '../components/admin/AdminBoardPanel';
 import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
+import AdminTournamentsPanel from '../components/admin/AdminTournamentsPanel';
 import AdminTrucoPanel from '../components/admin/AdminTrucoPanel';
 import AdminWithdrawalsPanel from '../components/admin/AdminWithdrawalsPanel';
 import AppHeader from '../components/AppHeader';
@@ -12,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 const SECTIONS = [
   { label: 'Visão geral', title: 'Visão geral', Panel: AdminOverviewPanel },
   { label: 'Saques', title: 'Saques', Panel: AdminWithdrawalsPanel },
+  { label: 'Torneios', title: 'Torneios', Panel: AdminTournamentsPanel },
   { label: 'Dominó', title: 'Mesas de dominó', Panel: AdminDominoPanel },
   { label: 'Truco', title: 'Mesas de truco', Panel: AdminTrucoPanel },
   { label: 'Damas', title: 'Mesas de damas', Panel: () => <AdminBoardPanel game="damas" title="Damas" /> },

@@ -60,6 +60,36 @@ export interface Venox {
   perWin: number;
 }
 
+export type TournamentStatus = 'OPEN' | 'RUNNING' | 'FINISHED' | 'CANCELLED';
+
+export interface TournamentSummary {
+  id: string;
+  name: string;
+  game: 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO';
+  mode: string;
+  size: number;
+  entryFee: number;
+  startsAt: string;
+  status: TournamentStatus;
+  players: number;
+  pot: number;
+  /** Premios do pote atual (1o, 2o, 3o e 4o) e com o torneio lotado. */
+  prizes: number[];
+  fullPrizes: number[];
+  joined: boolean;
+}
+
+export interface TournamentPlayer {
+  name: string;
+  isMe: boolean;
+}
+
+export interface TournamentDetail extends TournamentSummary {
+  entrants: TournamentPlayer[];
+  rounds: Array<Array<{ slot: number; players: Array<TournamentPlayer | null>; winner: 0 | 1 | null; live: boolean }>>;
+  podium: Array<TournamentPlayer & { placement: number; prize: number }>;
+}
+
 export interface Wallet {
   credits: { balance: number };
   prizes: { balanceFiat: string };

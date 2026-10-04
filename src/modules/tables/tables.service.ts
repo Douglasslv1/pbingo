@@ -10,6 +10,7 @@ import { dominoAdapter } from '../domino/domino.adapter';
 import { ludoAdapter } from '../ludo/ludo.adapter';
 import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
+import { advanceTournament, recordTournamentResult } from '../tournaments/tournament.service';
 import { trucoAdapter } from '../truco/truco.adapter';
 import { rewardWinners } from '../venox/venox.service';
 import { xadrezAdapter } from '../xadrez/xadrez.adapter';
@@ -142,6 +143,10 @@ async function publishTable(tableId: string, extraUserIds: string[] = []): Promi
   for (const userId of extraUserIds) {
     emitToUser(userId, `${prefix}:left`, { tableId, status: table.status });
   }
+  // Partida de torneio encerrada: a proxima da chave ja comeca
+  if (table.status === 'FINISHED' && table.tournamentId) {
+    await advanceTournament(table.tournamentId).catch((err) => logger.error('Erro ao avançar o torneio', { err, tableId }));
+  }
 }
 
 const toCents = (value: number) => Math.round(value * 100) / 100;
@@ -230,6 +235,41 @@ export async function joinQueue(game: GameName, userId: string, choice: QueueCho
   await publishTable(started.id);
   const table = await loadTable(started.id);
   return table ? tableViewFor(table, userId) : null;
+}
+
+/**
+ * Mesa de uma partida de torneio: ja comeca com os jogadores da chave, sem valor nem pote.
+ * Ausencia e tempo esgotado seguem as regras normais da mesa (quem nao joga perde no tempo).
+ */
+export async function startTournamentTable(
+  tx: Tx,
+  tournament: { id: string; game: string; mode: string; teamMode: string },
+  userIds: string[],
+): Promise<{ id: string; deadline: Date | null }> {
+  const adapter = adapterOf(tournament);
+  const state = adapter.deal(tournament.mode, tournament.teamMode);
+  const table = await tx.gameTable.create({
+    data: {
+      game: tournament.game,
+      mode: tournament.mode,
+      teamMode: tournament.teamMode,
+      tournamentId: tournament.id,
+      status: 'PLAYING',
+      startedAt: new Date(),
+      state: state as Prisma.InputJsonValue,
+      turnDeadline: nextDeadline(adapter, state, []),
+      seats: { create: userIds.map((userId, seat) => ({ userId, seat, creditsSpent: 0, prizeContribution: 0 })) },
+    },
+  });
+  return { id: table.id, deadline: table.turnDeadline };
+}
+
+/** Depois de gravar as mesas de torneio: liga os cronometros e mostra a mesa aos jogadores. */
+export async function announceTables(tables: Array<{ id: string; deadline: Date | null }>): Promise<void> {
+  for (const table of tables) {
+    scheduleTurnTimeout(table.id, table.deadline);
+    await publishTable(table.id);
+  }
 }
 
 /** Sai da fila antes da partida comecar, recuperando as chaves. */
@@ -323,6 +363,7 @@ async function advanceTable(tx: Tx, table: GameTable, seats: GameSeat[], first: 
   });
   if (finished) {
     await payWinners(tx, table, adapter.winnerSeats(state), seats);
+    if (table.tournamentId) await recordTournamentResult(tx, table.id, adapter.winnerSeats(state), seats);
   }
   return deadline;
 }

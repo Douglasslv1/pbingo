@@ -13,6 +13,8 @@ import type {
   RoundView,
   TableGame,
   Ticket,
+  TournamentDetail,
+  TournamentSummary,
   TransactionItem,
   Venox,
   Wallet,
@@ -87,6 +89,22 @@ export const api = {
   getWallet: (token: string) => request<Wallet>('/wallet/me', {}, token),
 
   getVenox: (token: string) => request<Venox>('/venox/me', {}, token),
+
+  getTournaments: (token?: string) => request<TournamentSummary[]>('/tournaments', {}, token),
+
+  getTournament: (id: string, token?: string) => request<TournamentDetail>(`/tournaments/${id}`, {}, token),
+
+  joinTournament: (token: string, id: string) => request<TournamentDetail>(`/tournaments/${id}/entry`, { method: 'POST' }, token),
+
+  leaveTournament: (token: string, id: string) => request<TournamentDetail>(`/tournaments/${id}/entry`, { method: 'DELETE' }, token),
+
+  adminCreateTournament: (
+    token: string,
+    data: { name: string; game: TournamentSummary['game']; mode?: string; size: number; entryFee: number; startsAt: string },
+  ) => request<TournamentSummary>('/admin/tournaments', { method: 'POST', body: JSON.stringify(data) }, token),
+
+  adminCancelTournament: (token: string, id: string) =>
+    request<null>(`/admin/tournaments/${id}/cancel`, { method: 'POST' }, token),
 
   claimDailyVenox: (token: string) => request<Venox & { claimed: boolean }>('/venox/daily', { method: 'POST' }, token),
 

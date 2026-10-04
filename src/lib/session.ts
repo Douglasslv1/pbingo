@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import { AppError } from '../utils/errors';
 import { verifyAuthToken } from './jwt';
 import { prisma } from './prisma';
@@ -28,4 +29,10 @@ export async function authenticateToken(token: string): Promise<string> {
   }
 
   return payload.userId;
+}
+
+/** Rotas publicas: com login valido, devolve quem esta vendo; sem login (ou token invalido), null. */
+export async function viewerOf(req: Request): Promise<string | null> {
+  const token = req.headers.authorization?.replace(/^Bearer /, '');
+  return token ? authenticateToken(token).catch(() => null) : null;
 }

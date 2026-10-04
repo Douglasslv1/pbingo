@@ -36,6 +36,10 @@ model User {
   AccessLog           AccessLog[]
   GameSeat            GameSeat[]
   venoxLedger         VenoxLedger[]
+  tournamentEntries   TournamentEntry[]
+  matchesAsPlayer0    TournamentMatch[]    @relation("MatchPlayer0")
+  matchesAsPlayer1    TournamentMatch[]    @relation("MatchPlayer1")
+  matchesWon          TournamentMatch[]    @relation("MatchWinner")
 
   @@map("users")
 }
@@ -232,9 +236,12 @@ model GameTable {
   startedAt    DateTime?       @map("started_at") @db.Timestamptz
   finishedAt   DateTime?       @map("finished_at") @db.Timestamptz
   turnDeadline DateTime?       @map("turn_deadline") @db.Timestamptz
+  tournamentId String?         @map("tournament_id") @db.Uuid
 
-  seats GameSeat[]
-  moves GameMove[]
+  seats           GameSeat[]
+  moves           GameMove[]
+  tournament      Tournament?      @relation(fields: [tournamentId], references: [id])
+  tournamentMatch TournamentMatch?
 
   @@index([game, status, mode, teamMode, stake, createdAt], map: "idx_game_tables_queue")
   @@map("game_tables")
@@ -291,4 +298,72 @@ model VenoxLedger {
   @@unique([userId, reason, ref], map: "unique_venox_ledger_ref")
   @@index([userId, createdAt(sort: Desc)], map: "idx_venox_ledger_user")
   @@map("venox_ledger")
+}
+
+enum TournamentStatus {
+  OPEN
+  RUNNING
+  FINISHED
+  CANCELLED
+
+  @@map("tournament_status")
+}
+
+/// Torneio mata-mata pago em Venox. `rounds` e definido na largada (tamanho real da chave).
+model Tournament {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String           @db.VarChar(60)
+  game       String           @db.VarChar(20)
+  mode       String           @db.VarChar(20)
+  teamMode   String           @map("team_mode") @db.VarChar(20)
+  size       Int
+  entryFee   Int              @map("entry_fee")
+  startsAt   DateTime         @map("starts_at") @db.Timestamptz
+  status     TournamentStatus @default(OPEN)
+  pot        Int              @default(0)
+  rounds     Int?
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  finishedAt DateTime?        @map("finished_at") @db.Timestamptz
+
+  entries TournamentEntry[]
+  matches TournamentMatch[]
+  tables  GameTable[]
+
+  @@index([status, startsAt], map: "idx_tournaments_status")
+  @@map("tournaments")
+}
+
+model TournamentEntry {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tournamentId String   @map("tournament_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  placement    Int?
+  prize        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId], map: "unique_tournament_entry")
+  @@map("tournament_entries")
+}
+
+model TournamentMatch {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tournamentId String  @map("tournament_id") @db.Uuid
+  round        Int
+  slot         Int
+  player0Id    String? @map("player0_id") @db.Uuid
+  player1Id    String? @map("player1_id") @db.Uuid
+  winnerId     String? @map("winner_id") @db.Uuid
+  tableId      String? @unique @map("table_id") @db.Uuid
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player0    User?      @relation("MatchPlayer0", fields: [player0Id], references: [id])
+  player1    User?      @relation("MatchPlayer1", fields: [player1Id], references: [id])
+  winner     User?      @relation("MatchWinner", fields: [winnerId], references: [id])
+  table      GameTable? @relation(fields: [tableId], references: [id])
+
+  @@unique([tournamentId, round, slot], map: "unique_tournament_match")
+  @@map("tournament_matches")
 }

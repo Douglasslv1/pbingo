@@ -25,6 +25,9 @@ export default function AppHeader() {
         <NavLink to="/app" className={navClass}>
           Carteira
         </NavLink>
+        <NavLink to="/torneios" className={navClass}>
+          Torneios
+        </NavLink>
         <NavLink to="/ranking" className={navClass}>
           Ranking
         </NavLink>

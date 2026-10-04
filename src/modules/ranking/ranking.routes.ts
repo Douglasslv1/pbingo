@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { authenticateToken } from '../../lib/session';
+import { viewerOf } from '../../lib/session';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { getRanking, RankingGame } from './ranking.service';
 
@@ -10,11 +10,6 @@ const querySchema = z.object({
 });
 
 /** Ranking e publico; com login valido, mostra tambem a posicao de quem esta vendo. */
-async function viewerOf(req: Request): Promise<string | null> {
-  const token = req.headers.authorization?.replace(/^Bearer /, '');
-  return token ? authenticateToken(token).catch(() => null) : null;
-}
-
 export const rankingRouter = Router();
 
 rankingRouter.get(

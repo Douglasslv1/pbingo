@@ -17,6 +17,7 @@ import { profileRouter } from './modules/profile/profile.routes';
 import { rankingRouter } from './modules/ranking/ranking.routes';
 import { roundsRouter } from './modules/rounds/rounds.routes';
 import { adminTrucoRouter, trucoRouter } from './modules/truco/truco.routes';
+import { adminTournamentsRouter, tournamentsRouter } from './modules/tournaments/tournament.routes';
 import { venoxRouter } from './modules/venox/venox.routes';
 import { walletRouter } from './modules/wallet/wallet.routes';
 import { adminWithdrawalsRouter, withdrawalsRouter } from './modules/withdrawals/withdrawals.routes';
@@ -103,6 +104,8 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/auth', authRouter);
   app.use('/wallet', walletRouter);
   app.use('/venox', venoxRouter);
+  app.use('/tournaments', tournamentsRouter);
+  app.use('/admin/tournaments', adminTournamentsRouter);
   app.use('/profile', profileRouter);
   app.use('/ranking', rankingRouter);
   app.use('/payments', paymentsRouter);

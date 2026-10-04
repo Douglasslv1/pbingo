@@ -6,6 +6,7 @@ import { purgeExpiredAccessLogs } from './modules/auth/accessLog.service';
 import { setUserRole } from './modules/auth/userRole.service';
 import { cancelStaleQueues, restoreTurnTimers } from './modules/tables/tables.service';
 import { roundEngine } from './modules/rounds/round.engine';
+import { tournamentTick } from './modules/tournaments/tournament.service';
 import { initSocket } from './websocket/socket';
 
 if (env.isProduction && env.corsOrigins.length === 0) {
@@ -58,6 +59,15 @@ function scheduleQueueSweep(): void {
   setInterval(sweep, QUEUE_SWEEP_MS).unref();
 }
 
+const TOURNAMENT_TICK_MS = 15 * 1000;
+
+/** A cada 15s: torneios no horario largam e as partidas prontas da chave ganham mesa (tambem apos reinicio). */
+function scheduleTournaments(): void {
+  const tick = () => tournamentTick().catch((err) => logger.error('Erro no ciclo dos torneios', { err }));
+  tick();
+  setInterval(tick, TOURNAMENT_TICK_MS).unref();
+}
+
 const app = createApp();
 const httpServer = createServer(app);
 
@@ -70,6 +80,7 @@ httpServer.listen(env.port, () => {
   });
   schedulePurgeOfAccessLogs();
   scheduleQueueSweep();
+  scheduleTournaments();
   restoreTurnTimers()
     .then((count) => count > 0 && logger.info('Cronometros das mesas religados após o início', { tables: count }))
     .catch((err) => logger.error('Erro ao religar cronometros das mesas', { err }));
