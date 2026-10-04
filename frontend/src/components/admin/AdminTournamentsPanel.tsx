@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
-import { TOURNAMENT_GAMES } from '../../pages/TournamentsPage';
+import { formatLabel, TOURNAMENT_FORMATS } from '../../pages/TournamentsPage';
 import type { TournamentSummary } from '../../types';
 import { formatDateTime } from '../../withdrawalFormat';
 
@@ -12,16 +12,13 @@ const PRESETS = [
   { name: 'Semanal', size: 32, entryFee: 150 },
 ];
 
-const LUDO_MODES = [
-  { value: 'CLASSICO', label: 'Clássico' },
-  { value: 'ARENA', label: 'Arena' },
-];
-
 /** Cria torneios (com os formatos sugeridos) e cancela os que ainda nao comecaram. */
 export default function AdminTournamentsPanel() {
   const { auth } = useAuth();
   const [list, setList] = useState<TournamentSummary[]>([]);
-  const [form, setForm] = useState({ ...PRESETS[0], game: 'DAMAS' as TournamentSummary['game'], mode: 'CLASSICO', startsAt: '' });
+  const [form, setForm] = useState({ ...PRESETS[0], format: 0, startsAt: '' });
+  const format = TOURNAMENT_FORMATS[form.format];
+  const pairs = format.teamMode === 'PAIRS';
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +35,9 @@ export default function AdminTournamentsPanel() {
     api
       .adminCreateTournament(auth.token, {
         name: form.name,
-        game: form.game,
-        mode: form.game === 'LUDO' ? form.mode : undefined,
+        game: format.game,
+        mode: format.mode,
+        teamMode: format.teamMode,
         size: form.size,
         entryFee: form.entryFee,
         startsAt: new Date(form.startsAt).toISOString(),
@@ -81,28 +79,16 @@ export default function AdminTournamentsPanel() {
         </label>
         <label>
           Jogo
-          <select value={form.game} onChange={(e) => setForm({ ...form, game: e.target.value as TournamentSummary['game'] })}>
-            {Object.entries(TOURNAMENT_GAMES).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
+          <select value={form.format} onChange={(e) => setForm({ ...form, format: Number(e.target.value) })}>
+            {TOURNAMENT_FORMATS.map((option, index) => (
+              <option key={option.label} value={index}>
+                {option.label}
               </option>
             ))}
           </select>
         </label>
-        {form.game === 'LUDO' && (
-          <label>
-            Modo
-            <select value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value })}>
-              {LUDO_MODES.map((mode) => (
-                <option key={mode.value} value={mode.value}>
-                  {mode.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         <label>
-          Vagas
+          {pairs ? 'Vagas (duplas)' : 'Vagas'}
           <select value={form.size} onChange={(e) => setForm({ ...form, size: Number(e.target.value) })}>
             {[8, 16, 32].map((size) => (
               <option key={size}>{size}</option>
@@ -110,7 +96,7 @@ export default function AdminTournamentsPanel() {
           </select>
         </label>
         <label>
-          Inscrição (Venox)
+          {pairs ? 'Inscrição por dupla (Venox, número par)' : 'Inscrição (Venox)'}
           <input
             type="number"
             min={0}
@@ -137,8 +123,8 @@ export default function AdminTournamentsPanel() {
             <div className="tournament-item" key={tournament.id}>
               <strong>{tournament.name}</strong>
               <div className="hint">
-                {TOURNAMENT_GAMES[tournament.game]} · {formatDateTime(tournament.startsAt)} · {tournament.players}/
-                {tournament.size} · pote {tournament.pot} Venox · {tournament.status}
+                {formatLabel(tournament)} · {formatDateTime(tournament.startsAt)} · {tournament.players}/
+                {tournament.capacity} jogadores · pote {tournament.pot} Venox · {tournament.status}
               </div>
               {tournament.status === 'OPEN' && (
                 <div className="tournament-actions">

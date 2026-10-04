@@ -67,16 +67,23 @@ export interface TournamentSummary {
   name: string;
   game: 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO';
   mode: string;
+  teamMode: 'DUEL' | 'PAIRS';
   size: number;
+  /** Inscricao por equipe; na dupla, cada jogador paga `feePerPlayer` (metade). */
   entryFee: number;
+  feePerPlayer: number;
   startsAt: string;
   status: TournamentStatus;
+  /** Jogadores confirmados e vagas em jogadores. */
   players: number;
+  capacity: number;
   pot: number;
   /** Premios do pote atual (1o, 2o, 3o e 4o) e com o torneio lotado. */
   prizes: number[];
   fullPrizes: number[];
   joined: boolean;
+  /** Convidado para uma dupla, ainda sem aceitar. */
+  invited: boolean;
 }
 
 export interface TournamentPlayer {
@@ -85,6 +92,7 @@ export interface TournamentPlayer {
 }
 
 export interface TournamentDetail extends TournamentSummary {
+  invitedBy: string | null;
   entrants: TournamentPlayer[];
   rounds: Array<Array<{ slot: number; players: Array<TournamentPlayer | null>; winner: 0 | 1 | null; live: boolean }>>;
   podium: Array<TournamentPlayer & { placement: number; prize: number }>;

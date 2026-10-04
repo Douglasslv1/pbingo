@@ -7,13 +7,26 @@ import { getSocket } from '../socket';
 import type { TournamentDetail, TournamentPlayer, TournamentSummary } from '../types';
 import { formatDateTime } from '../withdrawalFormat';
 
-export const TOURNAMENT_GAMES: Record<TournamentSummary['game'], string> = {
-  DOMINO: 'Dominó mano a mano',
-  TRUCO: 'Truco mano a mano',
-  DAMAS: 'Damas',
-  XADREZ: 'Xadrez',
-  LUDO: 'Ludo mano a mano',
-};
+/** Formatos de torneio aceitos pelo servidor, com o nome mostrado ao jogador. */
+export const TOURNAMENT_FORMATS: Array<{
+  game: TournamentSummary['game'];
+  mode: string;
+  teamMode: TournamentSummary['teamMode'];
+  label: string;
+}> = [
+  { game: 'DOMINO', mode: 'SIX_TILES', teamMode: 'DUEL', label: 'Dominó mano a mano' },
+  { game: 'DOMINO', mode: 'SIX_TILES', teamMode: 'PAIRS', label: 'Dominó em dupla (6 peças)' },
+  { game: 'DOMINO', mode: 'BURRINHO', teamMode: 'PAIRS', label: 'Dominó em dupla (burrinho)' },
+  { game: 'TRUCO', mode: 'PAULISTA', teamMode: 'DUEL', label: 'Truco mano a mano' },
+  { game: 'TRUCO', mode: 'PAULISTA', teamMode: 'PAIRS', label: 'Truco em dupla' },
+  { game: 'DAMAS', mode: 'BRASILEIRA', teamMode: 'DUEL', label: 'Damas' },
+  { game: 'XADREZ', mode: 'CLASSICO', teamMode: 'DUEL', label: 'Xadrez' },
+  { game: 'LUDO', mode: 'CLASSICO', teamMode: 'DUEL', label: 'Ludo mano a mano' },
+  { game: 'LUDO', mode: 'ARENA', teamMode: 'DUEL', label: 'Ludo Arena mano a mano' },
+];
+
+export const formatLabel = (t: Pick<TournamentSummary, 'game' | 'mode' | 'teamMode'>) =>
+  TOURNAMENT_FORMATS.find((f) => f.game === t.game && f.mode === t.mode && f.teamMode === t.teamMode)?.label ?? t.game;
 
 const STATUS_LABELS: Record<TournamentSummary['status'], string> = {
   OPEN: 'Inscrições abertas',
@@ -80,6 +93,7 @@ export default function TournamentsPage() {
   const [list, setList] = useState<TournamentSummary[]>([]);
   const [selected, setSelected] = useState<TournamentDetail | null>(null);
   const [busy, setBusy] = useState(false);
+  const [partners, setPartners] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const selectedId = selected?.id;
 
@@ -106,7 +120,8 @@ export default function TournamentsPage() {
     if (!token) return;
     setBusy(true);
     setError(null);
-    (join ? api.joinTournament(token, id) : api.leaveTournament(token, id))
+    const partner = partners[id]?.trim() || undefined;
+    (join ? api.joinTournament(token, id, partner) : api.leaveTournament(token, id))
       .then((detail) => {
         setSelected(detail);
         load();
@@ -123,7 +138,8 @@ export default function TournamentsPage() {
           <h1>Torneios</h1>
           <p className="hint intro-hint">
             Inscreva-se com Venox, a moeda que você ganha jogando: 10 por vitória e 2 por visita diária. Mata-mata: quem
-            vence avança. Os prêmios saem do pote das inscrições, e a casa fica com 10%. Se faltar jogador na sua vez,
+            vence avança. Na dupla, convide o parceiro pelo apelido (cada um paga metade) ou entre sozinho e a dupla é
+            sorteada na largada. Os prêmios saem do pote das inscrições, e a casa fica com 10%. Se faltar jogador na sua vez,
             vale a regra de tempo da mesa. Com menos de 4 inscritos, o torneio é cancelado e o Venox volta para você.
           </p>
           {error && <p className="error">{error}</p>}
@@ -135,12 +151,14 @@ export default function TournamentsPage() {
                   <strong>{tournament.name}</strong>
                   <span className="hint">
                     {' '}
-                    · {TOURNAMENT_GAMES[tournament.game]} · {STATUS_LABELS[tournament.status]}
+                    · {formatLabel(tournament)} · {STATUS_LABELS[tournament.status]}
                   </span>
                 </div>
                 <div className="hint">
-                  {formatDateTime(tournament.startsAt)} · {tournament.players}/{tournament.size} inscritos · inscrição{' '}
-                  {tournament.entryFee} Venox
+                  {formatDateTime(tournament.startsAt)} · {tournament.players}/{tournament.capacity} jogadores · inscrição{' '}
+                  {tournament.teamMode === 'PAIRS'
+                    ? `${tournament.entryFee} Venox por dupla (${tournament.feePerPlayer} cada)`
+                    : `${tournament.entryFee} Venox`}
                 </div>
                 <div className="hint">
                   {tournament.status === 'OPEN'
@@ -154,18 +172,37 @@ export default function TournamentsPage() {
                   {tournament.status === 'OPEN' &&
                     (!token ? (
                       <Link to="/app">Entre para se inscrever</Link>
+                    ) : tournament.invited ? (
+                      <>
+                        <button type="button" disabled={busy} onClick={() => act(tournament.id, true)}>
+                          Aceitar convite ({tournament.feePerPlayer} Venox)
+                        </button>
+                        <button type="button" className="danger" disabled={busy} onClick={() => act(tournament.id, false)}>
+                          Recusar
+                        </button>
+                      </>
                     ) : tournament.joined ? (
                       <button type="button" className="danger" disabled={busy} onClick={() => act(tournament.id, false)}>
                         Desistir
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={busy || tournament.players >= tournament.size}
-                        onClick={() => act(tournament.id, true)}
-                      >
-                        Inscrever ({tournament.entryFee} Venox)
-                      </button>
+                      <>
+                        {tournament.teamMode === 'PAIRS' && (
+                          <input
+                            placeholder="Apelido do parceiro (opcional)"
+                            maxLength={20}
+                            value={partners[tournament.id] ?? ''}
+                            onChange={(e) => setPartners({ ...partners, [tournament.id]: e.target.value })}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          disabled={busy || tournament.players >= tournament.capacity}
+                          onClick={() => act(tournament.id, true)}
+                        >
+                          Inscrever ({tournament.feePerPlayer} Venox)
+                        </button>
+                      </>
                     ))}
                 </div>
               </div>
@@ -176,6 +213,9 @@ export default function TournamentsPage() {
         {selected && (
           <div className="card">
             <h2>{selected.name}</h2>
+            {selected.invitedBy && selected.status === 'OPEN' && (
+              <p className="hint">{selected.invitedBy} convidou você para jogar em dupla. Aceite ou recuse na lista acima.</p>
+            )}
             {selected.podium.length > 0 && (
               <ol className="tournament-podium">
                 {selected.podium.map((player) => (
@@ -191,7 +231,7 @@ export default function TournamentsPage() {
             ) : (
               <>
                 <p className="hint">
-                  {selected.players} de {selected.size} inscritos. A chave é montada no horário de início, e os primeiros a
+                  {selected.players} de {selected.capacity} jogadores inscritos. A chave é montada no horário de início, e os primeiros a
                   se inscrever passam direto da primeira rodada quando faltar adversário.
                 </p>
                 <ul className="tournament-entrants">

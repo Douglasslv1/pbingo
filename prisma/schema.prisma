@@ -37,6 +37,8 @@ model User {
   GameSeat            GameSeat[]
   venoxLedger         VenoxLedger[]
   tournamentEntries   TournamentEntry[]
+  partnerEntries      TournamentEntry[]    @relation("EntryPartner")
+  captainEntries      TournamentEntry[]    @relation("EntryCaptain")
   matchesAsPlayer0    TournamentMatch[]    @relation("MatchPlayer0")
   matchesAsPlayer1    TournamentMatch[]    @relation("MatchPlayer1")
   matchesWon          TournamentMatch[]    @relation("MatchWinner")
@@ -340,9 +342,15 @@ model TournamentEntry {
   placement    Int?
   prize        Int      @default(0)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  /// CONFIRMED (pagou) ou INVITED (convidado para dupla, ainda nao aceitou)
+  status       String   @default("CONFIRMED") @db.VarChar(10)
+  partnerId    String?  @map("partner_id") @db.Uuid
+  captainId    String?  @map("captain_id") @db.Uuid
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner    User?      @relation("EntryPartner", fields: [partnerId], references: [id])
+  captain    User?      @relation("EntryCaptain", fields: [captainId], references: [id])
 
   @@unique([tournamentId, userId], map: "unique_tournament_entry")
   @@map("tournament_entries")

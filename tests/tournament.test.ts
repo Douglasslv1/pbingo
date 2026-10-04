@@ -2,6 +2,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { env } from '../src/config/env';
 import { prisma } from '../src/lib/prisma';
+import { handleTurnTimeout } from '../src/modules/tables/tables.service';
 import { prizesFor, tournamentTick } from '../src/modules/tournaments/tournament.service';
 import { makeAdmin, registerTestUser } from './helpers';
 import { app } from './testApp';
@@ -43,12 +44,26 @@ async function playLiveMatches(tournamentId: string, players: Player[]) {
   return live.length;
 }
 
-const original = env.damasEnabled;
+/** Joga as mesas abertas ate o fim so com jogadas automaticas (tempo esgotado). */
+async function autoPlayLiveTables(tournamentId: string) {
+  const live = await prisma.tournamentMatch.findMany({ where: { tournamentId, winnerId: null, tableId: { not: null } } });
+  for (const match of live) {
+    const later = new Date(Date.now() + 1e9);
+    while ((await prisma.gameTable.findUniqueOrThrow({ where: { id: match.tableId! } })).status === 'PLAYING') {
+      await handleTurnTimeout(match.tableId!, later);
+    }
+  }
+  return live.length;
+}
+
+const original = { damas: env.damasEnabled, domino: env.dominoEnabled };
 beforeEach(() => {
   env.damasEnabled = true;
+  env.dominoEnabled = true;
 });
 afterEach(() => {
-  env.damasEnabled = original;
+  env.damasEnabled = original.damas;
+  env.dominoEnabled = original.domino;
 });
 
 describe('Torneios', () => {
@@ -65,6 +80,8 @@ describe('Torneios', () => {
     const res = await createTournament({ game: 'LUDO' });
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ game: 'LUDO', mode: 'CLASSICO', teamMode: 'DUEL', status: 'OPEN' });
+    expect((await createTournament({ game: 'TRUCO', teamMode: 'PAIRS', entryFee: 25 })).status).toBe(422);
+    expect((await createTournament({ game: 'DOMINO', mode: 'BURRINHO', teamMode: 'DUEL' })).status).toBe(422);
   });
 
   it('inscricao cobra Venox, desistir devolve, e nao inscreve sem saldo, repetido ou lotado', async () => {
@@ -136,5 +153,55 @@ describe('Torneios', () => {
     expect((await request(app).post(`/admin/tournaments/${id}/cancel`).set(auth(admin))).status).toBe(204);
     expect(await venoxOf(ana)).toBe(100);
     expect((await request(app).get('/tournaments')).body[0]).toMatchObject({ status: 'CANCELLED' });
+  });
+
+  it('dupla: convite pelo apelido, recusa, sorteio de quem entrou sozinho, mesa frente a frente e premio dividido', async () => {
+    const id = (await createTournament({ game: 'DOMINO', teamMode: 'PAIRS', entryFee: 20 })).body.id;
+    const players = await playersWithVenox(10);
+    const [ana, bia, caio, dani] = players;
+    await prisma.user.update({ where: { id: bia.user.id }, data: { nickname: 'Bia_Domino' } });
+    await prisma.user.update({ where: { id: dani.user.id }, data: { nickname: 'Dani' } });
+    const join = (player: Player, body = {}) => request(app).post(`/tournaments/${id}/entry`).set(auth(player)).send(body);
+
+    expect((await join(ana, { partner: 'ninguem' })).status).toBe(404);
+    const invited = await join(ana, { partner: 'bia_domino' });
+    expect(invited.status).toBe(201);
+    expect(await venoxOf(ana)).toBe(90);
+    expect(await venoxOf(bia)).toBe(100);
+    const biaView = (await request(app).get(`/tournaments/${id}`).set(auth(bia))).body;
+    expect(biaView).toMatchObject({ invited: true, joined: false, feePerPlayer: 10 });
+    expect(biaView.invitedBy).toMatch(/^Jogador #/);
+    expect((await join(bia)).status).toBe(201);
+    expect(await venoxOf(bia)).toBe(90);
+
+    await join(caio, { partner: 'Dani' });
+    expect((await request(app).delete(`/tournaments/${id}/entry`).set(auth(dani))).status).toBe(200);
+    for (const player of players.slice(4)) await join(player);
+
+    // 8 confirmados em equipes (Ana & Bia + 3 sorteadas) e 1 que sobra e recebe o Venox de volta
+    await start(id);
+    const solos = players.filter((p) => ![ana, bia, dani].includes(p));
+    expect((await Promise.all(solos.map(venoxOf))).sort()).toEqual([100, 90, 90, 90, 90, 90, 90].sort());
+    const firstTable = await prisma.tournamentMatch.findFirstOrThrow({ where: { tournamentId: id, round: 1, tableId: { not: null } } });
+    const seats = await prisma.gameSeat.findMany({ where: { tableId: firstTable.tableId! }, orderBy: { seat: 'asc' } });
+    const captainOf = async (userId: string) =>
+      (await prisma.tournamentEntry.findFirstOrThrow({ where: { tournamentId: id, userId } })).captainId;
+    expect(await captainOf(seats[0].userId)).toBe(await captainOf(seats[2].userId));
+    expect(await captainOf(seats[1].userId)).not.toBe(await captainOf(seats[0].userId));
+
+    while ((await autoPlayLiveTables(id)) > 0);
+    const tournament = await prisma.tournament.findUniqueOrThrow({ where: { id } });
+    expect(tournament).toMatchObject({ status: 'FINISHED', pot: 80 });
+
+    const view = (await request(app).get(`/tournaments/${id}`).set(auth(ana))).body;
+    expect(view.podium.map((p: { placement: number; prize: number }) => [p.placement, p.prize])).toEqual([
+      [1, 36],
+      [2, 18],
+      [3, 9],
+      [3, 9],
+    ]);
+    expect(view.podium[0].name).toContain(' & ');
+    const total = (await Promise.all(players.map(venoxOf))).reduce((sum, v) => sum + v, 0);
+    expect(total).toBe(1000 - 80 + 72);
   });
 });

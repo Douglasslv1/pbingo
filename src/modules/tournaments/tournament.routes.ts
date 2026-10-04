@@ -23,14 +23,25 @@ const createSchema = z
     name: z.string().trim().min(3).max(60),
     game: z.enum(Object.keys(TOURNAMENT_FORMATS) as [GameName, ...GameName[]]),
     mode: z.string().optional(),
+    teamMode: z.string().optional(),
     size: z.coerce.number().refine((size): size is (typeof TOURNAMENT_SIZES)[number] => (TOURNAMENT_SIZES as readonly number[]).includes(size), {
       message: 'Vagas: 8, 16 ou 32',
     }),
     entryFee: z.coerce.number().int().min(0).max(10_000),
     startsAt: z.coerce.date().refine((date) => date > new Date(), { message: 'O início deve ser no futuro' }),
   })
-  .transform((input) => ({ ...input, mode: input.mode ?? TOURNAMENT_FORMATS[input.game][0] }))
-  .refine((input) => TOURNAMENT_FORMATS[input.game].includes(input.mode), { message: 'Modo inválido para o jogo' });
+  .transform((input) => {
+    const [mode, teamMode] = TOURNAMENT_FORMATS[input.game][0];
+    return { ...input, mode: input.mode ?? mode, teamMode: input.teamMode ?? teamMode };
+  })
+  .refine((input) => TOURNAMENT_FORMATS[input.game].some(([mode, teamMode]) => mode === input.mode && teamMode === input.teamMode), {
+    message: 'Formato inválido para o jogo',
+  })
+  .refine((input) => input.teamMode !== 'PAIRS' || input.entryFee % 2 === 0, {
+    message: 'Na dupla, a inscrição deve ser par (cada jogador paga metade)',
+  });
+
+const joinSchema = z.object({ partner: z.string().trim().min(1).max(20).optional() });
 
 /** Lista e chave sao publicas; inscrever e desistir exigem login. */
 export const tournamentsRouter = Router();
@@ -40,7 +51,7 @@ tournamentsRouter.get('/:id', asyncHandler(async (req: Request, res: Response) =
 tournamentsRouter.post(
   '/:id/entry',
   authMiddleware,
-  asyncHandler(async (req: Request, res: Response) => res.status(201).json(await joinTournament(req.userId!, idOf(req)))),
+  asyncHandler(async (req: Request, res: Response) => res.status(201).json(await joinTournament(req.userId!, idOf(req), joinSchema.parse(req.body ?? {}).partner))),
 );
 tournamentsRouter.delete(
   '/:id/entry',

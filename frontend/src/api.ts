@@ -94,13 +94,14 @@ export const api = {
 
   getTournament: (id: string, token?: string) => request<TournamentDetail>(`/tournaments/${id}`, {}, token),
 
-  joinTournament: (token: string, id: string) => request<TournamentDetail>(`/tournaments/${id}/entry`, { method: 'POST' }, token),
+  joinTournament: (token: string, id: string, partner?: string) =>
+    request<TournamentDetail>(`/tournaments/${id}/entry`, { method: 'POST', body: JSON.stringify({ partner }) }, token),
 
   leaveTournament: (token: string, id: string) => request<TournamentDetail>(`/tournaments/${id}/entry`, { method: 'DELETE' }, token),
 
   adminCreateTournament: (
     token: string,
-    data: { name: string; game: TournamentSummary['game']; mode?: string; size: number; entryFee: number; startsAt: string },
+    data: { name: string; game: TournamentSummary['game']; mode: string; teamMode: string; size: number; entryFee: number; startsAt: string },
   ) => request<TournamentSummary>('/admin/tournaments', { method: 'POST', body: JSON.stringify(data) }, token),
 
   adminCancelTournament: (token: string, id: string) =>
