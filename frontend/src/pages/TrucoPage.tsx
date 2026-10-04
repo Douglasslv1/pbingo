@@ -3,11 +3,12 @@ import GamePage from '../components/GamePage';
 import TableWaiting from '../components/tables/TableWaiting';
 import TrucoGame from '../components/truco/TrucoGame';
 import TrucoLobby from '../components/truco/TrucoLobby';
+import { predictTruco } from '../components/truco/optimisticPlay';
 import { useTableRoom } from '../hooks/useTableRoom';
 import type { TrucoAction, TrucoTableView } from '../types';
 
 function TrucoRoom() {
-  const room = useTableRoom<TrucoTableView, TrucoAction>('truco');
+  const room = useTableRoom<TrucoTableView, TrucoAction>('truco', predictTruco);
   const { table } = room;
 
   if (room.loading) {

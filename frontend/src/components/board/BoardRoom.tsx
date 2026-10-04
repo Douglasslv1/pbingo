@@ -22,12 +22,14 @@ interface Props<V, A> {
   intro: ReactNode;
   Rules: ComponentType;
   Game: ComponentType<BoardGameProps<V, A>>;
+  /** Lance mostrado na hora, antes da resposta do servidor. */
+  predict?: (table: V, action: A) => V | null;
 }
 
 /** Sala de um jogo de tabuleiro (mano a mano): lobby com as regras, espera e partida. */
-export default function BoardRoom<V extends GameTableView<unknown>, A>({ game, title, intro, Rules, Game }: Props<V, A>) {
+export default function BoardRoom<V extends GameTableView<unknown>, A>({ game, title, intro, Rules, Game, predict }: Props<V, A>) {
   const config = useGameConfig();
-  const room = useTableRoom<V, A>(game);
+  const room = useTableRoom<V, A>(game, predict);
   const [stake, setStake] = useState(1);
   const [showRules, setShowRules] = useState(false);
   const { table } = room;

@@ -3,6 +3,7 @@ import GamePage from '../components/GamePage';
 import HistoryPanel from '../components/HistoryPanel';
 import LudoGame from '../components/ludo/LudoGame';
 import LudoRules from '../components/ludo/LudoRules';
+import { predictLudo } from '../components/ludo/optimisticMove';
 import OptionCards from '../components/tables/OptionCards';
 import TableWaiting from '../components/tables/TableWaiting';
 import { useGameConfig } from '../hooks/useGameConfig';
@@ -26,7 +27,7 @@ const TEAM_MODES = [
 
 function LudoRoom() {
   const config = useGameConfig();
-  const room = useTableRoom<LudoTableView, LudoAction>('ludo');
+  const room = useTableRoom<LudoTableView, LudoAction>('ludo', predictLudo);
   const [mode, setMode] = useState<LudoMode>('CLASSICO');
   const [teamMode, setTeamMode] = useState<LudoTeamMode>('DUEL');
   const [showRules, setShowRules] = useState(false);
