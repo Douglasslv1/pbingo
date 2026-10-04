@@ -6,3 +6,7 @@ tests/
 *.log
 .env
 .env.local
+
+# Imagens de divulgacao e backups do banco (dados pessoais) nao vao para o servidor
+/*.png
+backup-*.sql
