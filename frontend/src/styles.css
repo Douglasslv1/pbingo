@@ -2474,6 +2474,32 @@ button.truco-call {
   margin-top: calc(var(--w) * -0.9);
 }
 
+/* Desktop: a mesa ocupa a largura da tela; tabuleiros quadrados crescem ate caber na altura e as cartas aumentam */
+@media (min-width: 861px) {
+  .app-shell:has(.game-table) {
+    max-width: none;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .game-table .board,
+  .game-table .ludo-board {
+    max-width: max(560px, calc(100dvh - 240px));
+  }
+
+  .playing-card {
+    --w: 56px;
+  }
+
+  .playing-card.small {
+    --w: 38px;
+  }
+
+  .playing-card.large {
+    --w: 84px;
+  }
+}
+
 @media (max-width: 560px) {
   .card.domino-game {
     padding: 12px;

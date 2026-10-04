@@ -27,7 +27,8 @@ function useLayout() {
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
-      const size = width < 300 ? 17 : width < 480 ? 22 : 28;
+      // No desktop a mesa e larga: pedras maiores
+      const size = width < 300 ? 17 : width < 480 ? 22 : width < 900 ? 28 : width < 1200 ? 34 : 40;
       const fit = Math.max(3, Math.floor((width + GAP) / (size * 2 + GAP)));
       setLayout({ size, columns: fit % 2 === 0 ? fit - 1 : fit });
     });
