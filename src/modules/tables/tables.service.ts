@@ -11,6 +11,7 @@ import { ludoAdapter } from '../ludo/ludo.adapter';
 import { displayName } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { trucoAdapter } from '../truco/truco.adapter';
+import { rewardWinners } from '../venox/venox.service';
 import { xadrezAdapter } from '../xadrez/xadrez.adapter';
 import { GameAdapter, GameName, GameRuleError, QueueChoice } from './tables.types';
 import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './turn.scheduler';
@@ -73,6 +74,7 @@ async function refundSeats(tx: Tx, table: GameTable, seats: GameSeat[]): Promise
 async function payWinners(tx: Tx, table: GameTable, winnerSeats: number[], seats: GameSeat[]): Promise<void> {
   const winners = seats.filter((seat) => winnerSeats.includes(seat.seat)).sort((a, b) => a.seat - b.seat);
   await tx.gameSeat.updateMany({ where: { id: { in: winners.map((seat) => seat.id) } }, data: { isWinner: true } });
+  await rewardWinners(tx, table, seats, winnerSeats);
   if (table.prizePool.isZero()) return;
   // Empate (damas e xadrez): o pote e dividido entre todos da mesa
   const paid = winners.length > 0 ? winners : [...seats].sort((a, b) => a.seat - b.seat);
@@ -134,6 +136,8 @@ async function publishTable(tableId: string, extraUserIds: string[] = []): Promi
   const prefix = table.game.toLowerCase();
   for (const seat of table.seats) {
     emitToUser(seat.userId, `${prefix}:table`, tableViewFor(table, seat.userId));
+    // Partida encerrada: o saldo de Venox do cabecalho se atualiza
+    if (table.status === 'FINISHED') emitToUser(seat.userId, 'venox:changed', null);
   }
   for (const userId of extraUserIds) {
     emitToUser(userId, `${prefix}:left`, { tableId, status: table.status });

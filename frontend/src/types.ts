@@ -53,6 +53,13 @@ export interface Ticket {
   createdAt: string;
 }
 
+export interface Venox {
+  balance: number;
+  dailyClaimed: boolean;
+  dailyAmount: number;
+  perWin: number;
+}
+
 export interface Wallet {
   credits: { balance: number };
   prizes: { balanceFiat: string };

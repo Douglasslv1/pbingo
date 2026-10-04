@@ -22,6 +22,8 @@ model User {
   nickname          String?   @db.VarChar(20)
   nicknameChangedAt DateTime? @map("nickname_changed_at") @db.Timestamptz
   playerNumber      Int       @unique(map: "unique_users_player_number") @default(autoincrement()) @map("player_number")
+  /// Saldo de Venox (moeda ganha jogando; nao se compra nem se saca)
+  venox             Int       @default(0)
 
   credits             UserCredit?
   prizes              UserPrize?
@@ -33,6 +35,7 @@ model User {
   PasswordResetToken  PasswordResetToken[]
   AccessLog           AccessLog[]
   GameSeat            GameSeat[]
+  venoxLedger         VenoxLedger[]
 
   @@map("users")
 }
@@ -272,4 +275,20 @@ model GameMove {
 
   @@unique([tableId, moveNumber], map: "unique_domino_move")
   @@map("game_moves")
+}
+
+/// Extrato de Venox: cada vitoria (ref = mesa) ou visita diaria (ref = data) rende uma unica vez.
+model VenoxLedger {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  amount    Int
+  reason    String   @db.VarChar(20)
+  ref       String   @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reason, ref], map: "unique_venox_ledger_ref")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_venox_ledger_user")
+  @@map("venox_ledger")
 }

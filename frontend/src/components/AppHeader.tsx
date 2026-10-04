@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Logo from './Logo';
+import VenoxBadge from './VenoxBadge';
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return isActive ? 'nav-link active' : 'nav-link';
@@ -17,6 +18,7 @@ export default function AppHeader() {
         <Logo size={30} />
       </Link>
       <nav className="app-nav" aria-label="Menu principal">
+        {auth && <VenoxBadge token={auth.token} />}
         <NavLink to="/jogos" className={navClass}>
           Jogos
         </NavLink>

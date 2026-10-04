@@ -14,6 +14,7 @@ import type {
   TableGame,
   Ticket,
   TransactionItem,
+  Venox,
   Wallet,
   Withdrawal,
   WithdrawalForReview,
@@ -84,6 +85,10 @@ export const api = {
     request<Profile>('/profile/me/nickname', { method: 'PUT', body: JSON.stringify({ nickname }) }, token),
 
   getWallet: (token: string) => request<Wallet>('/wallet/me', {}, token),
+
+  getVenox: (token: string) => request<Venox>('/venox/me', {}, token),
+
+  claimDailyVenox: (token: string) => request<Venox & { claimed: boolean }>('/venox/daily', { method: 'POST' }, token),
 
   createPixCharge: (token: string, creditsAmount: number) =>
     request<{ transactionId: string; status: string; qrCode: string | null; qrCodeBase64: string | null }>(

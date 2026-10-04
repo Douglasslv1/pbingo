@@ -404,6 +404,36 @@ button.link {
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
+/* Saldo de Venox no cabecalho */
+.venox-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.venox-claim {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.venox-claim:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .greeting {
   color: var(--muted);
   margin: 0 0 16px;
