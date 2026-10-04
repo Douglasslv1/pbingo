@@ -1,34 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { api } from '../api';
-import { getSocket } from '../socket';
-import type { Venox } from '../types';
+import { useState } from 'react';
+import { usePlayerStatus } from '../hooks/usePlayerStatus';
 
 /** Saldo de Venox no cabecalho, com o resgate da visita diaria enquanto ele estiver disponivel. */
-export default function VenoxBadge({ token }: { token: string }) {
-  const [venox, setVenox] = useState<Venox | null>(null);
+export default function VenoxBadge() {
+  const { venox, claimDaily } = usePlayerStatus();
   const [claiming, setClaiming] = useState(false);
-  const { pathname } = useLocation();
-
-  const refresh = useCallback(() => {
-    api.getVenox(token).then(setVenox).catch(() => undefined);
-  }, [token]);
-
-  // Atualiza ao trocar de pagina e quando uma partida termina (vitoria rende Venox)
-  useEffect(refresh, [refresh, pathname]);
-  useEffect(() => {
-    const socket = getSocket();
-    socket.on('venox:changed', refresh);
-    return () => {
-      socket.off('venox:changed', refresh);
-    };
-  }, [refresh]);
 
   const claim = () => {
     setClaiming(true);
-    api
-      .claimDailyVenox(token)
-      .then(setVenox)
+    claimDaily()
       .catch(() => undefined)
       .finally(() => setClaiming(false));
   };

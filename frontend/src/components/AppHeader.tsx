@@ -19,7 +19,7 @@ export default function AppHeader() {
         <Logo size={30} />
       </Link>
       <nav className="app-nav" aria-label="Menu principal">
-        {auth && <VenoxBadge token={auth.token} />}
+        {auth && <VenoxBadge />}
         <NavLink to="/jogos" className={navClass}>
           Jogos
         </NavLink>
@@ -51,7 +51,7 @@ export default function AppHeader() {
           </button>
         )}
       </nav>
-      {auth && <TournamentBanner token={auth.token} />}
+      {auth && <TournamentBanner />}
     </header>
   );
 }
