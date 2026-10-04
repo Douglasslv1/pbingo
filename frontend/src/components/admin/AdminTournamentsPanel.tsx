@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { formatLabel, TOURNAMENT_FORMATS } from '../../pages/TournamentsPage';
 import type { TournamentSummary } from '../../types';
 import { formatDateTime } from '../../withdrawalFormat';
+import AdminSchedulesPanel from './AdminSchedulesPanel';
 
 /** Formatos sugeridos: vagas e inscricao calibradas pelo ganho medio de Venox por dia. */
 const PRESETS = [
@@ -59,8 +60,9 @@ export default function AdminTournamentsPanel() {
 
   return (
     <>
+      <AdminSchedulesPanel onChange={load} />
       <form className="card" onSubmit={submit}>
-        <h2>Novo torneio</h2>
+        <h2>Novo torneio avulso</h2>
         <div className="tabs">
           {PRESETS.map((preset) => (
             <button

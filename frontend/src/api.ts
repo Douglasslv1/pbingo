@@ -15,6 +15,7 @@ import type {
   TableGame,
   Ticket,
   TournamentDetail,
+  TournamentSchedule,
   TournamentSummary,
   TransactionItem,
   Venox,
@@ -110,6 +111,19 @@ export const api = {
     token: string,
     data: { name: string; game: TournamentSummary['game']; mode: string; teamMode: string; size: number; entryFee: number; startsAt: string },
   ) => request<TournamentSummary>('/admin/tournaments', { method: 'POST', body: JSON.stringify(data) }, token),
+
+  adminSchedules: (token: string) => request<TournamentSchedule[]>('/admin/tournaments/schedules', {}, token),
+
+  adminCreateSchedule: (
+    token: string,
+    data: Pick<TournamentSchedule, 'name' | 'game' | 'mode' | 'teamMode' | 'size' | 'entryFee' | 'weekdays' | 'times'>,
+  ) => request<TournamentSchedule>('/admin/tournaments/schedules', { method: 'POST', body: JSON.stringify(data) }, token),
+
+  adminSetScheduleActive: (token: string, id: string, active: boolean) =>
+    request<TournamentSchedule>(`/admin/tournaments/schedules/${id}`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
+
+  adminDeleteSchedule: (token: string, id: string) =>
+    request<null>(`/admin/tournaments/schedules/${id}`, { method: 'DELETE' }, token),
 
   adminCancelTournament: (token: string, id: string) =>
     request<null>(`/admin/tournaments/${id}/cancel`, { method: 'POST' }, token),

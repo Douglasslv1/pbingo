@@ -98,6 +98,21 @@ export interface TournamentDetail extends TournamentSummary {
   podium: Array<TournamentPlayer & { placement: number; prize: number }>;
 }
 
+export interface TournamentSchedule {
+  id: string;
+  name: string;
+  game: TournamentSummary['game'];
+  mode: string;
+  teamMode: TournamentSummary['teamMode'];
+  size: number;
+  entryFee: number;
+  /** Dias da semana (0 = domingo; vazio = todos) e horarios "HH:MM" de Brasilia. */
+  weekdays: number[];
+  times: string[];
+  active: boolean;
+  nextStartsAt: string | null;
+}
+
 export interface VenoxHistoryItem {
   id: string;
   amount: number;

@@ -8,6 +8,7 @@ import { displayName } from '../profile/nickname';
 import { announceTables, leaveQueue, startTournamentTable } from '../tables/tables.service';
 import { GameName } from '../tables/tables.types';
 import { addVenox } from '../venox/venox.service';
+import { ensureScheduledTournaments } from './tournament.schedule';
 
 type Tx = Prisma.TransactionClient;
 
@@ -406,7 +407,10 @@ export async function advanceTournament(id: string): Promise<void> {
   await notifyEntrants(id);
 }
 
-/** A cada ciclo: torneios no horario largam (ou sao cancelados) e os em andamento abrem as mesas prontas. */
+/**
+ * A cada ciclo: torneios no horario largam (ou sao cancelados), os em andamento abrem as mesas
+ * prontas e as agendas automaticas abrem o proximo torneio.
+ */
 export async function tournamentTick(now = new Date()): Promise<void> {
   const due = await prisma.tournament.findMany({ where: { status: 'OPEN', startsAt: { lte: now } }, select: { id: true } });
   for (const { id } of due) {
@@ -419,6 +423,7 @@ export async function tournamentTick(now = new Date()): Promise<void> {
   }
   const running = await prisma.tournament.findMany({ where: { status: 'RUNNING' }, select: { id: true } });
   for (const { id } of running) await advanceTournament(id);
+  await ensureScheduledTournaments(now);
 }
 
 const PUBLIC_USER = { select: { id: true, nickname: true, playerNumber: true } } as const;

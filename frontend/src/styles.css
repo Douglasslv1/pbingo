@@ -466,6 +466,17 @@ button.link {
   flex: 0 0 auto;
 }
 
+.schedule-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.schedule-days .label {
+  flex-basis: 100%;
+}
+
 .tournament-podium,
 .tournament-entrants {
   margin: 0 0 16px;

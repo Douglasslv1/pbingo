@@ -17,31 +17,54 @@ import {
   TOURNAMENT_FORMATS,
   TOURNAMENT_SIZES,
 } from './tournament.service';
+import { createSchedule, deleteSchedule, listSchedules, setScheduleActive } from './tournament.schedule';
 
 const idOf = (req: Request) => z.string().uuid().parse(req.params.id);
 
-const createSchema = z
-  .object({
-    name: z.string().trim().min(3).max(60),
-    game: z.enum(Object.keys(TOURNAMENT_FORMATS) as [GameName, ...GameName[]]),
-    mode: z.string().optional(),
-    teamMode: z.string().optional(),
-    size: z.coerce.number().refine((size): size is (typeof TOURNAMENT_SIZES)[number] => (TOURNAMENT_SIZES as readonly number[]).includes(size), {
-      message: 'Vagas: 8, 16 ou 32',
-    }),
-    entryFee: z.coerce.number().int().min(0).max(10_000),
+const formatShape = {
+  name: z.string().trim().min(3).max(60),
+  game: z.enum(Object.keys(TOURNAMENT_FORMATS) as [GameName, ...GameName[]]),
+  mode: z.string().optional(),
+  teamMode: z.string().optional(),
+  size: z.coerce.number().refine((size): size is (typeof TOURNAMENT_SIZES)[number] => (TOURNAMENT_SIZES as readonly number[]).includes(size), {
+    message: 'Vagas: 8, 16 ou 32',
+  }),
+  entryFee: z.coerce.number().int().min(0).max(10_000),
+};
+type FormatFields = z.infer<z.ZodObject<typeof formatShape>>;
+
+/** Jogo, modo e formato aceitos (o primeiro formato do jogo e o padrao); na dupla, inscricao par. */
+const withValidFormat = <T extends FormatFields>(schema: z.ZodType<T, z.ZodTypeDef, unknown>) =>
+  schema
+    .transform((input) => {
+      const [mode, teamMode] = TOURNAMENT_FORMATS[input.game][0];
+      return { ...input, mode: input.mode ?? mode, teamMode: input.teamMode ?? teamMode };
+    })
+    .refine((input) => TOURNAMENT_FORMATS[input.game].some(([mode, teamMode]) => mode === input.mode && teamMode === input.teamMode), {
+      message: 'Formato inválido para o jogo',
+    })
+    .refine((input) => input.teamMode !== 'PAIRS' || input.entryFee % 2 === 0, {
+      message: 'Na dupla, a inscrição deve ser par (cada jogador paga metade)',
+    });
+
+const createSchema = withValidFormat(
+  z.object({
+    ...formatShape,
     startsAt: z.coerce.date().refine((date) => date > new Date(), { message: 'O início deve ser no futuro' }),
-  })
-  .transform((input) => {
-    const [mode, teamMode] = TOURNAMENT_FORMATS[input.game][0];
-    return { ...input, mode: input.mode ?? mode, teamMode: input.teamMode ?? teamMode };
-  })
-  .refine((input) => TOURNAMENT_FORMATS[input.game].some(([mode, teamMode]) => mode === input.mode && teamMode === input.teamMode), {
-    message: 'Formato inválido para o jogo',
-  })
-  .refine((input) => input.teamMode !== 'PAIRS' || input.entryFee % 2 === 0, {
-    message: 'Na dupla, a inscrição deve ser par (cada jogador paga metade)',
-  });
+  }),
+);
+
+const scheduleSchema = withValidFormat(
+  z.object({
+    ...formatShape,
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7).default([]).transform((days) => [...new Set(days)].sort()),
+    times: z
+      .array(z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Horário no formato HH:MM'))
+      .min(1, 'Informe ao menos um horário')
+      .max(24)
+      .transform((times) => [...new Set(times)].sort()),
+  }),
+);
 
 const joinSchema = z.object({ partner: z.string().trim().min(1).max(20).optional() });
 
@@ -70,6 +93,25 @@ tournamentsRouter.delete(
 export const adminTournamentsRouter = Router();
 
 adminTournamentsRouter.use(authMiddleware, asyncHandler(adminMiddleware));
+// Agendas de torneios automaticos (antes de '/:id' para nao confundir "schedules" com um id)
+adminTournamentsRouter.get('/schedules', asyncHandler(async (_req: Request, res: Response) => res.json(await listSchedules())));
+adminTournamentsRouter.post(
+  '/schedules',
+  asyncHandler(async (req: Request, res: Response) => res.status(201).json(await createSchedule(scheduleSchema.parse(req.body)))),
+);
+adminTournamentsRouter.patch(
+  '/schedules/:id',
+  asyncHandler(async (req: Request, res: Response) =>
+    res.json(await setScheduleActive(idOf(req), z.object({ active: z.boolean() }).parse(req.body).active)),
+  ),
+);
+adminTournamentsRouter.delete(
+  '/schedules/:id',
+  asyncHandler(async (req: Request, res: Response) => {
+    await deleteSchedule(idOf(req));
+    res.status(204).end();
+  }),
+);
 adminTournamentsRouter.post(
   '/',
   asyncHandler(async (req: Request, res: Response) => res.status(201).json(await createTournament(createSchema.parse(req.body)))),

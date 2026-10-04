@@ -326,10 +326,12 @@ model Tournament {
   rounds     Int?
   createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz
   finishedAt DateTime?        @map("finished_at") @db.Timestamptz
+  scheduleId String?          @map("schedule_id") @db.Uuid
 
-  entries TournamentEntry[]
-  matches TournamentMatch[]
-  tables  GameTable[]
+  entries  TournamentEntry[]
+  matches  TournamentMatch[]
+  tables   GameTable[]
+  schedule TournamentSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   @@index([status, startsAt], map: "idx_tournaments_status")
   @@map("tournaments")
@@ -374,4 +376,23 @@ model TournamentMatch {
 
   @@unique([tournamentId, round, slot], map: "unique_tournament_match")
   @@map("tournament_matches")
+}
+
+/// Agenda de torneio automatico: horarios "HH:MM" (Brasilia) nos dias da semana escolhidos (vazio = todos).
+model TournamentSchedule {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(60)
+  game      String   @db.VarChar(20)
+  mode      String   @db.VarChar(20)
+  teamMode  String   @map("team_mode") @db.VarChar(20)
+  size      Int
+  entryFee  Int      @map("entry_fee")
+  weekdays  Int[]    @default([])
+  times     String[] @db.VarChar(5)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tournaments Tournament[]
+
+  @@map("tournament_schedules")
 }

@@ -4,7 +4,7 @@ import { clearAllTurnTimeouts } from '../src/modules/tables/turn.scheduler';
 
 async function truncateAll(): Promise<void> {
   await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE tournaments, game_moves, game_seats, game_tables, access_logs, password_reset_tokens, withdrawals, transactions, tickets, rounds, user_prizes, user_credits, users
+    TRUNCATE TABLE tournament_schedules, tournaments, game_moves, game_seats, game_tables, access_logs, password_reset_tokens, withdrawals, transactions, tickets, rounds, user_prizes, user_credits, users
     RESTART IDENTITY CASCADE
   `);
 }
