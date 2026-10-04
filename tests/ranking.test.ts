@@ -56,7 +56,7 @@ describe('Ranking', () => {
       [expect.stringMatching(/^Jogador #\d{4}$/), 3, 6],
       [expect.stringMatching(/^Jogador #\d{4}$/), 1, 6],
     ]);
-    expect(res.body.entries[0]).toMatchObject({ position: 1, winRate: 100 });
+    expect(res.body.entries[0]).toMatchObject({ position: 1, winRate: 100, titles: 0 });
     expect(res.body.me).toMatchObject({ position: 2, isMe: true });
     expect(JSON.stringify(res.body)).not.toContain('prize');
   });

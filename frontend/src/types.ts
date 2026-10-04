@@ -159,6 +159,8 @@ export type RankingGame = 'truco' | 'domino' | 'damas' | 'xadrez' | 'ludo' | 'bi
 export interface RankingEntry {
   position: number;
   name: string;
+  /** Torneios vencidos (selo de campeao). */
+  titles: number;
   wins: number;
   matches: number;
   winRate: number;
@@ -297,7 +299,8 @@ export interface GameTableView<G, M extends string = string, T extends string = 
   prizePool: string;
   queueExpiresAt: string | null;
   mySeat: number | null;
-  players: Array<{ seat: number; name: string; isMe: boolean; away: boolean; prizeAmount: string | null }>;
+  /** `titles`: torneios vencidos (selo de campeao). */
+  players: Array<{ seat: number; name: string; titles: number; isMe: boolean; away: boolean; prizeAmount: string | null }>;
   turnDeadline: string | null;
   game: G | null;
 }

@@ -40,6 +40,7 @@ export default function TrucoGame({ table, busy, error, onAction, onComeBack, on
   const urgent = countdown !== null && countdown <= 10;
   const seats = game.handSizes.map((size, seat) => ({
     name: nameOf(seat),
+    titles: player(seat)?.titles,
     away: player(seat)?.away,
     hand: seat !== mySeat && (
       <div className="truco-backs" aria-label={`${size} cartas`}>

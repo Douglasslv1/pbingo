@@ -63,6 +63,7 @@ export default function DominoGame({ table, busy, error, onAction, onComeBack, o
 
   const seats = game.handSizes.map((size, seat) => ({
     name: nameOf(seat),
+    titles: table.players.find((p) => p.seat === seat)?.titles,
     away: table.players.find((p) => p.seat === seat)?.away,
     hand: seat !== mySeat && (
       <div className="domino-backs" aria-label={`${size} pedras`}>

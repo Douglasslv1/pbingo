@@ -48,8 +48,8 @@ export default function BoardGameShell({ table, title, situation, reasonText, sh
   const mySeat = me?.seat ?? 0;
   const seats = [0, 1].map((seat) =>
     seat === mySeat
-      ? { name: 'Você', tag: COLOR_NAME[game.myColor] }
-      : { name: opponent?.name ?? '...', tag: COLOR_NAME[opponentColor] },
+      ? { name: 'Você', titles: me?.titles, tag: COLOR_NAME[game.myColor] }
+      : { name: opponent?.name ?? '...', titles: opponent?.titles, tag: COLOR_NAME[opponentColor] },
   );
   const result = game.result;
   const won = result && (result.winner === null ? null : result.winner === game.myColor);

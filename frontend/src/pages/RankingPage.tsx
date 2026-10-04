@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import AppHeader from '../components/AppHeader';
+import ChampionBadge from '../components/ChampionBadge';
 import { useAuth } from '../hooks/useAuth';
 import { useGameConfig } from '../hooks/useGameConfig';
 import type { Ranking, RankingEntry, RankingGame } from '../types';
@@ -23,6 +24,7 @@ function Row({ entry }: { entry: RankingEntry }) {
       <td className="ranking-position">{MEDALS[entry.position - 1] ?? `${entry.position}º`}</td>
       <td className="ranking-name">
         {entry.name}
+        <ChampionBadge titles={entry.titles} />
         {entry.isMe && <span className="partner-badge">você</span>}
       </td>
       <td>{entry.wins}</td>

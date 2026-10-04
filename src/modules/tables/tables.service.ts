@@ -8,7 +8,7 @@ import { emitToUser } from '../../websocket/socket';
 import { damasAdapter } from '../damas/damas.adapter';
 import { dominoAdapter } from '../domino/domino.adapter';
 import { ludoAdapter } from '../ludo/ludo.adapter';
-import { displayName } from '../profile/nickname';
+import { displayName, titlesOf, TITLES_COUNT } from '../profile/nickname';
 import { splitPrizeInCents } from '../rounds/round.settlement';
 import { activeTournamentOf, advanceTournament, recordTournamentResult } from '../tournaments/tournament.service';
 import { trucoAdapter } from '../truco/truco.adapter';
@@ -18,8 +18,9 @@ import { GameAdapter, GameName, GameRuleError, QueueChoice } from './tables.type
 import { registerTurnTimeoutHandler, scheduleTurnTimeout } from './turn.scheduler';
 
 type Tx = Prisma.TransactionClient;
-const PUBLIC_USER = { select: { nickname: true, playerNumber: true } } as const;
-type TableWithSeats = GameTable & { seats: Array<GameSeat & { user: { nickname: string | null; playerNumber: number } }> };
+const PUBLIC_USER = { select: { nickname: true, playerNumber: true, ...TITLES_COUNT } } as const;
+type PublicUser = { nickname: string | null; playerNumber: number; _count: { tournamentEntries: number } };
+type TableWithSeats = GameTable & { seats: Array<GameSeat & { user: PublicUser }> };
 
 const ADAPTERS: Record<GameName, GameAdapter> = {
   DOMINO: dominoAdapter as GameAdapter,
@@ -114,6 +115,7 @@ export function tableViewFor(table: TableWithSeats, userId: string) {
       .map((seat) => ({
         seat: seat.seat,
         name: displayName(seat.user),
+        titles: titlesOf(seat.user),
         isMe: seat.userId === userId,
         away: seat.isAway,
         prizeAmount: seat.prizeAmount?.toString() ?? null,

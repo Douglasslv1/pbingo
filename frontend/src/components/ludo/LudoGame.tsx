@@ -106,6 +106,7 @@ export default function LudoGame({ table, busy, offline, error, onAction, onCome
 
   const seats = game.pieces.map((_, seat) => ({
     name: nameOf(seat),
+    titles: player(seat)?.titles,
     tag: [COLOR_NAMES[game.colors[seat]], characterOf(seat) && `${CHARACTER_ICONS[characterOf(seat)!.id]} ${characterOf(seat)!.name}`]
       .filter(Boolean)
       .join(' · '),

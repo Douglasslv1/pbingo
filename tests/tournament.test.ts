@@ -231,5 +231,8 @@ describe('Torneios', () => {
     const winner = players.find((p) => p.user.id === final.winnerId)!;
     const profile = (await request(app).get('/profile/me').set(auth(winner))).body;
     expect(profile.tournaments).toEqual({ played: 1, titles: 1, podiums: 1, venoxWon: 36 });
+
+    // Selo de campeao publico: a mesa mostra os titulos de cada jogador
+    expect((await queue(winner)).body.players).toEqual([expect.objectContaining({ isMe: true, titles: 1 })]);
   });
 });

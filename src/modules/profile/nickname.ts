@@ -34,3 +34,8 @@ export const nicknameSchema = z.object({
 export function displayName(user: { nickname: string | null; playerNumber: number }): string {
   return user.nickname ?? `Jogador #${String(user.playerNumber).padStart(4, '0')}`;
 }
+
+/** Contagem de titulos de torneio (1o lugar) junto com o usuario, para o selo de campeao publico. */
+export const TITLES_COUNT = { _count: { select: { tournamentEntries: { where: { placement: 1 } } } } } as const;
+
+export const titlesOf = (user: { _count: { tournamentEntries: number } }) => user._count.tournamentEntries;

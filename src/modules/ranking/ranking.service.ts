@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
-import { displayName } from '../profile/nickname';
+import { displayName, titlesOf, TITLES_COUNT } from '../profile/nickname';
 
 export type RankingGame = 'BINGO' | 'DOMINO' | 'TRUCO' | 'DAMAS' | 'XADREZ' | 'LUDO';
 export type RankingPeriod = 'month' | 'all';
@@ -71,7 +71,7 @@ export async function getRanking(game: RankingGame, period: RankingPeriod, viewe
   const rows = game === 'BINGO' ? await bingoRows(period) : await tableRows(game, period);
   const users = await prisma.user.findMany({
     where: { id: { in: rows.map((row) => row.user_id) } },
-    select: { id: true, nickname: true, playerNumber: true },
+    select: { id: true, nickname: true, playerNumber: true, ...TITLES_COUNT },
   });
   const userById = new Map(users.map((user) => [user.id, user]));
 
@@ -81,6 +81,7 @@ export async function getRanking(game: RankingGame, period: RankingPeriod, viewe
     .map((row, index) => ({
       position: index + 1,
       name: displayName(userById.get(row.user_id)!),
+      titles: titlesOf(userById.get(row.user_id)!),
       wins: row.wins,
       matches: row.matches,
       winRate: Math.round(row.winRate * 100),

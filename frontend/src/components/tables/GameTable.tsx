@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
+import ChampionBadge from '../ChampionBadge';
 
 export interface TableSeat {
   name: string;
+  /** Torneios vencidos: selo de campeao ao lado do nome. */
+  titles?: number;
   /** Rotulo ao lado do nome (ex.: "brancas"). Nas duplas e substituido por parceiro/adversario. */
   tag?: string;
   away?: boolean;
@@ -39,7 +42,7 @@ export default function GameTable({ seats, mySeat, turnSeat, countdown, pairs = 
     <div className={`game-table seats-${count}`}>
       {POSITIONS[count].map((position, index) => {
         const seat = (mySeat + index) % count;
-        const { name, tag, away, hand, className } = seats[seat];
+        const { name, titles, tag, away, hand, className } = seats[seat];
         const mine = seat % 2 === mySeat % 2;
         const turn = turnSeat === seat;
         const classes = ['seat-plate', position, sides && (mine ? 'mine' : 'theirs'), turn && 'turn', className];
@@ -47,7 +50,10 @@ export default function GameTable({ seats, mySeat, turnSeat, countdown, pairs = 
 
         return (
           <div key={seat} className={classes.filter(Boolean).join(' ')}>
-            <strong>{name}</strong>
+            <strong>
+              {name}
+              <ChampionBadge titles={titles} />
+            </strong>
             {label && <span className="seat-tag">{label}</span>}
             {away && <span className="away-badge">ausente</span>}
             {turn && countdown !== null && (
