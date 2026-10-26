@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { formatBrl } from '../format';
 import { useAuth } from '../hooks/useAuth';
@@ -43,9 +44,15 @@ export default function WalletPanel({ wallet, onWalletChange }: Props) {
         </div>
       </div>
 
+      {wallet?.commissions && <div className="card"><h3>Comissões de indicações</h3>
+        <p>Disponível: <strong>{formatBrl(wallet.commissions.availableCents / 100)}</strong> · Pendente: {formatBrl(wallet.commissions.pendingCents / 100)}</p>
+        <p>Reservado em saques: {formatBrl(wallet.commissions.reservedCents / 100)} · Estornos a compensar: {formatBrl(wallet.commissions.debtCents / 100)}</p>
+        {wallet.commissions.blocked && <p className="error">Saques de comissões bloqueados para revisão.</p>}
+        <Link to="/parceiro">Ver painel de parceiro e link de indicação</Link>
+      </div>}
       <div className="wallet-forms">
         <PixPurchase onWalletChange={onWalletChange} />
-        <WithdrawForm onWithdrawn={handleWithdrawn} />
+        <WithdrawForm onWithdrawn={handleWithdrawn} hasCommissions={!!wallet?.commissions} />
       </div>
 
       <WithdrawalHistory withdrawals={withdrawals} />

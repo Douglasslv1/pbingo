@@ -7,6 +7,7 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(72),
   birthDate: birthDateSchema,
   acceptTerms: acceptTermsField,
+  referralCode: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{4,32}$/).optional(),
 });
 
 export const acceptTermsSchema = z.object({

@@ -39,6 +39,7 @@ export type PixKeyTypeInput = z.infer<typeof pixKeyTypeSchema>;
 export const withdrawalSchema = z
   .object({
     amount: amountInReais,
+    source: z.enum(['PRIZES', 'COMMISSIONS']).optional(),
     cpf: cpfField,
     pixKeyType: pixKeyTypeSchema,
     pixKey: z.string().min(1).max(255),

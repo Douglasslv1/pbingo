@@ -1,4 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import ReferralCapture from './components/ReferralCapture';
+import PartnerPage from './pages/PartnerPage';
 import { AuthProvider } from './hooks/useAuth';
 import { PlayerStatusProvider } from './hooks/usePlayerStatus';
 import AdminPage from './pages/AdminPage';
@@ -23,12 +25,14 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ReferralCapture />
         <PlayerStatusProvider>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/suporte" element={<SupportPage />} />
             <Route path="/app" element={<AppPage />} />
             <Route path="/rifas" element={<RafflesPage />} />
+            <Route path="/parceiro" element={<PartnerPage />} />
             <Route path="/domino" element={<DominoPage />} />
             <Route path="/truco" element={<TrucoPage />} />
             <Route path="/damas" element={<DamasPage />} />

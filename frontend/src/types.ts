@@ -131,6 +131,12 @@ export interface ActiveTournament {
 export interface Wallet {
   credits: { balance: number };
   prizes: { balanceFiat: string };
+  commissions?: PartnerWallet | null;
+}
+
+export interface PartnerWallet {
+  partnerId: string; code: string; active: boolean; blocked: boolean; rateBps: number; holdDays: number;
+  durationDays: number | null; availableCents: number; pendingCents: number; reservedCents: number; debtCents: number; paidCents: number;
 }
 
 export type UserRole = 'PLAYER' | 'ADMIN';
@@ -195,6 +201,7 @@ export type PixKeyType = 'CPF' | 'EMAIL' | 'PHONE' | 'RANDOM';
 export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED';
 
 export interface WithdrawalRequest {
+  source?: 'PRIZES' | 'COMMISSIONS';
   amount: number;
   cpf: string;
   pixKeyType: PixKeyType;
@@ -202,6 +209,7 @@ export interface WithdrawalRequest {
 }
 
 export interface Withdrawal {
+  source?: 'PRIZES' | 'COMMISSIONS';
   id: string;
   amountFiat: string;
   cpf: string;

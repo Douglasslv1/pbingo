@@ -61,6 +61,7 @@ export default function AdminWithdrawalItem({ withdrawal, onReviewed }: Props) {
       </div>
 
       <dl className="admin-details">
+        <dt>Origem do saldo</dt><dd>{withdrawal.source === 'COMMISSIONS' ? 'Comissões de parceiro' : 'Prêmios dos jogos'}</dd>
         <dt>Jogador</dt>
         <dd>
           {withdrawal.user.name} ({withdrawal.user.email})

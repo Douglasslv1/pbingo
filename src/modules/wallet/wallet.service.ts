@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/errors';
 import { HistoryPage } from '../../utils/pagination';
+import { partnerWallet } from '../partners/partners.service';
 
 export async function getWallet(userId: string) {
   const [credits, prizes] = await Promise.all([
@@ -12,9 +13,11 @@ export async function getWallet(userId: string) {
     throw new AppError('Carteira não encontrada para o usuário', 404);
   }
 
+  const commissions = await partnerWallet(userId);
   return {
     credits: { balance: credits.balance },
     prizes: { balanceFiat: prizes.balanceFiat.toString() },
+    ...(commissions ? { commissions } : {}),
   };
 }
 

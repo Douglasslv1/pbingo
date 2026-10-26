@@ -4,6 +4,7 @@ import { signAuthToken } from '../../lib/jwt';
 import { AppError } from '../../utils/errors';
 import { AcceptTermsInput, LoginInput, RegisterInput } from './auth.types';
 import { CURRENT_TERMS_VERSION, hasAcceptedCurrentTerms } from './terms';
+import { referralForSignup } from '../partners/partners.service';
 
 type UserRecord = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
 
@@ -30,6 +31,7 @@ export async function registerUser(input: RegisterInput) {
   const passwordHash = await hashPassword(input.password);
 
   const user = await prisma.$transaction(async (tx) => {
+    const affiliateId = await referralForSignup(tx, input.referralCode);
     const created = await tx.user.create({
       data: {
         name: input.name,
@@ -38,6 +40,7 @@ export async function registerUser(input: RegisterInput) {
         birthDate: input.birthDate,
         termsAcceptedAt: new Date(),
         termsVersion: CURRENT_TERMS_VERSION,
+        affiliateId,
       },
     });
 

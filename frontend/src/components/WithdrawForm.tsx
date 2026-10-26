@@ -7,6 +7,7 @@ import { PIX_KEY_LABELS } from '../withdrawalFormat';
 
 interface Props {
   onWithdrawn: () => Promise<void>;
+  hasCommissions?: boolean;
 }
 
 const PIX_KEY_PLACEHOLDERS: Record<PixKeyType, string> = {
@@ -16,9 +17,10 @@ const PIX_KEY_PLACEHOLDERS: Record<PixKeyType, string> = {
   RANDOM: '123e4567-e89b-12d3-a456-426614174000',
 };
 
-export default function WithdrawForm({ onWithdrawn }: Props) {
+export default function WithdrawForm({ onWithdrawn, hasCommissions = false }: Props) {
   const { auth } = useAuth();
   const [amount, setAmount] = useState(0);
+  const [source, setSource] = useState<'PRIZES' | 'COMMISSIONS'>('PRIZES');
   const [cpf, setCpf] = useState('');
   const [pixKeyType, setPixKeyType] = useState<PixKeyType>('CPF');
   const [pixKey, setPixKey] = useState('');
@@ -33,7 +35,7 @@ export default function WithdrawForm({ onWithdrawn }: Props) {
     setError(null);
     setInfo(null);
     try {
-      const res = await api.withdraw(auth.token, { amount, cpf, pixKeyType, pixKey });
+      const res = await api.withdraw(auth.token, { amount, cpf, pixKeyType, pixKey, source });
       await onWithdrawn();
       setAmount(0);
       setInfo(`Saque solicitado! Ele será pago via Pix após análise. Saldo restante: ${formatBrl(res.remainingBalance)}`);
@@ -46,8 +48,11 @@ export default function WithdrawForm({ onWithdrawn }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="withdraw-form">
+      {hasCommissions && <label>Saldo para saque<select value={source} onChange={(e) => setSource(e.target.value as typeof source)}>
+        <option value="PRIZES">Prêmios dos jogos</option><option value="COMMISSIONS">Comissões disponíveis</option>
+      </select></label>}
       <label>
-        Sacar prêmio (R$)
+        Solicitar saque (R$)
         <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
       </label>
       <label>

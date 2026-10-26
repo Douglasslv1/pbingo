@@ -1,4 +1,6 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { clearReferral, getReferral } from '../referral';
 import { api, ApiError } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import TermsConsentFields from './TermsConsentFields';
@@ -6,6 +8,7 @@ import TermsConsentFields from './TermsConsentFields';
 type Mode = 'login' | 'register' | 'forgot';
 
 export default function AuthForm() {
+  const { search } = useLocation();
   const { login } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [name, setName] = useState('');
@@ -16,6 +19,8 @@ export default function AuthForm() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | undefined>();
+  useEffect(() => { setReferralCode(getReferral()); }, [search]);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -37,7 +42,8 @@ export default function AuthForm() {
       const result =
         mode === 'login'
           ? await api.login({ email, password })
-          : await api.register({ name, email, password, birthDate, acceptTerms });
+          : await api.register({ name, email, password, birthDate, acceptTerms, referralCode: getReferral() });
+      clearReferral();
       login(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro de conexão com o servidor');
@@ -64,6 +70,8 @@ export default function AuthForm() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {mode === 'register' && referralCode && <div className="banner">Indicação: {referralCode}. O vínculo será permanente após criar a conta.
+          <button type="button" className="link" onClick={() => { clearReferral(); setReferralCode(undefined); }}>Remover indicação antes de cadastrar</button></div>}
         {mode === 'forgot' && (
           <p className="hint">Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha.</p>
         )}

@@ -3,10 +3,12 @@ import { env } from '../../config/env';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../utils/errors';
 import { WithdrawalInput } from './withdrawals.types';
+import { assertCommissionWithdrawal, lockPartner } from '../partners/partners.service';
 
 function toView(withdrawal: Withdrawal) {
   return {
     id: withdrawal.id,
+    source: withdrawal.source,
     amountFiat: withdrawal.amountFiat.toString(),
     cpf: withdrawal.cpf,
     pixKeyType: withdrawal.pixKeyType,
@@ -30,6 +32,16 @@ export async function requestWithdrawal(userId: string, input: WithdrawalInput) 
   }
 
   return prisma.$transaction(async (tx) => {
+    if (input.source === 'COMMISSIONS') {
+      const partner = await assertCommissionWithdrawal(tx, userId, input.cpf);
+      const cents = Math.round(input.amount * 100);
+      if (Number(partner.balanceCents) < cents) throw new AppError('Saldo de comissões insuficiente ou com estornos a compensar', 400);
+      await tx.partner.update({ where: { id: partner.id }, data: { balanceCents: { decrement: cents } } });
+      const transaction = await tx.transaction.create({ data: { userId, type: 'WITHDRAWAL', game: 'PARTNER', amountFiat: input.amount, status: 'PENDING' } });
+      const withdrawal = await tx.withdrawal.create({ data: { userId, transactionId: transaction.id, amountFiat: input.amount,
+        cpf: input.cpf, pixKeyType: input.pixKeyType, pixKey: input.pixKey, source: 'COMMISSIONS' } });
+      return { withdrawalId: withdrawal.id, transactionId: transaction.id, remainingBalance: ((Number(partner.balanceCents) - cents) / 100).toFixed(2) };
+    }
     const rows = await tx.$queryRaw<Array<{ balance_fiat: string }>>`
       SELECT balance_fiat FROM user_prizes WHERE user_id = ${userId}::uuid FOR UPDATE
     `;
@@ -109,6 +121,11 @@ async function lockPendingWithdrawal(tx: Prisma.TransactionClient, withdrawalId:
 export async function markWithdrawalPaid(withdrawalId: string, adminUserId: string, paymentReference: string) {
   return prisma.$transaction(async (tx) => {
     await lockPendingWithdrawal(tx, withdrawalId);
+    const current = await tx.withdrawal.findUniqueOrThrow({ where: { id: withdrawalId } });
+    if (current.source === 'COMMISSIONS') {
+      const partner = await assertCommissionWithdrawal(tx, current.userId, current.cpf);
+      if (Number(partner.balanceCents) < 0) throw new AppError('Há estornos a compensar. Recuse e revise o saque antes de pagar.', 409);
+    }
 
     const withdrawal = await tx.withdrawal.update({
       where: { id: withdrawalId },
@@ -138,11 +155,14 @@ export async function rejectWithdrawal(withdrawalId: string, adminUserId: string
       data: { status: 'REJECTED' },
     });
 
-    await tx.$queryRaw`SELECT balance_fiat FROM user_prizes WHERE user_id = ${withdrawal.userId}::uuid FOR UPDATE`;
-    await tx.userPrize.update({
-      where: { userId: withdrawal.userId },
-      data: { balanceFiat: { increment: withdrawal.amountFiat } },
-    });
+    if (withdrawal.source === 'COMMISSIONS') {
+      const partner = await tx.partner.findUniqueOrThrow({ where: { userId: withdrawal.userId } });
+      await lockPartner(tx, partner.id);
+      await tx.partner.update({ where: { id: partner.id }, data: { balanceCents: { increment: Math.round(Number(withdrawal.amountFiat) * 100) } } });
+    } else {
+      await tx.$queryRaw`SELECT balance_fiat FROM user_prizes WHERE user_id = ${withdrawal.userId}::uuid FOR UPDATE`;
+      await tx.userPrize.update({ where: { userId: withdrawal.userId }, data: { balanceFiat: { increment: withdrawal.amountFiat } } });
+    }
 
     return toView(withdrawal);
   });

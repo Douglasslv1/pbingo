@@ -5,6 +5,7 @@ import { env } from '../../config/env';
 import { createPixForTransaction } from '../payments/pix.service';
 import { Discount, quoteRaffle, RaffleInput } from './raffles.schemas';
 import { sampleAvailableNumbers } from './raffleNumbers';
+import { createCommission, snapshotCommission } from '../partners/partners.service';
 
 export async function lockRaffle(tx: Prisma.TransactionClient, id: string) {
   await tx.$queryRaw`SELECT id FROM raffles WHERE id = ${id}::uuid FOR UPDATE`;
@@ -25,7 +26,7 @@ export async function listRaffles(admin = false) {
   });
   return Promise.all(raffles.map(async (raffle) => {
     const groups = await prisma.rafflePurchase.groupBy({ by: ['status'], where: { raffleId: raffle.id },
-      _sum: { quantity: true, totalCents: true }, _count: { _all: true } });
+      _sum: { quantity: true, totalCents: true, refundedCents: true }, _count: { _all: true } });
     const paid = groups.find((g) => g.status === 'PAID');
     const pending = groups.find((g) => g.status === 'PENDING');
     const sold = paid?._sum.quantity ?? 0;
@@ -36,7 +37,7 @@ export async function listRaffles(admin = false) {
     });
     return { ...view(raffle), resultRecordedBy: admin ? raffle.resultRecordedBy : undefined,
       sold, reserved, available: 10 ** raffle.digits - sold - reserved,
-      ...(admin ? { revenueCents: paid?._sum.totalCents ?? 0, pendingCents: pending?._sum.totalCents ?? 0,
+      ...(admin ? { revenueCents: (paid?._sum.totalCents ?? 0) - (paid?._sum.refundedCents ?? 0), pendingCents: pending?._sum.totalCents ?? 0,
         buyers: await prisma.rafflePurchase.findMany({ where: { raffleId: raffle.id, status: 'PAID' }, distinct: ['userId'], select: { userId: true } }).then((r) => r.length) } : {}),
       winner: winner ? { name: admin ? winner.purchase.user.name : winner.purchase.user.nickname ?? `Jogador #${winner.purchase.user.playerNumber}`,
         ...(admin ? { email: winner.purchase.user.email, userId: winner.purchase.user.id, purchaseId: winner.purchase.id } : {}) } : null,
@@ -73,10 +74,11 @@ export async function purchaseRaffle(userId: string, raffleId: string, quantity:
     const reserved = await tx.rafflePurchase.aggregate({ where: { raffleId, status: { in: ['PENDING', 'PAID'] } }, _sum: { quantity: true } });
     if ((reserved._sum.quantity ?? 0) + quantity > 10 ** raffle.digits) throw new AppError('Quantidade de bilhetes indisponível', 409);
     const quote = quoteRaffle(raffle.priceCents, raffle.discounts as Discount[], quantity);
+    const commission = await snapshotCommission(tx, userId);
     if (quote.totalCents < 100 || quote.totalCents > 999999999) throw new AppError('O total da compra deve ficar entre R$ 1,00 e R$ 9.999.999,99');
     return tx.transaction.create({ data: {
       userId, type: 'PURCHASE_RAFFLE', game: 'RAFFLE', amountFiat: new Prisma.Decimal(quote.totalCents).div(100), status: 'PENDING',
-      rafflePurchase: { create: { raffleId, userId, quantity, unitPriceCents: quote.unitPriceCents,
+      rafflePurchase: { create: { ...commission, raffleId, userId, quantity, unitPriceCents: quote.unitPriceCents,
         discountPercent: quote.discountPercent, totalCents: quote.totalCents } },
     } });
   });
@@ -103,6 +105,7 @@ export async function settleRafflePayment(transactionId: string, paidCents: numb
       if (sold.length + purchase.quantity > totalTickets) throw new AppError('Capacidade da rifa excedida', 409);
       const numbers = sampleAvailableNumbers(totalTickets, sold.map((ticket) => ticket.number), purchase.quantity);
       await tx.raffleTicket.createMany({ data: numbers.map((number) => ({ raffleId: raffle.id, purchaseId: purchase.id, number })) });
+      await createCommission(tx, purchase);
     }
   });
 }

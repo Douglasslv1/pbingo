@@ -6,6 +6,7 @@ import { errorMiddleware, notFoundMiddleware } from './middleware/error.middlewa
 import { createRateLimiter } from './middleware/rateLimit.middleware';
 import { requestLogger } from './middleware/requestLogger.middleware';
 import { adminStatsRouter } from './modules/admin/admin.routes';
+import { partnersRouter, adminPartnersRouter } from './modules/partners/partners.routes';
 import { adminRafflesRouter, rafflesRouter } from './modules/raffles/raffles.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { damasRouters, xadrezRouters } from './modules/board/board.routes';
@@ -128,6 +129,8 @@ export function createApp({ rateLimitEnabled = env.rateLimitEnabled }: AppOption
   app.use('/ludo', ludoRouters.router);
   app.use('/admin/ludo', ludoRouters.admin);
   app.use('/admin/stats', adminStatsRouter);
+  app.use('/partners', partnersRouter);
+  app.use('/admin/partners', adminPartnersRouter);
   app.use('/raffles', rafflesRouter);
   app.use('/admin/raffles', adminRafflesRouter);
 

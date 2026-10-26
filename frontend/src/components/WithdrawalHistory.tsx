@@ -24,6 +24,7 @@ export default function WithdrawalHistory({ withdrawals }: Props) {
               </span>
             </div>
             <span className="label">{formatDateTime(withdrawal.createdAt)}</span>
+            <span className="label">{withdrawal.source === 'COMMISSIONS' ? 'Comissões de parceiro' : 'Prêmios dos jogos'}</span>
             {withdrawal.status === 'REJECTED' && withdrawal.rejectionReason && (
               <span className="label">Motivo: {withdrawal.rejectionReason} (valor devolvido ao saldo)</span>
             )}

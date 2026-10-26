@@ -62,7 +62,7 @@ export async function request<T>(path: string, options: RequestInit = {}, token?
 }
 
 export const api = {
-  register: (data: { name: string; email: string; password: string; birthDate: string; acceptTerms: boolean }) =>
+  register: (data: { name: string; email: string; password: string; birthDate: string; acceptTerms: boolean; referralCode?: string }) =>
     request<AuthResult>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
   login: (data: { email: string; password: string }) =>

@@ -44,7 +44,12 @@ model User {
   matchesWon          TournamentMatch[]    @relation("MatchWinner")
   rafflePurchases     RafflePurchase[]
   rafflesDrawn        Raffle[]             @relation("RaffleRecorder")
+  affiliateId         String?              @map("affiliate_id") @db.Uuid
+  affiliate           Partner?             @relation("Referral", fields: [affiliateId], references: [id])
+  partnerProfile      Partner?             @relation("PartnerOwner")
+  partnerAudits       PartnerAudit[]
 
+  @@index([affiliateId])
   @@map("users")
 }
 
@@ -180,25 +185,82 @@ model Raffle {
 }
 
 model RafflePurchase {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  raffleId        String         @map("raffle_id") @db.Uuid
-  userId          String         @map("user_id") @db.Uuid
-  transactionId   String         @unique @map("transaction_id") @db.Uuid
-  quantity        Int
-  unitPriceCents  Int            @map("unit_price_cents")
-  discountPercent Int            @map("discount_percent")
-  totalCents      Int            @map("total_cents")
-  status          String         @default("PENDING") @db.VarChar(10)
-  paidAt          DateTime?      @map("paid_at") @db.Timestamptz
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  raffle          Raffle         @relation(fields: [raffleId], references: [id])
-  user            User           @relation(fields: [userId], references: [id])
-  transaction     Transaction    @relation(fields: [transactionId], references: [id])
-  tickets         RaffleTicket[]
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raffleId            String             @map("raffle_id") @db.Uuid
+  userId              String             @map("user_id") @db.Uuid
+  transactionId       String             @unique @map("transaction_id") @db.Uuid
+  quantity            Int
+  unitPriceCents      Int                @map("unit_price_cents")
+  discountPercent     Int                @map("discount_percent")
+  totalCents          Int                @map("total_cents")
+  status              String             @default("PENDING") @db.VarChar(10)
+  paidAt              DateTime?          @map("paid_at") @db.Timestamptz
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  raffle              Raffle             @relation(fields: [raffleId], references: [id])
+  user                User               @relation(fields: [userId], references: [id])
+  transaction         Transaction        @relation(fields: [transactionId], references: [id])
+  tickets             RaffleTicket[]
+  refundedCents       Int                @default(0) @map("refunded_cents")
+  commissionPartnerId String?            @map("commission_partner_id") @db.Uuid
+  commissionBps       Int                @default(0) @map("commission_bps")
+  commissionHoldDays  Int                @default(0) @map("commission_hold_days")
+  commissionPartner   Partner?           @relation("PurchasePartner", fields: [commissionPartnerId], references: [id])
+  partnerCommission   PartnerCommission?
 
   @@index([raffleId, status])
   @@index([userId, createdAt])
   @@map("raffle_purchases")
+}
+
+model Partner {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String              @unique @map("user_id") @db.Uuid
+  code         String              @unique @db.VarChar(32)
+  rateBps      Int                 @map("rate_bps")
+  holdDays     Int                 @map("hold_days")
+  durationDays Int?                @map("duration_days")
+  active       Boolean             @default(false)
+  blocked      Boolean             @default(false)
+  balanceCents Decimal             @default(0) @map("balance_cents") @db.Decimal(14, 0)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  user         User                @relation("PartnerOwner", fields: [userId], references: [id])
+  referrals    User[]              @relation("Referral")
+  purchases    RafflePurchase[]    @relation("PurchasePartner")
+  commissions  PartnerCommission[]
+  audits       PartnerAudit[]
+
+  @@map("partners")
+}
+
+model PartnerCommission {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId     String         @map("partner_id") @db.Uuid
+  purchaseId    String         @unique @map("purchase_id") @db.Uuid
+  rateBps       Int            @map("rate_bps")
+  amountCents   Int            @map("amount_cents")
+  reversedCents Int            @default(0) @map("reversed_cents")
+  availableAt   DateTime       @map("available_at") @db.Timestamptz
+  releasedAt    DateTime?      @map("released_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  partner       Partner        @relation(fields: [partnerId], references: [id])
+  purchase      RafflePurchase @relation(fields: [purchaseId], references: [id])
+
+  @@index([partnerId, releasedAt, availableAt])
+  @@map("partner_commissions")
+}
+
+model PartnerAudit {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId String   @map("partner_id") @db.Uuid
+  adminId   String   @map("admin_id") @db.Uuid
+  action    String   @db.VarChar(30)
+  details   Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  partner   Partner  @relation(fields: [partnerId], references: [id])
+  admin     User     @relation(fields: [adminId], references: [id])
+
+  @@index([partnerId, createdAt])
+  @@map("partner_audits")
 }
 
 model RaffleTicket {
@@ -236,6 +298,7 @@ model Withdrawal {
   userId           String           @map("user_id") @db.Uuid
   transactionId    String           @unique @map("transaction_id") @db.Uuid
   amountFiat       Decimal          @map("amount_fiat") @db.Decimal(10, 2)
+  source           String           @default("PRIZES") @db.VarChar(20)
   cpf              String           @db.Char(11)
   pixKeyType       PixKeyType       @map("pix_key_type")
   pixKey           String           @map("pix_key") @db.VarChar(255)
