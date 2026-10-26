@@ -147,7 +147,7 @@ export const api = {
 
   getConfig: () => request<GameConfig>('/config'),
 
-  getCurrentRound: () => request<RoundView | null>('/rounds/current'),
+  getCurrentRound: (signal?: AbortSignal) => request<RoundView | null>('/rounds/current', { signal }),
 
   joinRound: (token: string, quantity = 1, roundId?: string) => request<JoinRoundResult>('/rounds/join', { method: 'POST', body: JSON.stringify({ quantity, roundId }) }, token),
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import GamePage from '../components/GamePage';
 import { useAuth } from '../hooks/useAuth';
@@ -10,7 +11,7 @@ function RaffleCard({ raffle, busy, onBuy }: { raffle: Raffle; busy: boolean; on
   const [quantity, setQuantity] = useState(1);
   const quote = raffleQuote(raffle, quantity);
   const open = raffle.salesOpen && new Date(raffle.closesAt) > new Date();
-  return <article className="card raffle-card">
+  return <article id={`rifa-${raffle.id}`} className="card raffle-card">
     <img className="raffle-image" src={raffle.image} alt={raffle.title} />
     <h2>{raffle.title}</h2><p className="raffle-description">{raffle.description}</p>
     <p><strong>Prêmio: {raffle.prize}</strong></p>
@@ -40,6 +41,7 @@ function RaffleCard({ raffle, busy, onBuy }: { raffle: Raffle; busy: boolean; on
 }
 
 export default function RafflesPage() {
+  const { hash } = useLocation();
   const { auth } = useAuth();
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [purchases, setPurchases] = useState<RafflePurchase[]>([]);
@@ -48,6 +50,9 @@ export default function RafflesPage() {
   const [message, setMessage] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (loaded && hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+  }, [loaded, hash]);
   const refresh = useCallback(async () => {
     if (!auth) return;
     const [list, mine] = await Promise.all([raffleApi.list(), raffleApi.mine(auth.token)]);

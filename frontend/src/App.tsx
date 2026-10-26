@@ -6,7 +6,7 @@ import AppPage from './pages/AppPage';
 import DamasPage from './pages/DamasPage';
 import DominoPage from './pages/DominoPage';
 import GamesPage from './pages/GamesPage';
-import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
 import PrivacyPage from './pages/PrivacyPage';
 import ProfilePage from './pages/ProfilePage';
 import RankingPage from './pages/RankingPage';
@@ -25,7 +25,7 @@ export default function App() {
       <BrowserRouter>
         <PlayerStatusProvider>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/suporte" element={<SupportPage />} />
             <Route path="/app" element={<AppPage />} />
             <Route path="/rifas" element={<RafflesPage />} />

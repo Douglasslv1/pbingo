@@ -24,7 +24,7 @@ export interface BuyersPage { items: BuyerPurchase[]; total: number; page: numbe
 export interface RaffleCharge { transactionId: string; status: string; qrCode?: string | null; qrCodeBase64?: string | null }
 const post = (body?: unknown) => ({ method: 'POST', ...(body ? { body: JSON.stringify(body) } : {}) });
 export const raffleApi = {
-  list: () => request<Raffle[]>('/raffles'),
+  list: (signal?: AbortSignal) => request<Raffle[]>('/raffles', { signal }),
   mine: (token: string) => request<RafflePurchase[]>('/raffles/me/purchases', {}, token),
   buy: (token: string, id: string, quantity: number) => request<RaffleCharge>(`/raffles/${id}/purchases`, post({ quantity }), token),
   refresh: (token: string, id: string, admin = false) => request<RaffleCharge>(`${admin ? '/admin' : ''}/raffles/purchases/${id}/refresh`, post(), token),
