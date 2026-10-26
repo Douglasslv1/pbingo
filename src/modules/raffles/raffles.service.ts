@@ -4,6 +4,7 @@ import { AppError } from '../../utils/errors';
 import { env } from '../../config/env';
 import { createPixForTransaction } from '../payments/pix.service';
 import { Discount, quoteRaffle, RaffleInput } from './raffles.schemas';
+import { sampleAvailableNumbers } from './raffleNumbers';
 
 export async function lockRaffle(tx: Prisma.TransactionClient, id: string) {
   await tx.$queryRaw`SELECT id FROM raffles WHERE id = ${id}::uuid FOR UPDATE`;
@@ -96,11 +97,12 @@ export async function settleRafflePayment(transactionId: string, paidCents: numb
     await tx.transaction.update({ where: { id: transactionId }, data: { status: paidCents === null ? 'FAILED' : 'COMPLETED', providerReference: providerId } });
     await tx.rafflePurchase.update({ where: { id: purchase.id }, data: { status: paidCents === null ? 'FAILED' : 'PAID', paidAt: paidCents === null ? null : new Date() } });
     if (paidCents !== null) {
-      // Numbers are issued only on payment. Pending orders reserve capacity, never reusable numbers.
-      const last = await tx.raffleTicket.aggregate({ where: { raffleId: raffle.id }, _max: { number: true } });
-      const start = (last._max.number ?? -1) + 1;
-      if (start + purchase.quantity > 10 ** raffle.digits) throw new AppError('Capacidade da rifa excedida', 409);
-      await tx.raffleTicket.createMany({ data: Array.from({ length: purchase.quantity }, (_, i) => ({ raffleId: raffle.id, purchaseId: purchase.id, number: start + i })) });
+      // The raffle lock covers reading sold numbers, sampling and insertion, including retries.
+      const sold = await tx.raffleTicket.findMany({ where: { raffleId: raffle.id }, select: { number: true } });
+      const totalTickets = 10 ** raffle.digits;
+      if (sold.length + purchase.quantity > totalTickets) throw new AppError('Capacidade da rifa excedida', 409);
+      const numbers = sampleAvailableNumbers(totalTickets, sold.map((ticket) => ticket.number), purchase.quantity);
+      await tx.raffleTicket.createMany({ data: numbers.map((number) => ({ raffleId: raffle.id, purchaseId: purchase.id, number })) });
     }
   });
 }

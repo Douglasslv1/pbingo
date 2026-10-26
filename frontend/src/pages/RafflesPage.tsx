@@ -16,7 +16,7 @@ function RaffleCard({ raffle, busy, onBuy }: { raffle: Raffle; busy: boolean; on
     <h2>{raffle.title}</h2><p className="raffle-description">{raffle.description}</p>
     <p><strong>Prêmio: {raffle.prize}</strong></p>
     <p>Bilhete: <strong>{formatBrl(raffle.priceCents / 100)}</strong> · {raffle.sold} vendidos · {raffle.available} disponíveis</p>
-    <p className="hint">Números de {ticketNumber(0, raffle.digits)} a {ticketNumber(raffle.totalTickets - 1, raffle.digits)}. Atribuídos na confirmação do pagamento.</p>
+    <p className="hint">Números de {ticketNumber(0, raffle.digits)} a {ticketNumber(raffle.totalTickets - 1, raffle.digits)}. Atribuídos aleatoriamente, sem repetição, na confirmação do pagamento.</p>
     <p>Vendas até {formatDateTime(raffle.closesAt)}.<br />Sorteio: {formatDateTime(raffle.drawAt)}.</p>
     <details><summary>Regra e descontos</summary>
       <p>{raffle.lottery} · Concurso {raffle.contest}. {raffle.rule}</p>

@@ -63,6 +63,36 @@ describe('Rifas: preços, acesso e cadastro', () => {
 });
 
 describe('Rifas: compras e Pix', () => {
+  it('usa as lacunas disponíveis quando já existem bilhetes antigos no fim da faixa', async () => {
+    const player = await registerTestUser(); const raffle = await published({ digits: 1, discounts: [] });
+    const first = await buy(player.token, raffle.id, 1);
+    await settleRafflePayment(first.body.transactionId, 500, `ORD-${first.body.transactionId}`);
+    const oldTicket = await prisma.raffleTicket.findFirstOrThrow({ where: { raffleId: raffle.id } });
+    await prisma.raffleTicket.update({ where: { id: oldTicket.id }, data: { number: 9 } });
+    const second = await buy(player.token, raffle.id, 9);
+    expect(second.status).toBe(201);
+    await settleRafflePayment(second.body.transactionId, 4500, `ORD-${second.body.transactionId}`);
+    const tickets = await prisma.raffleTicket.findMany({ where: { raffleId: raffle.id }, orderBy: { number: 'asc' } });
+    expect(tickets.map((t) => t.number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(tickets.find((t) => t.id === oldTicket.id)?.number).toBe(9);
+  });
+
+  it('não repete números entre confirmações e conserva a emissão ao repetir o webhook', async () => {
+    const player = await registerTestUser(); const raffle = await published({ digits: 1, discounts: [] });
+    const first = await buy(player.token, raffle.id, 4);
+    const second = await buy(player.token, raffle.id, 6);
+    await Promise.all([
+      settleRafflePayment(first.body.transactionId, 2000, `ORD-${first.body.transactionId}`),
+      settleRafflePayment(second.body.transactionId, 3000, `ORD-${second.body.transactionId}`),
+    ]);
+    const before = await prisma.raffleTicket.findMany({ where: { raffleId: raffle.id }, orderBy: { id: 'asc' } });
+    expect(before).toHaveLength(10);
+    expect(new Set(before.map((t) => t.number)).size).toBe(10);
+    await settleRafflePayment(first.body.transactionId, 2000, `ORD-${first.body.transactionId}`);
+    const after = await prisma.raffleTicket.findMany({ where: { raffleId: raffle.id }, orderBy: { id: 'asc' } });
+    expect(after).toEqual(before);
+  });
+
   it('gera Pix próprio com desconto e emite bilhetes somente após pagar, uma única vez', async () => {
     const player = await registerTestUser();
     const raffle = await published();
@@ -138,10 +168,12 @@ describe('Rifas: apuração', () => {
     expect((await buy(player.token, raffle.id, 1)).status).toBe(409);
     await expect(drawRaffle(raffle.id, player.user.id, '1200', 'https://caixa.gov.br')).rejects.toThrow('pendentes');
     await settleRafflePayment(res.body.transactionId, 1000, `ORD-${res.body.transactionId}`);
-    const result = await drawRaffle(raffle.id, player.user.id, '1200', 'https://caixa.gov.br');
-    expect(result.drawnNumber).toBe(0); expect(result.winningPurchaseId).toBeTruthy();
+    const winningTicket = await prisma.raffleTicket.findFirstOrThrow({ where: { raffleId: raffle.id } });
+    const resultNumber = `12${String(winningTicket.number).padStart(2, '0')}`;
+    const result = await drawRaffle(raffle.id, player.user.id, resultNumber, 'https://caixa.gov.br');
+    expect(result.drawnNumber).toBe(winningTicket.number); expect(result.winningPurchaseId).toBe(winningTicket.purchaseId);
     const stored = await prisma.raffle.findUniqueOrThrow({ where: { id: raffle.id } });
-    expect(stored.resultRecordedBy).toBe(player.user.id); expect(stored.resultNumber).toBe('1200');
+    expect(stored.resultRecordedBy).toBe(player.user.id); expect(stored.resultNumber).toBe(resultNumber);
     const publicList = await request(app).get('/raffles');
     expect(publicList.body[0].winner.email).toBeUndefined();
     expect(publicList.body[0].winner.purchaseId).toBeUndefined();

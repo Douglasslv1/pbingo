@@ -3,7 +3,7 @@
 ## Funcionalidades
 
 - Bingo: de 1 a 100 cartelas por compra, novas compras na mesma partida enquanto a sala estiver aberta, débito e criação de cartelas em uma transação. O mínimo de jogadores continua contando pessoas diferentes. Sair antes do início devolve as chaves de todas as cartelas.
-- Menu **Rifas** (`/rifas`): lista de edições, regras, descontos, compra com Pix e histórico das últimas 100 compras. Os números são emitidos em ordem de confirmação do pagamento, de zero até o limite da edição, com zeros à esquerda.
+- Menu **Rifas** (`/rifas`): lista de edições, regras, descontos, compra com Pix e histórico das últimas 100 compras. A cada confirmação do pagamento, os números são escolhidos aleatoriamente entre os disponíveis, sem repetição, de zero até o limite da edição, com zeros à esquerda. A seleção usa o gerador criptográfico do Node.js e ocorre com a rifa bloqueada na transação. Bilhetes já emitidos mantêm seus números; as novas emissões excluem todos eles, inclusive os antigos sequenciais.
 - **Admin → Rifas**: cadastro de imagem (arquivo PNG/JPEG/WebP até 1 MB ou URL HTTPS), título, descrição, prêmio, preço, descontos, datas e regras. Rascunhos podem ser editados; a publicação bloqueia alterações das regras e dos preços.
 - Descontos: a maior faixa atingida aplica-se ao total da compra, arredondado para centavos. Compras anteriores não se somam. O Pix tem total mínimo de R$ 1,00.
 - Dashboard: bilhetes pagos, reservas, disponibilidade, compradores únicos por edição e arrecadação antes das taxas do provedor. Compras pendentes e com falha não entram na arrecadação. Lista administrativa de compras com nome, e-mail, números, quantidade, desconto e valor, paginada em 50 registros.
@@ -59,8 +59,8 @@ O comando de inicialização existente já executa `prisma migrate deploy`. Nenh
 Verificação realizada nesta alteração:
 
 - Compilação do servidor e da interface concluídas.
-- 22 testes de preço e validação aprovados.
-- 50 testes de integração aprovados nos oito arquivos relacionados abaixo, com o Mercado Pago simulado.
+- 35 testes de preço, validação e seleção aleatória de bilhetes aprovados.
+- 20 testes de integração aprovados em `raffles.test.ts`, `pixWebhook.test.ts` e `pix.test.ts`, com o Mercado Pago simulado. Incluem números antigos preservados, preenchimento das últimas vagas, confirmações repetidas e apuração com os números aleatórios emitidos.
 - Todas as 18 migrações SQL aplicadas em um PGlite descartável em memória. A verificação portátil usou uma conexão do Prisma; ela não substitui o teste de concorrência em um PostgreSQL real com várias conexões.
 - O PostgreSQL nativo e o executor nativo de migrações não iniciaram neste ambiente Windows. Antes de publicar, valide `prisma migrate deploy` e repita os testes no PostgreSQL de homologação. O banco de produção não foi acessado.
 
