@@ -86,6 +86,8 @@ export async function mercadoPagoWebhook(req: Request, res: Response): Promise<v
       await handleMercadoPagoWebhook(String(orderId));
     } catch (err) {
       logger.error('Erro ao processar webhook do Mercado Pago', { orderId: String(orderId), err });
+      res.status(503).send('retry');
+      return;
     }
   }
 

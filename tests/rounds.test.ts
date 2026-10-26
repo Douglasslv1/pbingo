@@ -5,6 +5,29 @@ import { createWaitingRound, registerTestUser, setCreditBalance } from './helper
 import { app } from './testApp';
 
 describe('Rounds', () => {
+  it('compra várias cartelas atomicamente e permite comprar mais na mesma partida', async () => {
+    const { token, user } = await registerTestUser();
+    const round = await createWaitingRound(); await setCreditBalance(user.id, 5);
+    const res = await request(app).post('/rounds/join').set('Authorization', `Bearer ${token}`).send({ quantity: 3, roundId: round.id });
+    expect(res.status).toBe(201); expect(res.body.tickets).toHaveLength(3); expect(Number(res.body.accumulatedPrize)).toBe(2.4);
+    expect(res.body.playersCount).toBe(1);
+    expect((await request(app).post('/rounds/join').set('Authorization', `Bearer ${token}`).send({ quantity: 3 })).status).toBe(400);
+    expect(await prisma.ticket.count({ where: { roundId: round.id } })).toBe(3);
+    expect((await request(app).post('/rounds/join').set('Authorization', `Bearer ${token}`).send({ quantity: 2 })).status).toBe(201);
+    const leave = await request(app).post('/rounds/leave').set('Authorization', `Bearer ${token}`);
+    expect(leave.body.refundedCredits).toBe(5);
+    expect((await prisma.userCredit.findUniqueOrThrow({ where: { userId: user.id } })).balance).toBe(5);
+  });
+
+  it('rejeita quantidades inválidas e rodada diferente da exibida', async () => {
+    const { token, user } = await registerTestUser();
+    await createWaitingRound(); await setCreditBalance(user.id, 5);
+    for (const quantity of [0, -1, 1.5, 101]) {
+      expect((await request(app).post('/rounds/join').set('Authorization', `Bearer ${token}`).send({ quantity })).status).toBe(422);
+    }
+    expect((await request(app).post('/rounds/join').set('Authorization', `Bearer ${token}`).send({ quantity: 1, roundId: user.id })).status).toBe(409);
+    expect(await prisma.ticket.count()).toBe(0);
+  });
   it('rejeita entrada quando nao ha rodada aberta (WAITING)', async () => {
     const { token, user } = await registerTestUser();
     await setCreditBalance(user.id, 5);

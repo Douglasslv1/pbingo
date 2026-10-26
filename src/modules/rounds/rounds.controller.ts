@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { AppError } from '../../utils/errors';
 import { historyQuerySchema } from '../../utils/pagination';
 import {
@@ -22,7 +23,8 @@ export async function joinRound(req: Request, res: Response): Promise<void> {
   if (!req.userId) {
     throw new AppError('Não autenticado', 401);
   }
-  const result = await joinCurrentRound(req.userId);
+  const input = z.object({ quantity: z.number().int().min(1).max(100).default(1), roundId: z.string().uuid().optional() }).parse(req.body ?? {});
+  const result = await joinCurrentRound(req.userId, input.quantity, input.roundId);
   res.status(201).json(result);
 }
 

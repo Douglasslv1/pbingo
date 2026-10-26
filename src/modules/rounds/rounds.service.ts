@@ -1,4 +1,5 @@
 import { Prisma, Round } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { AppError } from '../../utils/errors';
@@ -7,7 +8,10 @@ import { broadcast } from '../../websocket/socket';
 import { countPlayers, leaveWaitingRound } from './round.lifecycle';
 import { generateBingoMatrix } from './ticket.util';
 
-export async function joinCurrentRound(userId: string) {
+export async function joinCurrentRound(userId: string, quantity = 1, expectedRoundId?: string) {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+    throw new AppError('Escolha entre 1 e 100 cartelas', 400);
+  }
   const result = await prisma.$transaction(async (tx) => {
     const waitingRounds = await tx.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM rounds
@@ -21,19 +25,23 @@ export async function joinCurrentRound(userId: string) {
       throw new AppError('Nenhuma rodada aberta para entrada no momento', 409);
     }
     const roundId = waitingRounds[0].id;
+    if (expectedRoundId && expectedRoundId !== roundId) {
+      throw new AppError('A rodada mudou. Atualize a página antes de comprar.', 409);
+    }
 
     const creditRows = await tx.$queryRaw<Array<{ balance: number }>>`
       SELECT balance FROM user_credits WHERE user_id = ${userId}::uuid FOR UPDATE
     `;
     const currentBalance = creditRows[0]?.balance ?? 0;
 
-    if (currentBalance < env.ticketPriceCredits) {
+    const totalCredits = env.ticketPriceCredits * quantity;
+    if (currentBalance < totalCredits) {
       throw new AppError('Saldo de chaves insuficiente para entrar na rodada', 400);
     }
 
     await tx.userCredit.update({
       where: { userId },
-      data: { balance: { decrement: env.ticketPriceCredits } },
+      data: { balance: { decrement: totalCredits } },
     });
 
     await tx.transaction.create({
@@ -41,29 +49,28 @@ export async function joinCurrentRound(userId: string) {
         userId,
         type: 'SPEND_KEY',
         game: 'BINGO',
-        amountCredits: env.ticketPriceCredits,
+        amountCredits: totalCredits,
         status: 'COMPLETED',
       },
     });
 
-    const matrix = generateBingoMatrix();
-
-    const ticket = await tx.ticket.create({
-      data: {
+    const ticketData = Array.from({ length: quantity }, () => ({
+        id: randomUUID(),
         roundId,
         userId,
-        numbersMatrix: matrix as unknown as Prisma.InputJsonValue,
+        numbersMatrix: generateBingoMatrix() as unknown as Prisma.InputJsonValue,
         creditsSpent: env.ticketPriceCredits,
         prizeContribution: env.prizeContributionPerTicket,
-      },
-    });
+    }));
+    await tx.ticket.createMany({ data: ticketData });
+    const tickets = await tx.ticket.findMany({ where: { id: { in: ticketData.map((ticket) => ticket.id) } }, orderBy: { id: 'asc' } });
 
     const updatedRound = await tx.round.update({
       where: { id: roundId },
-      data: { accumulatedPrize: { increment: env.prizeContributionPerTicket } },
+      data: { accumulatedPrize: { increment: new Prisma.Decimal(env.prizeContributionPerTicket).mul(quantity) } },
     });
 
-    return { ticket, round: updatedRound, playersCount: await countPlayers(tx, roundId) };
+    return { ticket: tickets[0], tickets, round: updatedRound, playersCount: await countPlayers(tx, roundId) };
   });
 
   broadcast('round:players_changed', {
@@ -74,6 +81,7 @@ export async function joinCurrentRound(userId: string) {
 
   return {
     ticketId: result.ticket.id,
+    tickets: result.tickets,
     roundId: result.round.id,
     numbersMatrix: result.ticket.numbersMatrix,
     accumulatedPrize: result.round.accumulatedPrize.toString(),

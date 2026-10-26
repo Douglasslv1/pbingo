@@ -39,6 +39,13 @@ function describeTransaction(transaction: TransactionItem): TransactionView {
   const keys = (count: number) => `${count} ${count === 1 ? 'chave' : 'chaves'}`;
 
   switch (transaction.type) {
+    case 'PURCHASE_RAFFLE':
+      return {
+        title: 'Compra de bilhetes de rifa (Pix)',
+        amount: formatBrl(transaction.amountFiat),
+        positive: false,
+        note: transaction.status === 'COMPLETED' ? 'Pago' : transaction.status === 'PENDING' ? 'Aguardando Pix' : 'Não concluído',
+      };
     case 'PURCHASE_CREDITS':
       return {
         title: 'Compra de chaves (Pix)',

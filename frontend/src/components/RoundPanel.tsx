@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatBrl, formatCountdown, formatTime } from '../format';
 import { useCountdown } from '../hooks/useCountdown';
 import { useGameConfig } from '../hooks/useGameConfig';
@@ -8,7 +9,7 @@ import TicketCard from './TicketCard';
 interface Props {
   round: RoundView | null;
   myTickets: Ticket[];
-  onJoin: () => void;
+  onJoin: (quantity: number) => void;
   onLeave: () => void;
   joining: boolean;
   lastDrawn: DrawEvent | null;
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<RoundView['status'], string> = {
 
 export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining, lastDrawn }: Props) {
   const config = useGameConfig();
+  const [quantity, setQuantity] = useState(1);
   const countdown = useCountdown(round?.status === 'WAITING' ? round.waitingEndsAt : null);
 
   if (!round) {
@@ -72,23 +74,28 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
 
           <p className="hint">
             A rodada só começa com pelo menos {round.minPlayers} jogadores. Se não completar até o horário, ela é
-            cancelada e sua chave volta para a carteira.
+            cancelada e as chaves de todas as suas cartelas voltam para a carteira.
           </p>
 
-          {inRound ? (
-            <div className="round-actions">
-              <button type="button" disabled>
-                Você está na rodada
-              </button>
-              <button type="button" className="link" onClick={onLeave} disabled={joining}>
-                Sair e recuperar a chave
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={onJoin} disabled={joining}>
-              {joining ? 'Entrando...' : `Entrar na rodada (1 chave${ticketPrice ? ` = ${ticketPrice}` : ''})`}
+          <div className="round-actions">
+            <label>Quantidade de cartelas
+              <input type="number" min={1} max={100} value={quantity} disabled={joining}
+                onChange={(event) => setQuantity(Number(event.target.value))} />
+            </label>
+            <p className="hint">Cada cartela: {config?.ticketPriceCredits ?? 1} chave(s){ticketPrice ? ` (${ticketPrice})` : ''}.
+              Total: {quantity * (config?.ticketPriceCredits ?? 1)} chave(s).
+            </p>
+            <button type="button" onClick={() => onJoin(quantity)}
+              disabled={joining || !config || !Number.isInteger(quantity) || quantity < 1 || quantity > 100}>
+              {joining ? 'Comprando...' : inRound ? 'Comprar mais cartelas' : 'Comprar cartelas'}
             </button>
-          )}
+            {inRound && <>
+              <p>Você tem {myTickets.length} cartela(s) nesta rodada.</p>
+              <button type="button" className="link" onClick={onLeave} disabled={joining}>
+                Sair e recuperar todas as chaves
+              </button>
+            </>}
+          </div>
         </div>
       )}
 
@@ -115,7 +122,7 @@ export default function RoundPanel({ round, myTickets, onJoin, onLeave, joining,
 
       {inRound && (
         <div className="my-tickets">
-          <span className="label">Minha cartela</span>
+          <span className="label">Minhas cartelas ({myTickets.length})</span>
           {myTickets.map((ticket) => (
             <TicketCard
               key={ticket.id}

@@ -17,6 +17,7 @@ import TermsPage from './pages/TermsPage';
 import TrucoPage from './pages/TrucoPage';
 import XadrezPage from './pages/XadrezPage';
 import LudoPage from './pages/LudoPage';
+import RafflesPage from './pages/RafflesPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/suporte" element={<SupportPage />} />
             <Route path="/app" element={<AppPage />} />
+            <Route path="/rifas" element={<RafflesPage />} />
             <Route path="/domino" element={<DominoPage />} />
             <Route path="/truco" element={<TrucoPage />} />
             <Route path="/damas" element={<DamasPage />} />

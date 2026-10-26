@@ -95,7 +95,7 @@ export default function Dashboard() {
       setRound((prev) => (prev && prev.id === payload.roundId ? { ...prev, status: 'CANCELLED' } : prev));
       if (myTicketsRef.current.length > 0) {
         setMessage(
-          `Rodada cancelada: eram necessários ${payload.minPlayers} jogadores e só ${payload.playersCount} entraram. Sua chave foi devolvida.`,
+          `Rodada cancelada: eram necessários ${payload.minPlayers} jogadores e só ${payload.playersCount} entraram. As chaves das suas cartelas foram devolvidas.`,
         );
         refreshWallet();
       } else {
@@ -143,12 +143,12 @@ export default function Dashboard() {
     };
   }, [auth, refreshWallet]);
 
-  async function handleJoinRound() {
+  async function handleJoinRound(quantity: number) {
     if (!auth || !round) return;
     setJoining(true);
     setMessage(null);
     try {
-      const result = await api.joinRound(auth.token);
+      const result = await api.joinRound(auth.token, quantity, round.id);
       await refreshWallet();
       await refreshMyTickets(result.roundId);
     } catch (err) {
@@ -166,7 +166,7 @@ export default function Dashboard() {
       await api.leaveRound(auth.token);
       setMyTickets([]);
       await refreshWallet();
-      setMessage('Você saiu da rodada e sua chave foi devolvida.');
+      setMessage('Você saiu da rodada e as chaves das suas cartelas foram devolvidas.');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Erro ao sair da rodada');
     } finally {

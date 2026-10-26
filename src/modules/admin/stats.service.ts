@@ -30,7 +30,7 @@ export async function getPlatformStats(now = new Date()) {
   ]);
 
   const [pixIn, prizesPaid, withdrawals, rounds, tables, recentUsers] = await Promise.all([
-    sumFiat({ type: 'PURCHASE_CREDITS' }),
+    sumFiat({ type: { in: ['PURCHASE_CREDITS', 'PURCHASE_RAFFLE'] } }),
     sumFiat({ type: 'PRIZE_PAYOUT' }),
     prisma.withdrawal.groupBy({ by: ['status'], _count: { _all: true }, _sum: { amountFiat: true } }),
     prisma.round.groupBy({ by: ['status'], _count: { _all: true } }),

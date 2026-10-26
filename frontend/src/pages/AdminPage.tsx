@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AdminDominoPanel from '../components/admin/AdminDominoPanel';
+import AdminRafflesPanel from '../components/admin/AdminRafflesPanel';
 import AdminBoardPanel from '../components/admin/AdminBoardPanel';
 import AdminOverviewPanel from '../components/admin/AdminOverviewPanel';
 import AdminTournamentsPanel from '../components/admin/AdminTournamentsPanel';
@@ -12,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const SECTIONS = [
   { label: 'Visão geral', title: 'Visão geral', Panel: AdminOverviewPanel },
+  { label: 'Rifas', title: 'Rifas', Panel: AdminRafflesPanel },
   { label: 'Saques', title: 'Saques', Panel: AdminWithdrawalsPanel },
   { label: 'Torneios', title: 'Torneios', Panel: AdminTournamentsPanel },
   { label: 'Dominó', title: 'Mesas de dominó', Panel: AdminDominoPanel },

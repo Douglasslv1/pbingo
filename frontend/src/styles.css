@@ -10,6 +10,18 @@
   --input-bg: #0b1220;
 }
 
+.raffle-image { width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px; background: var(--input-bg); }
+.raffle-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.raffle-purchase { border-top: 1px solid var(--border); padding: 16px 0; overflow-wrap: anywhere; }
+.raffle-numbers { font-family: monospace; overflow-wrap: anywhere; max-height: 240px; overflow-y: auto; }
+.raffle-tier { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.raffle-tier label { flex: 1; min-width: 100px; }
+.raffle-confirm { display: flex; align-items: start; gap: 8px; }
+.raffle-confirm input { width: auto; }
+.raffle-card details { margin-bottom: 16px; }
+fieldset { border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
+summary { cursor: pointer; }
+
 * {
   box-sizing: border-box;
 }

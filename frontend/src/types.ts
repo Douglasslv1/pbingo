@@ -223,7 +223,7 @@ export interface AuthResult {
   user: AuthUser;
 }
 
-export type TransactionType = 'PURCHASE_CREDITS' | 'SPEND_KEY' | 'PRIZE_PAYOUT' | 'WITHDRAWAL' | 'KEY_REFUND';
+export type TransactionType = 'PURCHASE_CREDITS' | 'PURCHASE_RAFFLE' | 'SPEND_KEY' | 'PRIZE_PAYOUT' | 'WITHDRAWAL' | 'KEY_REFUND';
 
 export interface TransactionItem {
   id: string;
@@ -231,7 +231,7 @@ export interface TransactionItem {
   status: string;
   amountFiat: string;
   amountCredits: number;
-  game: 'BINGO' | 'DOMINO' | null;
+  game: 'BINGO' | 'DOMINO' | 'RAFFLE' | null;
   createdAt: string;
 }
 

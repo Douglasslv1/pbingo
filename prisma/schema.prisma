@@ -42,6 +42,8 @@ model User {
   matchesAsPlayer0    TournamentMatch[]    @relation("MatchPlayer0")
   matchesAsPlayer1    TournamentMatch[]    @relation("MatchPlayer1")
   matchesWon          TournamentMatch[]    @relation("MatchWinner")
+  rafflePurchases     RafflePurchase[]
+  rafflesDrawn        Raffle[]             @relation("RaffleRecorder")
 
   @@map("users")
 }
@@ -119,6 +121,7 @@ model Ticket {
 }
 
 enum TransactionType {
+  PURCHASE_RAFFLE
   PURCHASE_CREDITS
   SPEND_KEY
   PRIZE_PAYOUT
@@ -139,11 +142,76 @@ model Transaction {
   game              String?         @db.VarChar(20)
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
-  user       User        @relation(fields: [userId], references: [id])
-  withdrawal Withdrawal?
+  user           User            @relation(fields: [userId], references: [id])
+  withdrawal     Withdrawal?
+  rafflePurchase RafflePurchase?
 
   @@index([providerReference])
   @@map("transactions")
+}
+
+model Raffle {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String           @db.VarChar(120)
+  description      String
+  image            String
+  prize            String           @db.VarChar(255)
+  priceCents       Int              @map("price_cents")
+  discounts        Json             @default("[]")
+  digits           Int
+  lottery          String           @db.VarChar(80)
+  contest          String           @db.VarChar(40)
+  prizePosition    Int              @map("prize_position")
+  closesAt         DateTime         @map("closes_at") @db.Timestamptz
+  drawAt           DateTime         @map("draw_at") @db.Timestamptz
+  status           String           @default("DRAFT") @db.VarChar(10)
+  drawnNumber      Int?             @map("drawn_number")
+  resultNumber     String?          @map("result_number") @db.VarChar(30)
+  resultSource     String?          @map("result_source")
+  resultRecordedBy String?          @map("result_recorded_by") @db.Uuid
+  recorder         User?            @relation("RaffleRecorder", fields: [resultRecordedBy], references: [id])
+  drawnAt          DateTime?        @map("drawn_at") @db.Timestamptz
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  purchases        RafflePurchase[]
+  tickets          RaffleTicket[]
+
+  @@index([status, drawAt])
+  @@map("raffles")
+}
+
+model RafflePurchase {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raffleId        String         @map("raffle_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  transactionId   String         @unique @map("transaction_id") @db.Uuid
+  quantity        Int
+  unitPriceCents  Int            @map("unit_price_cents")
+  discountPercent Int            @map("discount_percent")
+  totalCents      Int            @map("total_cents")
+  status          String         @default("PENDING") @db.VarChar(10)
+  paidAt          DateTime?      @map("paid_at") @db.Timestamptz
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  raffle          Raffle         @relation(fields: [raffleId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+  transaction     Transaction    @relation(fields: [transactionId], references: [id])
+  tickets         RaffleTicket[]
+
+  @@index([raffleId, status])
+  @@index([userId, createdAt])
+  @@map("raffle_purchases")
+}
+
+model RaffleTicket {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raffleId   String         @map("raffle_id") @db.Uuid
+  purchaseId String         @map("purchase_id") @db.Uuid
+  number     Int
+  raffle     Raffle         @relation(fields: [raffleId], references: [id])
+  purchase   RafflePurchase @relation(fields: [purchaseId], references: [id])
+
+  @@unique([raffleId, number])
+  @@index([purchaseId])
+  @@map("raffle_tickets")
 }
 
 enum WithdrawalStatus {

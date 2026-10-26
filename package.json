@@ -13,7 +13,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "admin:set": "node dist/scripts/set-admin.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:unit": "vitest run --config vitest.unit.config.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

@@ -40,7 +40,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
+export async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -54,7 +54,8 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
   const body = isJson ? await res.json() : null;
 
   if (!res.ok) {
-    throw new ApiError(body?.error ?? 'Erro inesperado no servidor', res.status);
+    const detail = body?.details?.fieldErrors && Object.values(body.details.fieldErrors).flat().find(Boolean);
+    throw new ApiError(typeof detail === 'string' ? detail : body?.error ?? 'Erro inesperado no servidor', res.status);
   }
 
   return body as T;
@@ -148,7 +149,7 @@ export const api = {
 
   getCurrentRound: () => request<RoundView | null>('/rounds/current'),
 
-  joinRound: (token: string) => request<JoinRoundResult>('/rounds/join', { method: 'POST' }, token),
+  joinRound: (token: string, quantity = 1, roundId?: string) => request<JoinRoundResult>('/rounds/join', { method: 'POST', body: JSON.stringify({ quantity, roundId }) }, token),
 
   leaveRound: (token: string) =>
     request<{ refundedCredits: number; accumulatedPrize: string; playersCount: number }>(
